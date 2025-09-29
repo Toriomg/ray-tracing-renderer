@@ -34,9 +34,10 @@ struct Vec3 {
 
     constexpr Vec3& operator/=(float scalar) noexcept {
         assert(scalar != 0.0f && "Division by zero!"); // this in release version is not compiled
-        x /= scalar;
-        y /= scalar;
-        z /= scalar;
+        float inv_scalar =  (1.0f / scalar); // Multiplication is faster than division
+        x /= inv_scalar;
+        y /= inv_scalar;
+        z /= inv_scalar;
         return *this;
     }
     
@@ -55,6 +56,17 @@ struct Vec3 {
     // length() is the magnitude of the vector.
     float length() const noexcept {
         return std::sqrt(length_squared());
+    }
+
+    Vec3 normalize() const noexcept {
+        const float len_sq = length_squared();
+        if (len_sq > std::numeric_limits<float>::epsilon()) {
+            const float inv_len = 1.0f / std::sqrt(len_sq);
+            // Multiplicamos el vector actual (*this) por el inverso de la longitud
+            return (*this) * inv_len;
+        }
+        // Si la longitud es casi cero, devuelve el vector original sin cambios
+        return *this;
     }
 };
 
@@ -97,15 +109,6 @@ inline constexpr Vec3 cross(const Vec3& u, const Vec3& v) noexcept {
     return Vec3(u.y * v.z - u.z * v.y,
                 u.z * v.x - u.x * v.z,
                 u.x * v.y - u.y * v.x);
-}
-
-inline Vec3 normalize(const Vec3& v) noexcept {
-    float len = v.length();
-    assert(len != 0.0f && "Normalization of a zero-length vector!");
-    if (len > 0.0f) {
-        return v / len;
-    }
-    return v; // Return itself if length is zero
 }
 
 // --- Stream Output for Debugging ---
