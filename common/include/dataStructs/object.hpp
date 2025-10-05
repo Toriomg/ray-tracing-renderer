@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 struct alignas(16) SphereData {

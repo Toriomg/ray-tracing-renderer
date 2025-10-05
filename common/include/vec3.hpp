@@ -10,6 +10,7 @@ struct Vec3 {
     float z = 0.0f;
 
     constexpr Vec3(float x, float y, float z) noexcept : x(x), y(y), z(z) {}
+    constexpr Vec3() noexcept : x(0), y(0), z(0) {}
 
     constexpr Vec3& operator+=(const Vec3& other) noexcept {
         x += other.x;

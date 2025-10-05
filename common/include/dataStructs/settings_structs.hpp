@@ -1,3 +1,5 @@
+#pragma once
+
 #include "vec3.hpp"
 #include "object.hpp"
 #include "material.hpp"
@@ -20,7 +22,7 @@ struct ConfigSttings{
 };
 
 struct SceneSettings{
-    SphereData spheres;
-    CylinderData cylinders;
-    std::vector<MaterialID> materialTable;
+    const SphereData spheres;
+    const CylinderData cylinders;
+    const std::vector<MaterialID> materialTable;
 };
