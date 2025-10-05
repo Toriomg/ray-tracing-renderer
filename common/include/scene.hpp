@@ -21,10 +21,19 @@ class Scene {
     CylinderData cylinders;
     // Materiales
     std::vector<MaterialID> materialTable;
-    // Boundary Volume Hierarchy 
+
+    // Estructuras de aceleración (BVH)
     std::vector<BVHNode> bvhNodes;
-    
+    std::vector<PrimitiveInfo> orderedPrimitives; // Las primitivas, reordenadas para que las hojas apunten a rangos contiguos
+
     Scene(std::shared_ptr<SceneSettings> sceneSetings);
+    
     private:
-    std::vector<PrimitiveInfo> buildPrimitiveInfo;
+    std::vector<PrimitiveInfo> buildPrimitiveInfo(
+        const SphereData& spheres,
+        const CylinderData& cylinders
+    );
+
+    // Función de ayuda recursiva para construir el árbol BVH
+    uint32_t buildRecursive(std::vector<PrimitiveInfo>& primitiveInfos, uint32_t start, uint32_t end);
 };
