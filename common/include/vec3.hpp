@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <algorithm>
 #include <cassert>
 
 struct Vec3 {
@@ -10,6 +11,7 @@ struct Vec3 {
     float z = 0.0f;
 
     constexpr Vec3(float x, float y, float z) noexcept : x(x), y(y), z(z) {}
+    constexpr Vec3() noexcept : x(0), y(0), z(0) {}
 
     constexpr Vec3& operator+=(const Vec3& other) noexcept {
         x += other.x;
@@ -94,6 +96,22 @@ inline constexpr Vec3 operator*(const Vec3& v, float scalar) noexcept {
 inline constexpr Vec3 operator/(const Vec3& v, float scalar) noexcept {
     assert(scalar != 0.0f && "Division by zero!");
     return v * (1.0f / scalar); // Multiplication is faster than division
+}
+
+inline Vec3 min(const Point3& a, const Point3& b) {
+    return Point3(
+        std::min(a.x, b.x),
+        std::min(a.y, b.y),
+        std::min(a.z, b.z)
+    );
+}
+
+inline Vec3 max(const Point3& a, const Point3& b) {
+    return Point3(
+        std::max(a.x, b.x),
+        std::max(a.y, b.y),
+        std::max(a.z, b.z)
+    );
 }
 
 using Color = Vec3;
