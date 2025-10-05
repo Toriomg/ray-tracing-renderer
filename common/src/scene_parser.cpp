@@ -58,4 +58,3 @@ struct Scene {
 
     // TODO: Reserve capacity for fast parsing
 };
-
