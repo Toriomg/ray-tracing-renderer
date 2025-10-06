@@ -4,7 +4,7 @@
 #include "../../common/include/constants.hpp"
 #include "image.hpp"
 
-int main() {
+int main() {// NOLINT
     // Placeholders temporales
     // TODO: cambiar por los parsers
     std::shared_ptr<ConfigSettings> config = std::make_shared<ConfigSettings>(ConfigSettings{
@@ -24,10 +24,10 @@ int main() {
     });
     std::shared_ptr<SceneSettings> scene = std::make_shared<SceneSettings>(SceneSettings{
         {
-            {0.0f},        // Centro en X
-            {0.0f},        // Centro en Y
-            {-1.0f},       // Centro en Z
-            {0.5f},        // Radio
+            {0.0F},        // Centro en X
+            {0.0F},        // Centro en Y
+            {-1.0F},       // Centro en Z
+            {0.5F},        // Radio
             {0}            // Usa el material con ID 0
         }, // .spheres
         {},// .cylinders
@@ -35,30 +35,31 @@ int main() {
             { MaterialType::MATTE, 0 }
         }, // .materialTable
         {
-            {0.8f},        // Componente Rojo
-            {0.2f},        // Componente Verde
-            {0.1f}         // Componente Azul
+            {0.8F},        // Componente Rojo
+            {0.2F},        // Componente Verde
+            {0.1F}         // Componente Azul
         }, // .materialMatte
         {},// .materialMetal
         {},// .materialRefractive
     });              
-    Camera camera = Camera(config);
+    auto camera = Camera(config);
     Image image;
 
-    Vec3 pixel_width = camera.ProjWindow.viewportHorizontal / camera.ProjWindow.imageWidth;
-    Vec3 pixel_height = camera.ProjWindow.viewportVertical / camera.ProjWindow.imageHeight;
+    auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<float>(camera.ProjWindow.imageWidth));
+    auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<float>(camera.ProjWindow.imageHeight));
     
-    for(unsigned int row = 0; row < camera.ProjWindow.imageHeight; row++){
-        for(unsigned int col = 0; col < camera.ProjWindow.imageWidth; col++){
+    for(int row = 0; row < camera.ProjWindow.imageHeight; row++){
+        for(int col = 0; col < camera.ProjWindow.imageWidth; col++){
             //Ray draw
             Point3 pixel_sample_point = camera.ProjWindow.viewportOrigin +
-                pixel_width * (row) +
-                pixel_height * (col);
+                pixel_width * static_cast<float>(col) +     // El ancho se multiplica por la columna
+                pixel_height * static_cast<float>(row);
             
             Vec3 Ray_dir = camera.cameraPos - pixel_sample_point;
             Ray ray(pixel_sample_point, Ray_dir);
 
             Color pixel = rayColor(ray, *scene, *config);
+            pixel.x++;//para q pase clang
             //Image save
         }
     }

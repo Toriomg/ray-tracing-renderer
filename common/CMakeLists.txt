@@ -4,7 +4,6 @@ target_sources(common
     PRIVATE 
         src/vector.cpp
         src/camera.cpp
-        src/mathFunctions.cpp
         src/renderer.cpp
         src/scene_parser.cpp
 )

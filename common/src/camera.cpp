@@ -1,19 +1,23 @@
 #include "camera.hpp"
 #include "constants.hpp"
+#include "dataStructs/settings_structs.hpp" 
+#include <cmath> 
+#include <utility>
 
-Camera::Camera(std::shared_ptr<ConfigSettings> config){
-    cameraPos       = config->camera_pos;
-    cameraTarget    = config->camera_target;
-    cameraNorth     = config->camera_north;
-    FOV             = config->field_of_view;
-
+Camera::Camera(std::shared_ptr<ConfigSettings>& config)
+    : cameraPos{config->camera_pos},
+      cameraTarget{config->camera_target},
+      cameraNorth{config->camera_north},
+      FOV{config->field_of_view}
+{
     focalVector = cameraPos - cameraTarget;
 
-    float FOV_radians = FOV * (Constants::PI / 180.0f);
-    ProjWindow.projWindowHeight = 2 * tan(FOV_radians/2.0f) * focalVector.length();
+    float  FOV_radians = FOV * (Constants::PI / 180.0F);
+    ProjWindow.projWindowHeight = 2 * std::tan(FOV_radians/2.0F) * focalVector.length();
 
     std::pair AspRt = config->aspect_ratio;
-    ProjWindow.projWindowWidth  = ProjWindow.projWindowHeight * AspRt.first / AspRt.second;
+    ProjWindow.projWindowWidth = ProjWindow.projWindowHeight * 
+                             (static_cast<float>(AspRt.first) / static_cast<float>(AspRt.second));
     // Vectores directores de la ventana
     Vec3 focalVectorNorm = focalVector.normalize();
     cameraRight = cross(cameraNorth, focalVectorNorm).normalize();
@@ -23,6 +27,6 @@ Camera::Camera(std::shared_ptr<ConfigSettings> config){
     ProjWindow.viewportHorizontal = ProjWindow.projWindowWidth * cameraRight;
     ProjWindow.viewportVertical   = ProjWindow.projWindowHeight * -cameraUp;
 
-    ProjWindow.viewportOrigin = cameraTarget - 0.5f * 
+    ProjWindow.viewportOrigin = cameraTarget - 0.5F * 
         (ProjWindow.viewportHorizontal + ProjWindow.viewportVertical);
 }

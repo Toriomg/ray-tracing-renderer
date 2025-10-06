@@ -21,5 +21,5 @@ struct MaterialID {
     // Selecciona el SOA
     MaterialType type;
     // Accede al índice del SOA
-    int localIndex;
+    unsigned int localIndex;
 };
