@@ -6,7 +6,7 @@
 namespace Constants {  
     inline constexpr float PI = 3.14159265358979323846;
     inline constexpr float Infinity = std::numeric_limits<float>::infinity();
-
+    
     inline constexpr std::pair<unsigned int, unsigned int> AspectRatio = {16, 9};
     inline constexpr int    ImageWidth = 1920;
     inline constexpr Point3 CameraPosition(0.0f, 0.0f, -10.0f);
@@ -23,5 +23,6 @@ namespace Constants {
     inline constexpr Color ColorBackGroundLight(1.0f, 1.0f, 1.0f);
     inline constexpr Color ColorBackgroundDark(0.25f, 0.5f, 1.0f);
     
+    inline constexpr int    MAX_PRIMS_IN_NODE = 4;
 
 }
