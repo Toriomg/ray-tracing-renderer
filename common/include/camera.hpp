@@ -1,4 +1,5 @@
 #pragma once
+#include "vec3.hpp"
 #include "dataStructs/settings_structs.hpp"
 
 struct ProjectionWindow {

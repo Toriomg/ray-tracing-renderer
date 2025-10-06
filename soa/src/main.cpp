@@ -1,4 +1,3 @@
-#include <print>
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/ray.hpp"
 #include "../../common/include/camera.hpp"

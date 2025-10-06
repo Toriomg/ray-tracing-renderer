@@ -6,12 +6,12 @@
 #include <cassert>
 
 struct Vec3 {
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
+    float x = 0.0F;
+    float y = 0.0F;
+    float z = 0.0F;
 
     constexpr Vec3(float x, float y, float z) noexcept : x(x), y(y), z(z) {}
-    constexpr Vec3() noexcept : x(0), y(0), z(0) {}
+    constexpr Vec3() noexcept = default;
 
     constexpr Vec3& operator+=(const Vec3& other) noexcept {
         x += other.x;
@@ -36,7 +36,7 @@ struct Vec3 {
 
     constexpr Vec3& operator/=(float scalar) noexcept {
         assert(scalar != 0.0f && "Division by zero!"); // this in release version is not compiled
-        float inv_scalar =  (1.0f / scalar); // Multiplication is faster than division
+        float inv_scalar =  (1.0F / scalar); // Multiplication is faster than division
         x /= inv_scalar;
         y /= inv_scalar;
         z /= inv_scalar;
@@ -44,14 +44,14 @@ struct Vec3 {
     }
     
     // --- Unary Operator ---
-    constexpr Vec3 operator-() const noexcept {
-        return Vec3(-x, -y, -z);
+    [[nodiscard]] constexpr Vec3 operator-() const noexcept {
+        return {-x, -y, -z};
     }
 
     // --- Utility Functions ---
     // length_squared is much faster than length() as it avoids a square root.
     // Use it for comparisons whenever possible.
-    constexpr float length_squared() const noexcept {
+    [[nodiscard]] constexpr float length_squared() const noexcept {
         return x * x + y * y + z * z;
     }
 
