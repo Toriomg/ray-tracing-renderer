@@ -1,5 +1,5 @@
 set(COMMON_SRC_FILES 
-  "${CMAKE_SOURCE_DIR}/common/src/vector.cpp"
+  #"${CMAKE_SOURCE_DIR}/common/src/ray.cpp"
 )
 
 set(CURRENT_DIR_SRC_FILES 

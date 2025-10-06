@@ -27,6 +27,10 @@ Camera::Camera(std::shared_ptr<ConfigSettings>& config)
     ProjWindow.viewportHorizontal = ProjWindow.projWindowWidth * cameraRight;
     ProjWindow.viewportVertical   = ProjWindow.projWindowHeight * -cameraUp;
 
+    ProjWindow.imageWidth = config->image_width;
+    ProjWindow.imageHeight = static_cast<int>(static_cast<float>(ProjWindow.imageWidth) * 
+    (static_cast<float>(AspRt.second) / static_cast<float>(AspRt.first)));
+
     ProjWindow.viewportOrigin = cameraTarget - 0.5F * 
         (ProjWindow.viewportHorizontal + ProjWindow.viewportVertical);
 }

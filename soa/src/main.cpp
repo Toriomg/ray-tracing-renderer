@@ -3,6 +3,7 @@
 #include "../../common/include/camera.hpp"
 #include "../../common/include/constants.hpp"
 #include "image.hpp"
+#include <iostream>
 
 int main() {// NOLINT
     // Placeholders temporales
@@ -13,7 +14,7 @@ int main() {// NOLINT
         Constants::CameraNorth,         // .camera_north
         Constants::FOV,                 // .field_of_view
         Constants::AspectRatio,         // .aspect_ratio
-        Constants::ImageWidth,          // .image_width
+        40,          // .image_width
         Constants::Gamma,               // .gamma
         Constants::MaxDepth,            // .max_depth
         Constants::SamplesPerPixel,     // .samples_per_pixel
@@ -44,22 +45,24 @@ int main() {// NOLINT
     });              
     auto camera = Camera(config);
     Image image;
-
+    std::cout << "Generated camera\n";
     auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<float>(camera.ProjWindow.imageWidth));
     auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<float>(camera.ProjWindow.imageHeight));
     
+    std::cout << "image size : " << camera.ProjWindow.imageWidth << " , " << camera.ProjWindow.imageHeight << "\n";
     for(int row = 0; row < camera.ProjWindow.imageHeight; row++){
         for(int col = 0; col < camera.ProjWindow.imageWidth; col++){
             //Ray draw
             Point3 pixel_sample_point = camera.ProjWindow.viewportOrigin +
-                pixel_width * static_cast<float>(col) +     // El ancho se multiplica por la columna
-                pixel_height * static_cast<float>(row);
+            pixel_width * static_cast<float>(col) +     // El ancho se multiplica por la columna
+            pixel_height * static_cast<float>(row);
             
             Vec3 Ray_dir = camera.cameraPos - pixel_sample_point;
             Ray ray(pixel_sample_point, Ray_dir);
-
+            
             Color pixel = rayColor(ray, *scene, *config);
-            pixel.x++;//para q pase clang
+            std::cout << "Color for pixel: " << row << " , " << col << "\n";
+            pixel.x++;
             //Image save
         }
     }

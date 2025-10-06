@@ -2,7 +2,7 @@
 #include <optional> // For std::optional
 #include <cmath> 
 
-Color ray_color(const Ray& r, const SceneSettings& scene, const ConfigSettings& config) {// NOLINT
+Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& config) {// NOLINT
     // --- Variables para rastrear la colisión más cercana ---
     float closest_t = std::numeric_limits<float>::infinity(); // intersección más cercana
     std::optional<size_t> hit_sphere_index; // -1 significa que no hemos golpeado ninguna esfera todavía
