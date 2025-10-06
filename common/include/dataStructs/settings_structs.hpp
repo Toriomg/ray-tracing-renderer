@@ -5,7 +5,7 @@
 #include "material.hpp"
 #include <vector>
 
-struct ConfigSttings{
+struct ConfigSettings{
     Point3 camera_pos;
     Point3 camera_target;
     Vec3 camera_north;
