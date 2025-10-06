@@ -58,6 +58,8 @@ int main() {
             
             Vec3 Ray_dir = camera.cameraPos - pixel_sample_point;
             Ray ray(pixel_sample_point, Ray_dir);
+
+            Color pixel = rayColor(ray, *scene, *config);
             //Image save
         }
     }

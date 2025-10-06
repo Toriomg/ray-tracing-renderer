@@ -24,4 +24,4 @@ struct HitRecord {
     }
 };
 
-Color rayColor(const Ray& r, const SceneSettings& scene);
+Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& config);
