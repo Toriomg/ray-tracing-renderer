@@ -2,8 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
-
-constexpr int MAX_PRIMS_IN_NODE = 4;
+#include "constants.hpp"
 
 AABB compute_bounds(const std::vector<PrimitiveInfo>& infos, uint32_t start, uint32_t end) {
     // Función auxiliar para calcular la caja que engloba a todas las primitivas en un rango
@@ -50,7 +49,7 @@ uint32_t Scene::buildRecursive(std::vector<PrimitiveInfo>& primitiveInfos, uint3
     uint32_t numPrimitives = end - start;
 
     // --- Caso Base: Crear un nodo hoja ---
-    if (numPrimitives <= MAX_PRIMS_IN_NODE) {
+    if (numPrimitives <= Constants::MAX_PRIMS_IN_NODE) {
         BVHNode& node = bvhNodes[currentNodeIndex];
         node.first_primitive_offset = start;
         node.primitive_count = numPrimitives;
