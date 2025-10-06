@@ -25,4 +25,9 @@ struct SceneSettings{
     const SphereData spheres;
     const CylinderData cylinders;
     const std::vector<MaterialID> materialTable;
+
+    // tiene los SOA de los materiales
+    const MatteMaterials matte;
+    const MetalMaterials metal;
+    const RefractiveMaterials refractive;
 };
