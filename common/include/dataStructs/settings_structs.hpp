@@ -22,12 +22,13 @@ struct ConfigSettings{
 };
 
 struct SceneSettings{
-    const SphereData spheres;
-    const CylinderData cylinders;
-    const std::vector<MaterialID> materialTable;
+    SphereData spheres;
+    CylinderData cylinders;
+    std::vector<MaterialID> materialTable;
+    std::vector<std::string> materialNames; // Just for debugging
 
     // tiene los SOA de los materiales
-    const MatteMaterials matte;
-    const MetalMaterials metal;
-    const RefractiveMaterials refractive;
+    MatteMaterials matte;
+    MetalMaterials metal;
+    RefractiveMaterials refractive;
 };

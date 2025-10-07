@@ -1,3 +1,4 @@
+#include "../../common/include/scene_parser.hpp"
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/ray.hpp"
 #include "../../common/include/camera.hpp"
@@ -8,6 +9,7 @@
 #include "image_soa.hpp"
 #include <iostream>
 #include <string>
+const std::string FilepathScene = "/workspace/res/scene_scripts/scene1.txt";
 const std::string FilepathOut = "/workspace/outputImage.ppm";
 
 int main() {// NOLINT
@@ -28,28 +30,8 @@ int main() {// NOLINT
         Constants::ColorBackgroundDark, // .background_dark_color
         Constants::ColorBackGroundLight,// .background_light_color
     });
-    std::shared_ptr<SceneSettings> scene = std::make_shared<SceneSettings>(SceneSettings{
-        {
-            {0.0F, 5.0F, -5.0F},        // Centro en X
-            {0.0F, 5.0F, -5.0F},        // Centro en Y
-            {5.0F, 2.0F, 1.0F},       // Centro en Z
-            {7.0F, 5.0F, 3.0F},        // Radio
-            {0, 1, 2}            // Usa el material con ID 0
-        }, // .spheres
-        {},// .cylinders
-        {
-            { MaterialType::MATTE, 0 },
-            { MaterialType::MATTE, 1 },
-            { MaterialType::MATTE, 2 },
-        }, // .materialTable
-        {
-            {0.8F, 0.5F, 0.0F},        // Componente Rojo
-            {0.2F, 0.5F, 1.0F},        // Componente Verde
-            {0.1F, 0.5F, 0.0F}         // Componente Azul
-        }, // .materialMatte
-        {},// .materialMetal
-        {},// .materialRefractive
-    });
+    SceneSettings scene = loadSceneFromFile(FilepathScene);
+    
     // Crear randomizadores
     auto rngRay = RandomGenerator(config->ray_rng_seed);
     //auto rngMaterial = RandomGenerator(config->material_rng_seed);
@@ -85,7 +67,7 @@ int main() {// NOLINT
                 // Crear el rayo
                 Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
                 // Sacar el color del rayo
-                accumulated_color += rayColor(ray, *scene, *config);
+                accumulated_color += rayColor(ray, scene, *config);
             }
 
             Color final_pixel_color = accumulated_color * static_cast<float>(scale);
