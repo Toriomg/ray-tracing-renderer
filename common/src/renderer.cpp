@@ -62,14 +62,12 @@ Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& c
             unsigned int matte_idx = material_id.localIndex;
             Color material_color = {scene.matte.r[matte_idx], scene.matte.g[matte_idx], scene.matte.b[matte_idx]};
 
-            Vec3 bounce_direction = hit_rec->normal + materialRng.get_vector_minus1_to_1();
+            Vec3 bounce_target = hit_rec->p + hit_rec->normal + materialRng.get_unit_sphere();
+            if (bounce_target.is_near_zero()) {
+                bounce_target = hit_rec->normal;
+            }
+            Ray bounced_ray(hit_rec->p, bounce_target - hit_rec->p);
 
-            if (bounce_direction.is_near_zero()) {
-            // 3. Acción de Seguridad: Si lo es, usar la normal como dirección de rebote.
-            bounce_direction = hit_rec->normal;
-        }
-
-            Ray bounced_ray(hit_rec->p, bounce_direction );
             // Devolvemos el color de ese material mate
             return material_color * rayColor(bounced_ray, scene, config, materialRng, depth - 1);
         }

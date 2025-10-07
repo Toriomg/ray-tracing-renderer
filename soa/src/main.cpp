@@ -23,8 +23,8 @@ int main() {// NOLINT
         Constants::AspectRatio,         // .aspect_ratio
         900,          // .image_width
         Constants::Gamma,               // .gamma
-        Constants::MaxDepth,            // .max_depth
-        Constants::SamplesPerPixel,     // .samples_per_pixel
+        30,            // .max_depth
+        60,     // .samples_per_pixel
         Constants::RNGSeedMaterial,     // .material_rng_seed
         Constants::RNGSeedRay,          // .ray_rng_seed
         Constants::ColorBackgroundDark, // .background_dark_color

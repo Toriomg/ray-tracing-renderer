@@ -24,7 +24,7 @@ struct HitRecord {
     HitRecord() = default;
     // Función para establecer la normal siempre apuntando hacia fuera
     void set_face_normal(const Ray& r, const Vec3& outward_normal) {
-        front_face = dot(r.direction, outward_normal) < 0;
+        bool front_face = dot(r.direction, outward_normal) < 0;
         normal = front_face ? outward_normal : -outward_normal;
     }    // Índice del objeto golpeado en el array de la escena.
 };

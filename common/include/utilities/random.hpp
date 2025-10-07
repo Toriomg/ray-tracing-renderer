@@ -11,6 +11,7 @@ class RandomGenerator{
     float get_float(float min, float max);
     Vec3 get_vector_minus1_to_1();
     Vec3 get_vector_in_range(double range);
+    Vec3 get_unit_sphere();
     
     private:
     std::mt19937_64 m_engine;

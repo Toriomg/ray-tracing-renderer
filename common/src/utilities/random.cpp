@@ -39,3 +39,12 @@ Vec3 RandomGenerator::get_vector_in_range(double range) {
         static_cast<float>(get_double(-range, range))
     };
 }
+
+Vec3 RandomGenerator::get_unit_sphere() {
+    while (true) {
+        auto p = this->get_vector_minus1_to_1();
+        if (p.length_squared() < 1) {
+            return p;
+        }
+    }
+}
