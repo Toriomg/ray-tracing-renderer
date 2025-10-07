@@ -2,8 +2,14 @@
 #include "../../common/include/ray.hpp"
 #include "../../common/include/camera.hpp"
 #include "../../common/include/constants.hpp"
-#include "image.hpp"
+#include "../../common/include/ppm_writer.hpp"
+
+#include "color_utils.hpp"
+#include "image_soa.hpp"
 #include <iostream>
+#include <string>
+
+const std::string FilepathOut = "/workspace/outputImage.ppm";
 
 int main() {// NOLINT
     // Placeholders temporales
@@ -46,25 +52,43 @@ int main() {// NOLINT
         {},// .materialRefractive
     });              
     auto camera = Camera(config);
-    Image image;
     std::cout << "Generated camera\n";
-    auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<float>(camera.ProjWindow.imageWidth));
-    auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<float>(camera.ProjWindow.imageHeight));
+
+    // Image width
+    int imageWidth = camera.ProjWindow.imageWidth;
+    int imageHeight = camera.ProjWindow.imageHeight;
+
+
+    auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<float>(imageWidth));
+    auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<float>(imageHeight));
     
-    std::cout << "image size : " << camera.ProjWindow.imageWidth << " , " << camera.ProjWindow.imageHeight << "\n";
-    for(int row = 0; row < camera.ProjWindow.imageHeight; row++){
-        for(int col = 0; col < camera.ProjWindow.imageWidth; col++){
-            //Ray draw
+    std::cout << "image size : " << imageWidth << " , " << imageHeight << "\n";
+    ImageSOA image = ImageSOA(static_cast<size_t>(imageWidth), static_cast<size_t>(imageHeight));
+
+    for(size_t row = 0; row < static_cast<size_t>(imageHeight); row++){
+        for(size_t col = 0; col < static_cast<size_t>(imageWidth); col++){
+            //Ray position in proj screen
             Point3 pixel_sample_point = camera.ProjWindow.viewportOrigin +
             pixel_width * static_cast<float>(col) +     // El ancho se multiplica por la columna
             pixel_height * static_cast<float>(row);
             
+            // Crear el rayo
             Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
             
+            // Sacar el color del rayo
             Color pixel = rayColor(ray, *scene, *config);
-            std::cout << "Color for pixel: " << pixel.x << " , " << pixel.y << " , " << pixel.z << "\n";
+            
+            //TODO: esto es una cutrada pero es la forma rapida de settear el color de uno en uno sin crear unos buffers
+            uint8_t red     = color_utils::float_to_uint8(pixel.x);
+            uint8_t green   = color_utils::float_to_uint8(pixel.y);
+            uint8_t blue    = color_utils::float_to_uint8(pixel.z);
+
             //Image save
+            image.set_pixel(row, col, red, green, blue);
+
         }
     }
-
+    if( !image.write_to_ppm(FilepathOut)){
+        std::cerr << "Error writing into .ppm file";
+    }
 }

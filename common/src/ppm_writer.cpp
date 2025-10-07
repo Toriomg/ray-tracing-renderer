@@ -1,6 +1,5 @@
 #include <fstream>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -13,7 +12,6 @@ bool PPMWriter::write_ppm(const std::string& filename,// NOLINT(readability-func
                      const std::vector<uint8_t>& b_channel,
                      size_t width, size_t height)
 {
-    
     // Checkeamos que el número de pixeles coincide con el tamaño de los arrays que se han definido
     size_t total_pixels = width * height;
     if (r_channel.size() != total_pixels or

@@ -39,7 +39,7 @@ public:
                         const std::vector<float>& g_data,
                         const std::vector<float>& b_data,
                         float gamma = 2.2F);
-    
+
     // Métodos para recibir las dimensiones de la imagen 
     [[nodiscard]]size_t width() const { return width_; }
     [[nodiscard]]size_t height() const { return height_; }
