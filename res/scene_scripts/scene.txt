@@ -1,0 +1,2 @@
+matte: mat1 0 0.8 0.8
+sphere: 0 0 0 0.65 mat1
