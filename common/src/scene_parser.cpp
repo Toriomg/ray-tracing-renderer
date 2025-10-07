@@ -1,58 +1,308 @@
+#include "scene_parser.hpp"
+#include <cerrno>
+#include <charconv>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <string_view>
 #include <vector>
 
-// Materials structs
+namespace {
 
-struct MatteMaterials {
-    std::vector<float> r, g, b;
-};
+void trimWhitespace(std::string_view &str) {
+  while (!str.empty() and
+         (std::isspace(static_cast<unsigned char>(str.front())) != 0)) {
+    str.remove_prefix(1);
+  }
+  while (!str.empty() and
+         (std::isspace(static_cast<unsigned char>(str.back())) != 0)) {
+    str.remove_suffix(1);
+  }
+}
 
-struct MetalMaterials {
-    std::vector<float> r, g, b, diffusion;
-};
+std::vector<std::string_view> tokenizeLine(std::string_view line) {
+  // Combierte el string a tokens (más o menos cada palabra o dato importante)
+  std::vector<std::string_view> tokens;
 
+  while (!line.empty()) {
+    trimWhitespace(line);
+    if (line.empty()) {
+      break;
+    }
 
-struct RefractiveMaterials {
-    std::vector<float> ior;
-};
+    const std::size_t pos = line.find(' ');
+    if (pos == std::string_view::npos) {
+      tokens.push_back(line);
+      break;
+    }
 
-// Primitives structs
+    tokens.push_back(line.substr(0, pos));
+    line.remove_prefix(pos);
+  }
 
-struct alignas(16) Sphere {
-    float x, y, z, r;       // All the numbers that define the sphere
-    int materialIndex;       // Index of its material
-};
+  return tokens;
+}
 
-struct alignas(16) Cylinder {
-    float x, y, z, r;       // center + radius
-    float vx, vy, vz;       // axis vector
-    int materialIndex;       // index into Scene.materialTable
-    float invAxisLen;        // precomputed axis to avoid sqrt operations later on
-};
+bool parseFloat(std::string_view token, float &value) {
+  if (token.empty()) {
+    return false;
+  }
 
-// Scene
+  const char *const start = token.data();
+  const char *const end = std::__to_address(token.end());
 
-struct Scene {
-    // Materials
-    MatteMaterials matte;
-    MetalMaterials metal;
-    RefractiveMaterials refractive;
+  const auto result = std::from_chars(start, end, value);
 
-    // Primitives
-    std::vector<Sphere> spheres;
-    std::vector<Cylinder> cylinders;
+  return result.ec == std::errc() and result.ptr == end;
+}
 
-    // Material type enum for lookup
-    enum MaterialType { MATTE = 0, METAL = 1, REFRACTIVE = 2 };
+bool validateColorComponents(float r, float g, float b) {
+  // Nos aseguramos de que los colores estan en los rangos correctos
+  return r >= 0.0F and r <= 1.0F and g >= 0.0F and g <= 1.0F and b >= 0.0F and
+         b <= 1.0F;
+}
 
-    // Material reference table
-    struct MaterialRef {
-        MaterialType type;
-        int localIndex;  // index to the material
-    };
-    std::vector<MaterialRef> materialTable;
+bool parseMatteMaterial(const std::vector<std::string_view> &tokens,
+                        Scene &scene) {
+  if (tokens.size() != 5) {
+    std::cerr
+        << "Error: matte material requires 4 parameters (name r g b), got "
+        << tokens.size() - 1 << "\n";
+    return false;
+  }
 
-    // Names for debug later on maybe? 
-    std::vector<const char*> materialNames;
+  float r = 0.0F;
+  float g = 0.0F;
+  float b = 0.0F;
 
-    // TODO: Reserve capacity for fast parsing
-};
+  if (!parseFloat(tokens[2], r) or !parseFloat(tokens[3], g) or
+      !parseFloat(tokens[4], b)) {
+    std::cerr << "Error: invalid color values for matte material\n";
+    return false;
+  }
+
+  if (!validateColorComponents(r, g, b)) {
+    std::cerr << "Error: color values must be in range [0, 1]\n";
+    return false;
+  }
+
+  scene.matte.r.push_back(r);
+  scene.matte.g.push_back(g);
+  scene.matte.b.push_back(b);
+  scene.materialTable.push_back(
+      {Scene::MaterialType::MATTE, static_cast<int>(scene.matte.r.size()) - 1});
+  scene.materialNames.emplace_back(tokens[1]);
+
+  return true;
+}
+
+bool parseMetalMaterial(const std::vector<std::string_view> &tokens,
+                        Scene &scene) {
+  if (tokens.size() != 6) {
+    std::cerr << "Error: metal material requires 5 parameters (name r g b "
+                 "diffusion), got "
+              << tokens.size() - 1 << "\n";
+    return false;
+  }
+
+  float r = 0.0F;
+  float g = 0.0F;
+  float b = 0.0F;
+  float diffusion = 0.0F;
+
+  if (!parseFloat(tokens[2], r) or !parseFloat(tokens[3], g) or
+      !parseFloat(tokens[4], b) or !parseFloat(tokens[5], diffusion)) {
+    std::cerr << "Error: invalid parameter values for metal material\n";
+    return false;
+  }
+
+  if (!validateColorComponents(r, g, b) or diffusion < 0.0F) {
+    std::cerr << "Error: invalid parameter ranges for metal material\n";
+    return false;
+  }
+
+  scene.metal.r.push_back(r);
+  scene.metal.g.push_back(g);
+  scene.metal.b.push_back(b);
+  scene.metal.diffusion.push_back(diffusion);
+  scene.materialTable.push_back(
+      {Scene::MaterialType::METAL, static_cast<int>(scene.metal.r.size()) - 1});
+  scene.materialNames.emplace_back(tokens[1]);
+
+  return true;
+}
+
+bool parseRefractiveMaterial(const std::vector<std::string_view> &tokens,
+                             Scene &scene) {
+  if (tokens.size() != 3) {
+    std::cerr
+        << "Error: refractive material requires 2 parameters (name ior), got "
+        << tokens.size() - 1 << "\n";
+    return false;
+  }
+
+  float ior = 0.0F;
+  if (!parseFloat(tokens[2], ior)) {
+    std::cerr << "Error: invalid IOR value for refractive material\n";
+    return false;
+  }
+
+  if (ior <= 0.0F) {
+    std::cerr << "Error: IOR must be positive\n";
+    return false;
+  }
+
+  scene.refractive.ior.push_back(ior);
+  scene.materialTable.push_back(
+      {Scene::MaterialType::REFRACTIVE,
+       static_cast<int>(scene.refractive.ior.size()) - 1});
+  scene.materialNames.emplace_back(tokens[1]);
+
+  return true;
+}
+
+int findMaterialIndex(std::string_view materialName, const Scene &scene) {
+  for (std::size_t i = 0; i < scene.materialNames.size(); ++i) {
+    if (scene.materialNames[i] == materialName) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+bool parseSphere(const std::vector<std::string_view> &tokens, Scene &scene) {
+  if (tokens.size() != 6) {
+    std::cerr << "Error: esfera requiere 5 parameteros (x y z radio material), "
+                 "obtuvo "
+              << tokens.size() - 1 << "\n";
+    return false;
+  }
+
+  float x = 0.0F;
+  float y = 0.0F;
+  float z = 0.0F;
+  float radius = 0.0F;
+
+  if (!parseFloat(tokens[1], x) or !parseFloat(tokens[2], y) or
+      !parseFloat(tokens[3], z) or !parseFloat(tokens[4], radius)) {
+    std::cerr << "Error: parametros de esfera incorrectos\n";
+    return false;
+  }
+
+  if (radius <= 0.0F) {
+    std::cerr << "Error: radio de la esfera debe ser positivo\n";
+    return false;
+  }
+
+  const int materialIndex = findMaterialIndex(tokens[5], scene);
+  if (materialIndex == -1) {
+    std::cerr << "Error:material desconocido '" << tokens[5]
+              << "' para esfera\n";
+    return false;
+  }
+
+  scene.spheres.push_back({x, y, z, radius, materialIndex});
+  return true;
+}
+
+bool parseCylinder(const std::vector<std::string_view> &tokens, Scene &scene) {
+  if (tokens.size() != 9) {
+    std::cerr << "Error: cilindro requiere 8 parámteros (x y z radio vx vy vz "
+                 "material), obtuvo"
+              << tokens.size() - 1 << "\n";
+    return false;
+  }
+  float x = 0.0F;
+  float y = 0.0F;
+  float z = 0.0F;
+  float radius = 0.0F;
+  float vx = 0.0F;
+  float vy = 0.0F;
+  float vz = 0.0F;
+
+  if (!parseFloat(tokens[1], x) or !parseFloat(tokens[2], y) or
+      !parseFloat(tokens[3], z) or !parseFloat(tokens[4], radius) or
+      !parseFloat(tokens[5], vx) or !parseFloat(tokens[6], vy) or
+      !parseFloat(tokens[7], vz)) {
+    std::cerr << "Error: parámetros del cilindro incorrectos\n";
+    return false;
+  }
+
+  if (radius <= 0.0F) {
+    std::cerr << "Error: radio del cilindro debe ser positivo\n";
+    return false;
+  }
+
+  const int materialIndex = findMaterialIndex(tokens[8], scene);
+  if (materialIndex == -1) {
+    std::cerr << "Error: material desconocido '" << tokens[8]
+              << "' para esfera\n";
+    return false;
+  }
+  const float axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
+  const float invAxisLen = (axisLength > 0.0F) ? (1.0F / axisLength) : 1.0F;
+
+  scene.cylinders.push_back(
+      {x, y, z, radius, vx, vy, vz, materialIndex, invAxisLen});
+  return true;
+}
+
+bool processLine(std::string_view line, Scene &scene) {
+  trimWhitespace(line);
+
+  if (line.empty() or line.front() == '#') {
+    return true;
+  }
+
+  const std::vector<std::string_view> tokens = tokenizeLine(line);
+  if (tokens.empty()) {
+    return true;
+  }
+
+  const std::string_view command = tokens[0];
+
+  if (command == "matte:") {
+    return parseMatteMaterial(tokens, scene);
+  }
+  if (command == "metal:") {
+    return parseMetalMaterial(tokens, scene);
+  }
+  if (command == "refractive:") {
+    return parseRefractiveMaterial(tokens, scene);
+  }
+  if (command == "sphere:") {
+    return parseSphere(tokens, scene);
+  }
+  if (command == "cylinder:") {
+    return parseCylinder(tokens, scene);
+  }
+
+  std::cerr << "Error: unknown command '" << command << "'\n";
+  return false;
+}
+
+} // namespace
+
+[[nodiscard]] Scene loadSceneFromFile(const std::string &filename) {
+  Scene scene;
+
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    std::cerr << "Error: could not open file '" << filename << "'\n";
+    return scene;
+  }
+
+  std::string line;
+  std::size_t lineNumber = 0;
+
+  while (std::getline(file, line)) {
+    ++lineNumber;
+    if (!processLine(line, scene)) {
+      std::cerr << "Error parsing line " << lineNumber << ": " << line << "\n";
+    }
+  }
+
+  return scene;
+}
