@@ -1,6 +1,6 @@
-#include "image_soa.hpp"
-#include "color_utils.hpp"
-#include "ppm_writer.hpp"
+#include "../include/image_soa.hpp"
+#include "../../common/include/color_utils.hpp"
+#include "../../common/include/ppm_writer.hpp"
 #include <stdexcept>
 #include <cmath>
 
@@ -11,7 +11,7 @@ ImageSOA::ImageSOA(size_t width, size_t height)
       g_channel_(width * height, 0),
       b_channel_(width * height, 0)
 {
-    if (width == 0 || height == 0) {
+    if (width == 0 or height == 0) {
         throw std::invalid_argument("Las dimensiones de la imagen no pueden ser cero");
     }
 }
@@ -19,7 +19,7 @@ ImageSOA::ImageSOA(size_t width, size_t height)
 // Métodos para acceder al valor de un pixel dentro de los arrays de colores 
 uint8_t ImageSOA::get_red(size_t row, size_t col) const {
     // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango 
-    if (row >= height_ || col >= width_) {
+    if (row >= height_ or col >= width_) {
         throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" + 
                                std::to_string(row) + ", col=" + std::to_string(col));
     }
@@ -28,7 +28,7 @@ uint8_t ImageSOA::get_red(size_t row, size_t col) const {
 }
 
 uint8_t ImageSOA::get_green(size_t row, size_t col) const {
-    if (row >= height_ || col >= width_) {
+    if (row >= height_ or col >= width_) {
         throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" + 
                                std::to_string(row) + ", col=" + std::to_string(col));
     }
@@ -36,7 +36,7 @@ uint8_t ImageSOA::get_green(size_t row, size_t col) const {
 }
 
 uint8_t ImageSOA::get_blue(size_t row, size_t col) const {
-    if (row >= height_ || col >= width_) {
+    if (row >= height_ or col >= width_) {
         throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" + 
                                std::to_string(row) + ", col=" + std::to_string(col));
     }
@@ -46,7 +46,7 @@ uint8_t ImageSOA::get_blue(size_t row, size_t col) const {
 // Métodos para modificar el valor de un pixel dentro de los arrays de colores
 void ImageSOA::set_red(size_t row, size_t col, uint8_t value) {
     // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
-    if (row >= height_ || col >= width_) {
+    if (row >= height_ or col >= width_) {
         throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" + 
                                std::to_string(row) + ", col=" + std::to_string(col));
     }
@@ -54,7 +54,7 @@ void ImageSOA::set_red(size_t row, size_t col, uint8_t value) {
 }
 
 void ImageSOA::set_green(size_t row, size_t col, uint8_t value) {
-    if (row >= height_ || col >= width_) {
+    if (row >= height_ or col >= width_) {
         throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" + 
                                std::to_string(row) + ", col=" + std::to_string(col));
     }
@@ -62,7 +62,7 @@ void ImageSOA::set_green(size_t row, size_t col, uint8_t value) {
 }
 
 void ImageSOA::set_blue(size_t row, size_t col, uint8_t value) {
-    if (row >= height_ || col >= width_) {
+    if (row >= height_ or col >= width_) {
         throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" + 
                                std::to_string(row) + ", col=" + std::to_string(col));
     }
@@ -70,7 +70,7 @@ void ImageSOA::set_blue(size_t row, size_t col, uint8_t value) {
 }
 
 // Método para modificar los 3 arrays a la vez para definir un color completo en un pixel concreto de una sola vez
-void ImageSOA::set_pixel(size_t row, size_t col, uint8_t red, uint8_t green, uint8_t blue) {
+void ImageSOA::set_pixel(size_t row, size_t col, uint8_t red, uint8_t green, uint8_t blue) {// NOLINT(readability-function-size)
     set_red(row, col, red);
     set_green(row, col, green);
     set_blue(row, col, blue);
@@ -86,8 +86,8 @@ void ImageSOA::fill_from_float(const std::vector<float>& r_data,
     size_t expected_size = width_ * height_;
     
     // Verificamos que los datos proporcionados coinciden con las dimensiones de la imagen
-    if (r_data.size() != expected_size || 
-        g_data.size() != expected_size || 
+    if (r_data.size() != expected_size or 
+        g_data.size() != expected_size or 
         b_data.size() != expected_size) {
         throw std::invalid_argument("Los datos introducidos no coinciden con las dimensiones de la imagen");
     }

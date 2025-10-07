@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <stdexcept>
 
 class ImageSOA {
 private:
@@ -14,7 +13,7 @@ private:
     size_t height_; // Alto de la imagen
 
     // Función para calcular el índice de un pixel en los arrays de colores
-    size_t indice(size_t row, size_t col) const {
+    [[nodiscard]]size_t indice(size_t row, size_t col) const {
         return row * width_ + col;
     }
 
@@ -23,9 +22,9 @@ public:
     ImageSOA(size_t width, size_t height);
     
     // Métodos para acceder a los valores de cada color (cada array)
-    uint8_t get_red(size_t row, size_t col) const;
-    uint8_t get_green(size_t row, size_t col) const;
-    uint8_t get_blue(size_t row, size_t col) const;
+    [[nodiscard]]uint8_t get_red(size_t row, size_t col) const;
+    [[nodiscard]]uint8_t get_green(size_t row, size_t col) const;
+    [[nodiscard]]uint8_t get_blue(size_t row, size_t col) const;
     
     // Métodos para modificar valores de color a un pixel concreto en cada array 
     void set_red(size_t row, size_t col, uint8_t value);
@@ -39,18 +38,18 @@ public:
     void fill_from_float(const std::vector<float>& r_data,
                         const std::vector<float>& g_data,
                         const std::vector<float>& b_data,
-                        float gamma = 2.2f);
+                        float gamma = 2.2F);
     
     // Métodos para recibir las dimensiones de la imagen 
-    size_t width() const { return width_; }
-    size_t height() const { return height_; }
-    size_t total_pixels() const { return width_ * height_; }
+    [[nodiscard]]size_t width() const { return width_; }
+    [[nodiscard]]size_t height() const { return height_; }
+    [[nodiscard]]size_t total_pixels() const { return width_ * height_; }
     
     // Getters para acceder a todos los arrays de colores y poder usarlos externamente sin poder modificarlos 
-    const std::vector<uint8_t>& get_r_channel() const { return r_channel_; }
-    const std::vector<uint8_t>& get_g_channel() const { return g_channel_; }
-    const std::vector<uint8_t>& get_b_channel() const { return b_channel_; }
+    [[nodiscard]]const std::vector<uint8_t>& get_r_channel() const { return r_channel_; }
+    [[nodiscard]]const std::vector<uint8_t>& get_g_channel() const { return g_channel_; }
+    [[nodiscard]]const std::vector<uint8_t>& get_b_channel() const { return b_channel_; }
 
     // Función para escribir la imagen en un archivo PPM
-    bool write_to_ppm(const std::string& filename) const;
+    [[nodiscard]]bool write_to_ppm(const std::string& filename) const;
 };
