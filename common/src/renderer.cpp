@@ -42,7 +42,7 @@ Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& c
     // --- Después del bucle, decidimos qué color devolver ---
 
     // 1. Si golpeamos una esfera (el índice ya no es -1)
-    if (hit_sphere_index != -1) {
+    if (hit_sphere_index) {
         // Obtenemos el ID del material de la esfera que golpeamos
         unsigned int material_global_id = scene.spheres.materialIndex[*hit_sphere_index];
         

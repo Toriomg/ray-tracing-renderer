@@ -14,7 +14,7 @@ int main() {// NOLINT
         Constants::CameraNorth,         // .camera_north
         Constants::FOV,                 // .field_of_view
         Constants::AspectRatio,         // .aspect_ratio
-        40,          // .image_width
+        900,          // .image_width
         Constants::Gamma,               // .gamma
         Constants::MaxDepth,            // .max_depth
         Constants::SamplesPerPixel,     // .samples_per_pixel
@@ -28,7 +28,7 @@ int main() {// NOLINT
             {0.0F},        // Centro en X
             {0.0F},        // Centro en Y
             {-1.0F},       // Centro en Z
-            {0.5F},        // Radio
+            {2.0F},        // Radio
             {0}            // Usa el material con ID 0
         }, // .spheres
         {},// .cylinders
@@ -57,12 +57,10 @@ int main() {// NOLINT
             pixel_width * static_cast<float>(col) +     // El ancho se multiplica por la columna
             pixel_height * static_cast<float>(row);
             
-            Vec3 Ray_dir = camera.cameraPos - pixel_sample_point;
-            Ray ray(pixel_sample_point, Ray_dir);
+            Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
             
             Color pixel = rayColor(ray, *scene, *config);
-            std::cout << "Color for pixel: " << row << " , " << col << "\n";
-            pixel.x++;
+            std::cout << "Color for pixel: " << pixel.x << " , " << pixel.y << " , " << pixel.z << "\n";
             //Image save
         }
     }
