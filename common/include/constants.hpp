@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vec3.hpp"
+#include "utilities/vec3.hpp"
 #include <limits>
 #include <numbers> // For std::numbers::pi
 

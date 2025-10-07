@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vec3.hpp"
+#include "utilities/vec3.hpp"
 #include "object.hpp"
 #include "material.hpp"
 #include <vector>
@@ -15,8 +15,8 @@ struct ConfigSettings{
     float  gamma;
     int    max_depth;
     int    samples_per_pixel;
-    int    material_rng_seed;
-    int    ray_rng_seed;
+    unsigned long material_rng_seed;
+    unsigned long ray_rng_seed;
     Color  background_dark_color;
     Color  background_light_color;
 };

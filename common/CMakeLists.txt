@@ -2,7 +2,8 @@ add_library(common STATIC)
 
 target_sources(common 
     PRIVATE 
-        src/vector.cpp
+        src/utilities/vector.cpp
+        src/utilities/random.cpp
         src/camera.cpp
         src/renderer.cpp
         src/scene_parser.cpp

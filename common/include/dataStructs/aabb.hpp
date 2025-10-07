@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vec3.hpp"
+#include "utilities/vec3.hpp"
 class Ray;
 
 struct AABB {

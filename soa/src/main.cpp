@@ -2,13 +2,12 @@
 #include "../../common/include/ray.hpp"
 #include "../../common/include/camera.hpp"
 #include "../../common/include/constants.hpp"
-#include "../../common/include/ppm_writer.hpp"
+#include "../../common/include/utilities/color_utils.hpp"
+#include "../../common/include/utilities/random.hpp"
 
-#include "color_utils.hpp"
 #include "image_soa.hpp"
 #include <iostream>
 #include <string>
-
 const std::string FilepathOut = "/workspace/outputImage.ppm";
 
 int main() {// NOLINT
@@ -50,38 +49,50 @@ int main() {// NOLINT
         }, // .materialMatte
         {},// .materialMetal
         {},// .materialRefractive
-    });              
-    auto camera = Camera(config);
-    std::cout << "Generated camera\n";
+    });
+    // Crear randomizadores
+    auto rngRay = RandomGenerator(config->ray_rng_seed);
+    //auto rngMaterial = RandomGenerator(config->material_rng_seed);
+
+    auto camera = Camera(config); // Crear la cámara
 
     // Image width
-    int imageWidth = camera.ProjWindow.imageWidth;
-    int imageHeight = camera.ProjWindow.imageHeight;
-
+    auto imageWidth = static_cast<size_t>(camera.ProjWindow.imageWidth);
+    auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
     auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<float>(imageWidth));
     auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<float>(imageHeight));
     
-    std::cout << "image size : " << imageWidth << " , " << imageHeight << "\n";
-    ImageSOA image = ImageSOA(static_cast<size_t>(imageWidth), static_cast<size_t>(imageHeight));
+    ImageSOA image = ImageSOA((imageWidth), (imageHeight));
+    const double scale = 1.0 / static_cast<double>(config->samples_per_pixel);
 
-    for(size_t row = 0; row < static_cast<size_t>(imageHeight); row++){
-        for(size_t col = 0; col < static_cast<size_t>(imageWidth); col++){
-            //Ray position in proj screen
-            Point3 pixel_sample_point = camera.ProjWindow.viewportOrigin +
-            pixel_width * static_cast<float>(col) +     // El ancho se multiplica por la columna
-            pixel_height * static_cast<float>(row);
-            
-            // Crear el rayo
-            Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
-            
-            // Sacar el color del rayo
-            Color pixel = rayColor(ray, *scene, *config);
-            
+    /* Esto de aquí es ya la guerra hay q refactorizarlo*/
+    for(size_t row = 0; row < (imageHeight); row++){
+        std::cerr << "\rScanlines remaining: " << (imageHeight - 1 - row) << ' ' << std::flush;
+        for(size_t col = 0; col < (imageWidth); col++){
+            // Por cada pixel
+            Color accumulated_color(0.0F, 0.0F, 0.0F);
+            for (int s = 0; s < config->samples_per_pixel; ++s) {
+                //Ray position in proj screen
+                // random_double da [0,1), al restarle 0.5 da [-0.5, 0.5)
+                float delta_x = rngRay.get_float(-0.5F, 0.5F);
+                float delta_y = rngRay.get_float(-0.5F, 0.5F);
+                
+                Point3 pixel_sample_point = camera.ProjWindow.viewportOrigin +
+                pixel_width  * (static_cast<float>(col) + delta_x) +     // El ancho se multiplica por la columna
+                pixel_height * (static_cast<float>(row) + delta_y);
+                
+                // Crear el rayo
+                Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
+                // Sacar el color del rayo
+                accumulated_color += rayColor(ray, *scene, *config);
+            }
+
+            Color final_pixel_color = accumulated_color * static_cast<float>(scale);
             //TODO: esto es una cutrada pero es la forma rapida de settear el color de uno en uno sin crear unos buffers
-            uint8_t red     = color_utils::float_to_uint8(pixel.x);
-            uint8_t green   = color_utils::float_to_uint8(pixel.y);
-            uint8_t blue    = color_utils::float_to_uint8(pixel.z);
+            uint8_t red     = color_utils::float_to_uint8(final_pixel_color.x);
+            uint8_t green   = color_utils::float_to_uint8(final_pixel_color.y);
+            uint8_t blue    = color_utils::float_to_uint8(final_pixel_color.z);
 
             //Image save
             image.set_pixel(row, col, red, green, blue);

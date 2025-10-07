@@ -1,5 +1,5 @@
 #include "../include/image_soa.hpp"
-#include "../../common/include/color_utils.hpp"
+#include "../../common/include/utilities/color_utils.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include <stdexcept>
 #include <cmath>
