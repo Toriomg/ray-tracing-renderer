@@ -25,20 +25,22 @@ int main() {// NOLINT
     });
     std::shared_ptr<SceneSettings> scene = std::make_shared<SceneSettings>(SceneSettings{
         {
-            {0.0F},        // Centro en X
-            {0.0F},        // Centro en Y
-            {-1.0F},       // Centro en Z
-            {2.0F},        // Radio
-            {0}            // Usa el material con ID 0
+            {0.0F, 5.0F, -5.0F},        // Centro en X
+            {0.0F, 2.0F, -5.0F},        // Centro en Y
+            {2.0F, 2.0F, 1.0F},       // Centro en Z
+            {7.0F, 5.0F, 3.0F},        // Radio
+            {0, 1, 2}            // Usa el material con ID 0
         }, // .spheres
         {},// .cylinders
         {
-            { MaterialType::MATTE, 0 }
+            { MaterialType::MATTE, 0 },
+            { MaterialType::MATTE, 1 },
+            { MaterialType::MATTE, 2 },
         }, // .materialTable
         {
-            {0.8F},        // Componente Rojo
-            {0.2F},        // Componente Verde
-            {0.1F}         // Componente Azul
+            {0.8F, 0.5F, 0.0F},        // Componente Rojo
+            {0.2F, 0.5F, 1.0F},        // Componente Verde
+            {0.1F, 0.5F, 0.0F}         // Componente Azul
         }, // .materialMatte
         {},// .materialMetal
         {},// .materialRefractive
