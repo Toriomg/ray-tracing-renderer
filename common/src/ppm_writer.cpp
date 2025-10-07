@@ -31,15 +31,15 @@ bool PPMWriter::write_ppm(const std::string& filename,// NOLINT(readability-func
     }
 
     // Cabecera para PPM P6 (binario)
-    file << "P6\n";
+    file << "P3\n";
     file << width << " " << height << "\n";
     file << "255\n";
 
-    // Escribir datos binarios
     for (size_t i = 0; i < total_pixels; ++i) {
-        file.put(static_cast<char>(r_channel[i]));
-        file.put(static_cast<char>(g_channel[i]));
-        file.put(static_cast<char>(b_channel[i]));
+        // Escribe los valores numéricos como texto, separados por espacios
+        file << static_cast<int>(r_channel[i]) << " "
+             << static_cast<int>(g_channel[i]) << " " 
+             << static_cast<int>(b_channel[i]) << "\n";
     }
 
     file.close();

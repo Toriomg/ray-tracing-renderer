@@ -32,8 +32,8 @@ int main() {// NOLINT
     std::shared_ptr<SceneSettings> scene = std::make_shared<SceneSettings>(SceneSettings{
         {
             {0.0F, 5.0F, -5.0F},        // Centro en X
-            {0.0F, 2.0F, -5.0F},        // Centro en Y
-            {2.0F, 2.0F, 1.0F},       // Centro en Z
+            {0.0F, 5.0F, -5.0F},        // Centro en Y
+            {5.0F, 2.0F, 1.0F},       // Centro en Z
             {7.0F, 5.0F, 3.0F},        // Radio
             {0, 1, 2}            // Usa el material con ID 0
         }, // .spheres
