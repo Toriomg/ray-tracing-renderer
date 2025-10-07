@@ -2,20 +2,21 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 class PPMWriter {
 public:
     // Escribe una imágen en formato PPM P3 recibiendo los 3 arrays de colores y las dimensiones de la imagen
-    static bool write_ppm(const std::string& filename,
+    static bool write_ppm(const std::string& filename,// NOLINT(readability-function-size)
                          const std::vector<uint8_t>& r_channel,
                          const std::vector<uint8_t>& g_channel,
                          const std::vector<uint8_t>& b_channel,
-                         size_t width, size_t height) {
+                         size_t width, size_t height){
         
         // Checkeamos que el número de pixeles coincide con el tamaño de los arrays que se han definido
         size_t total_pixels = width * height;
-        if (r_channel.size() != total_pixels || 
-            g_channel.size() != total_pixels || 
+        if (r_channel.size() != total_pixels and 
+            g_channel.size() != total_pixels and 
             b_channel.size() != total_pixels) {
             throw std::invalid_argument("El tamaño de los arrays no se corresponde con las dimensiones de la imagen");
         }
