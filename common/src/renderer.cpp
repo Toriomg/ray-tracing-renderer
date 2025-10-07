@@ -2,10 +2,13 @@
 #include <optional> // For std::optional
 #include <cmath> 
 
-Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& config) {// NOLINT
+Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& config, RandomGenerator materialRng, int depth) {// NOLINT
+    if (depth <= 0) {
+        return {0, 0, 0};
+    }
     // --- Variables para rastrear la colisión más cercana ---
     float closest_t = std::numeric_limits<float>::infinity(); // intersección más cercana
-    std::optional<size_t> hit_sphere_index; // -1 significa que no hemos golpeado ninguna esfera todavía
+    std::optional<HitRecord> hit_rec;
 
     // --- Bucle principal: comprobar cada esfera de la escena ---
     const size_t num_spheres = scene.spheres.x.size();
@@ -35,28 +38,40 @@ Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& c
         // El umbral 0.001f evita problemas de precisión.
         if (root > 0.001F and root < closest_t) {
             closest_t = root;
-            hit_sphere_index = i; // Store the hit record.
+            // Llenamos el HitRecord con toda la información
+            HitRecord temp_rec;
+            temp_rec.t = root;
+            temp_rec.p = r.at(root); // Calcula el punto de colisión
+            Vec3 outward_normal = (temp_rec.p - sphere_center) / sphere_radius;
+            temp_rec.set_face_normal(r, outward_normal); // Calcula la normal correcta
+            temp_rec.material_global_id = scene.spheres.materialIndex[i];
+            
+            hit_rec = temp_rec; // Guardamos el registro de la colisión
         }
     }
 
     // --- Después del bucle, decidimos qué color devolver ---
 
     // 1. Si golpeamos una esfera (el índice ya no es -1)
-    if (hit_sphere_index) {
+    if (hit_rec) {
         // Obtenemos el ID del material de la esfera que golpeamos
-        unsigned int material_global_id = scene.spheres.materialIndex[*hit_sphere_index];
-        
-        // Usamos el ID para encontrar el tipo de material y su índice específico
-        MaterialID material_id = scene.materialTable[material_global_id];
+        MaterialID material_id = scene.materialTable[hit_rec->material_global_id];
 
         // Por ahora, solo nos importa si es MATE
         if (material_id.type == MaterialType::MATTE) {
             unsigned int matte_idx = material_id.localIndex;
-            
+            Color material_color = {scene.matte.r[matte_idx], scene.matte.g[matte_idx], scene.matte.b[matte_idx]};
+
+            Vec3 bounce_direction = hit_rec->normal + materialRng.get_vector_minus1_to_1();
+
+            if (bounce_direction.is_near_zero()) {
+            // 3. Acción de Seguridad: Si lo es, usar la normal como dirección de rebote.
+            bounce_direction = hit_rec->normal;
+        }
+
+            Ray bounced_ray(hit_rec->p, bounce_direction );
             // Devolvemos el color de ese material mate
-            return {scene.matte.r[matte_idx], 
-                         scene.matte.g[matte_idx], 
-                         scene.matte.b[matte_idx]};
+            return material_color * rayColor(bounced_ray, scene, config, materialRng, depth - 1);
         }
     }
 

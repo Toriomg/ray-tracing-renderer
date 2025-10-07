@@ -9,7 +9,7 @@
 #include "image_soa.hpp"
 #include <iostream>
 #include <string>
-const std::string FilepathScene = "/workspace/res/scene_scripts/scene1.txt";
+const std::string FilepathScene = "/workspace/res/scene_scripts/scene2.txt";
 const std::string FilepathOut = "/workspace/outputImage.ppm";
 
 int main() {// NOLINT
@@ -34,7 +34,7 @@ int main() {// NOLINT
     
     // Crear randomizadores
     auto rngRay = RandomGenerator(config->ray_rng_seed);
-    //auto rngMaterial = RandomGenerator(config->material_rng_seed);
+    auto rngMaterial = RandomGenerator(config->material_rng_seed);
 
     auto camera = Camera(config); // Crear la cámara
 
@@ -67,7 +67,7 @@ int main() {// NOLINT
                 // Crear el rayo
                 Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
                 // Sacar el color del rayo
-                accumulated_color += rayColor(ray, scene, *config);
+                accumulated_color += rayColor(ray, scene, *config, rngMaterial, config->max_depth);
             }
 
             Color final_pixel_color = accumulated_color * static_cast<float>(scale);

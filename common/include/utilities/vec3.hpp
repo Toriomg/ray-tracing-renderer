@@ -69,6 +69,13 @@ struct Vec3 {
         }
         return *this;
     }
+
+    [[nodiscard]] constexpr bool is_near_zero() const noexcept {
+        // A small value to avoid floating-point precision issues.
+        constexpr auto s = 1e-8F;
+        // Using a direct comparison is constexpr-friendly for all C++ versions.
+        return (x > -s and x < s) and (y > -s and y < s) and (z > -s and z < s);
+    }
 };
 
 // --- Type Aliases ---
@@ -95,6 +102,12 @@ using Point3 = Vec3;
 
 [[nodiscard]] constexpr Vec3 operator*(const Vec3& v, float scalar) noexcept {
     return scalar * v; // Reuse the above operator
+}
+
+[[nodiscard]] constexpr Vec3 operator/(const Vec3& lhs, float rhs) {
+    Vec3 result = lhs;
+    result /= rhs;
+    return result;
 }
 
 [[nodiscard]] inline Vec3 min(const Vec3& a, const Vec3& b) {
