@@ -6,10 +6,10 @@
 
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
 ImageSOA::ImageSOA(size_t width, size_t height) 
-    : width_(width), height_(height),
-      r_channel_(width * height, 0),    // Inicializamos todos con ceros
-      g_channel_(width * height, 0),
-      b_channel_(width * height, 0)
+    : r_channel_(width * height, 0),    // Inicializamos todos con ceros
+    g_channel_(width * height, 0),
+    b_channel_(width * height, 0),
+    width_(width), height_(height)
 {
     if (width == 0 or height == 0) {
         throw std::invalid_argument("Las dimensiones de la imagen no pueden ser cero");

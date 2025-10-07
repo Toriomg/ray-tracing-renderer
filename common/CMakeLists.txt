@@ -6,6 +6,7 @@ target_sources(common
         src/camera.cpp
         src/renderer.cpp
         src/scene_parser.cpp
+        src/ppm_writer.cpp
 )
 
 target_include_directories(common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

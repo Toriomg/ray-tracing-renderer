@@ -1,4 +1,7 @@
+// common/include/ppm_writer.hpp
+
 #pragma once
+
 #include <string>
 #include <vector>
 #include <cstdint>
