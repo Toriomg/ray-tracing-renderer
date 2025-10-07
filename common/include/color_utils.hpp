@@ -19,5 +19,4 @@ namespace color_utils {
         if (value >= 1.0F) {return 255;}
         return static_cast<uint8_t>(value * 255.0F);
     }
-    
 } 
