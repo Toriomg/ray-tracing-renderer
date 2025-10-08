@@ -14,91 +14,66 @@ ImageAOS::ImageAOS(size_t width, size_t height)
 }
 
 // Métodos para acceder al valor de un color específico dentro de un píxel
-uint8_t ImageAOS::get_red(size_t row, size_t col) const {
+uint8_t ImageAOS::get_red(size_t index) const {
   // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
   // Devolvemos el valor del componente rojo del píxel especificado usando la función de indice
-  return pixels_[indice(row, col)].r;
+  return pixels_[index].r;
 }
 
-uint8_t ImageAOS::get_green(size_t row, size_t col) const {
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+uint8_t ImageAOS::get_green(size_t index) const {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  return pixels_[indice(row, col)].g;
+  return pixels_[index].g;
 }
 
-uint8_t ImageAOS::get_blue(size_t row, size_t col) const {
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+uint8_t ImageAOS::get_blue(size_t index) const {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  return pixels_[indice(row, col)].b;
+  return pixels_[index].b;
 }
 
 // Métodos para modificar un color específico dentro de un píxel
-void ImageAOS::set_red(size_t row, size_t col, uint8_t value) {
-  // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+void ImageAOS::set_red(size_t index, uint8_t value) {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[indice(row, col)].r = value;
+  pixels_[index].r = value;
 }
 
-void ImageAOS::set_green(size_t row, size_t col, uint8_t value) {
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+void ImageAOS::set_green(size_t index, uint8_t value) {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[indice(row, col)].g = value;
+  pixels_[index].g = value;
 }
 
-void ImageAOS::set_blue(size_t row, size_t col, uint8_t value) {
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+void ImageAOS::set_blue(size_t index, uint8_t value) {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[indice(row, col)].b = value;
+  pixels_[index].b = value;
 }
 
 // Acceso directo al píxel completo (ventaja de AOS)
-ImageAOS::Pixel const & ImageAOS::get_pixel(size_t row, size_t col) const {
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+ImageAOS::Pixel const & ImageAOS::get_pixel(size_t index) const {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  return pixels_[indice(row, col)];
+  return pixels_[index];
 }
 
 // Método para modificar los 3 componentes de color a la vez en un píxel concreto
-void ImageAOS::set_pixel(size_t row, size_t col, uint8_t red, uint8_t green,
-                         uint8_t blue) {  // NOLINT(readability-function-size)
-  if (row >= height_ or col >= width_) {
-    throw std::out_of_range("Coordenadas de píxel fuera de rango: fila=" +
-                            std::to_string(row) +
-                            ", col=" +
-                            std::to_string(col));
+void ImageAOS::set_pixel(size_t index, uint8_t red,  // NOLINT(readability-function-size)
+                         uint8_t green, uint8_t blue) {
+  if (index >= total_pixels()) {
+    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  Pixel & pixel = pixels_[indice(row, col)];
+  Pixel & pixel = pixels_[index];
   pixel.r       = red;
   pixel.g       = green;
   pixel.b       = blue;
