@@ -1,9 +1,11 @@
 set(COMMON_SRC_FILES 
   #"${CMAKE_SOURCE_DIR}/common/src/ray.cpp"
+  #el fichero que se añade aqui
 )
 
 set(CURRENT_DIR_SRC_FILES 
   "${CMAKE_CURRENT_SOURCE_DIR}/test_vector.cpp"
+  #aqui se añade el test del fichero puesto arriba
 )
 
 add_unit_test_target(

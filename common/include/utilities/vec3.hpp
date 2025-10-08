@@ -118,7 +118,6 @@ using Point3 = Vec3;
     return { std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
 }
 
-
 [[nodiscard]] constexpr float dot(const Vec3& u, const Vec3& v) noexcept {
     return u.x * v.x + u.y * v.y + u.z * v.z;
 }
@@ -127,6 +126,10 @@ using Point3 = Vec3;
     return {u.y * v.z - u.z * v.y,
             u.z * v.x - u.x * v.z,
             u.x * v.y - u.y * v.x};
+}
+
+[[nodiscard]] constexpr Vec3 reflect(const Vec3& v, const Vec3& n) noexcept {
+    return v - 2 * dot(v, n) * n;
 }
 
 // --- Stream Output for Debugging ---
