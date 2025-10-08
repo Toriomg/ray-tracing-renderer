@@ -23,8 +23,8 @@ int main() {// NOLINT
         Constants::AspectRatio,         // .aspect_ratio
         900,          // .image_width
         Constants::Gamma,               // .gamma
-        30,            // .max_depth
-        60,     // .samples_per_pixel
+        Constants::MaxDepth,            // .max_depth
+        Constants::SamplesPerPixel,     // .samples_per_pixel
         Constants::RNGSeedMaterial,     // .material_rng_seed
         Constants::RNGSeedRay,          // .ray_rng_seed
         Constants::ColorBackgroundDark, // .background_dark_color
@@ -72,9 +72,9 @@ int main() {// NOLINT
 
             Color final_pixel_color = accumulated_color * static_cast<float>(scale);
             //TODO: esto es una cutrada pero es la forma rapida de settear el color de uno en uno sin crear unos buffers
-            uint8_t red     = color_utils::float_to_uint8(final_pixel_color.x);
-            uint8_t green   = color_utils::float_to_uint8(final_pixel_color.y);
-            uint8_t blue    = color_utils::float_to_uint8(final_pixel_color.z);
+            uint8_t red     = color_utils::float_to_uint8(color_utils::apply_gamma(final_pixel_color.x, config->gamma));
+            uint8_t green   = color_utils::float_to_uint8(color_utils::apply_gamma(final_pixel_color.y, config->gamma));
+            uint8_t blue    = color_utils::float_to_uint8(color_utils::apply_gamma(final_pixel_color.z, config->gamma));
 
             //Image save
             image.set_pixel(row, col, red, green, blue);

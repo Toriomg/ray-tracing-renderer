@@ -4,7 +4,7 @@
 
 Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& config, RandomGenerator materialRng, int depth) {// NOLINT
     if (depth <= 0) {
-        return {0, 0, 0};
+        return {0.0F,0.0F,0.0F};
     }
     // --- Variables para rastrear la colisión más cercana ---
     float closest_t = std::numeric_limits<float>::infinity(); // intersección más cercana
@@ -33,10 +33,16 @@ Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& c
         // Calculamos la raíz de la ecuación cuadrática para encontrar el punto de impacto 't'
         auto sqrtd = std::sqrt(discriminant);
         auto root = (-half_b - sqrtd) / a;
-
+        if (root <= 0.001F) { // Si esta raíz no es válida (está detrás o es demasiado cercana)
+            // ...entonces probamos la segunda raíz (la del '+')
+            root = (-half_b + sqrtd) / a;
+            if (root <= 0.001F) { // Si esta tampoco es válida, no hay intersección útil
+                continue; // Pasamos a la siguiente esfera
+            }
+        }
         // Comprobamos si la colisión es válida (delante de la cámara y más cerca que las anteriores)
         // El umbral 0.001f evita problemas de precisión.
-        if (root > 0.001F and root < closest_t) {
+        if (root < closest_t) {
             closest_t = root;
             // Llenamos el HitRecord con toda la información
             HitRecord temp_rec;
@@ -62,7 +68,7 @@ Color rayColor(const Ray& r, const SceneSettings& scene, const ConfigSettings& c
             unsigned int matte_idx = material_id.localIndex;
             Color material_color = {scene.matte.r[matte_idx], scene.matte.g[matte_idx], scene.matte.b[matte_idx]};
 
-            Vec3 bounce_target = hit_rec->p + hit_rec->normal + materialRng.get_unit_sphere();
+            Vec3 bounce_target = hit_rec->p + hit_rec->normal + materialRng.get_vector_minus1_to_1();
             if (bounce_target.is_near_zero()) {
                 bounce_target = hit_rec->normal;
             }
