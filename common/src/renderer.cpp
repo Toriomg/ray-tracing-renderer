@@ -20,7 +20,10 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
   }
   size_t const num_cylinders = scene.cylinders.x.size();
   for (size_t i = 0; i < num_cylinders; ++i) {
-    // TODO: Implementar intersección con cilindros
+    if (auto new_hit = Renderer::RenderCylinders(scene, i, ray, closest_t)) {
+      closest_t = new_hit->t;
+      hit_rec   = new_hit;
+    }
   }
   if (hit_rec) {
     MaterialID material_id = scene.materialTable[hit_rec->material_global_id];
@@ -80,6 +83,132 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   rec.set_face_normal(r, outward_normal);
   rec.material_global_id = scene.spheres.materialIndex[sphere_index];
   return rec;
+}
+
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,  // NOLINT
+                                                             size_t cylinder_index, Ray r,
+                                                             float closest_t) {
+  // Extraemos los datos del cilindro desde la estructura SoA
+  Point3 cylinder_center(scene.cylinders.x[cylinder_index], scene.cylinders.y[cylinder_index],
+                         scene.cylinders.z[cylinder_index]);
+  float cylinder_radius = scene.cylinders.r[cylinder_index];
+  Vec3 axis_vector(scene.cylinders.vx[cylinder_index], scene.cylinders.vy[cylinder_index],
+                   scene.cylinders.vz[cylinder_index]);
+
+  // Calculamos el vector unitario del eje y la altura
+  Vec3 axis_unit        = axis_vector.normalize();
+  float cylinder_height = axis_vector.length();
+  float half_height     = cylinder_height * 0.5F;
+
+  // Umbral mínimo para evitar auto-intersecciones
+  constexpr float epsilon = 0.001F;
+
+  // Variables para almacenar la intersección más cercana
+  float closest_intersection = closest_t;
+  Vec3 intersection_point;
+  Vec3 intersection_normal;
+  bool found_intersection = false;
+
+  // --- 1. INTERTSECCIÓN CON SUPERFICIE CURVA ---
+  // Según documento: cálculo con cilindro de altura infinita primero
+
+  Vec3 oc = r.point - cylinder_center;
+
+  // Componentes perpendiculares al eje (documento: v⊥â = v - (v · â)â)
+  Vec3 ray_dir_perp = r.direction - dot(r.direction, axis_unit) * axis_unit;
+  Vec3 oc_perp      = oc - dot(oc, axis_unit) * axis_unit;
+
+  // Coeficientes de la ecuación cuadrática para superficie curva
+  float a = dot(ray_dir_perp, ray_dir_perp);
+  float b = 2.0F * dot(ray_dir_perp, oc_perp);
+  float c = dot(oc_perp, oc_perp) - cylinder_radius * cylinder_radius;
+
+  float discriminant = b * b - 4.0F * a * c;
+
+  if (discriminant >= 0.0F) {
+    float sqrt_discriminant = std::sqrt(discriminant);
+    float root1             = (-b - sqrt_discriminant) / (2.0F * a);
+    float root2             = (-b + sqrt_discriminant) / (2.0F * a);
+
+    // Probar ambas raíces
+    for (float root : {root1, root2}) {
+      if (root > epsilon and root < closest_intersection) {
+        Point3 potential_point = r.at(root);
+
+        // Verificar si el punto está dentro de los límites de altura
+        // Calculamos la proyección sobre el eje (documento: (I - C) · â)
+        Vec3 point_to_center = potential_point - cylinder_center;
+        float projection     = dot(point_to_center, axis_unit);
+
+        if (std::fabs(projection) <= half_height) {
+          closest_intersection = root;
+          intersection_point   = potential_point;
+          // Vector normal para superficie curva (documento: (I - C)⊥â)
+          intersection_normal = (intersection_point - cylinder_center) - projection * axis_unit;
+          intersection_normal = intersection_normal.normalize();
+          found_intersection  = true;
+        }
+      }
+    }
+  }
+
+  // --- 2. INTERTSECCIÓN CON BASE SUPERIOR ---
+  Point3 top_center = cylinder_center + half_height * axis_unit;
+  Vec3 top_normal   = axis_unit;
+
+  // Intersección con plano de la base superior
+  float denom_top = dot(r.direction, top_normal);
+  if (std::fabs(denom_top) > epsilon) {
+    float t_top = dot(top_center - r.point, top_normal) / denom_top;
+    if (t_top > epsilon and t_top < closest_intersection) {
+      Point3 potential_point = r.at(t_top);
+
+      // Verificar si el punto está dentro del radio del círculo
+      Vec3 point_to_top_center = potential_point - top_center;
+      if (point_to_top_center.length() <= cylinder_radius) {
+        closest_intersection = t_top;
+        intersection_point   = potential_point;
+        intersection_normal  = top_normal;
+        found_intersection   = true;
+      }
+    }
+  }
+
+  // --- 3. INTERTSECCIÓN CON BASE INFERIOR ---
+  Point3 bottom_center = cylinder_center - half_height * axis_unit;
+  Vec3 bottom_normal   = -axis_unit;
+
+  // Intersección con plano de la base inferior
+  float denom_bottom = dot(r.direction, bottom_normal);
+  if (std::fabs(denom_bottom) > epsilon) {
+    float t_bottom = dot(bottom_center - r.point, bottom_normal) / denom_bottom;
+    if (t_bottom > epsilon and t_bottom < closest_intersection) {
+      Point3 potential_point = r.at(t_bottom);
+
+      // Verificar si el punto está dentro del radio del círculo
+      Vec3 point_to_bottom_center = potential_point - bottom_center;
+      if (point_to_bottom_center.length() <= cylinder_radius) {
+        closest_intersection = t_bottom;
+        intersection_point   = potential_point;
+        intersection_normal  = bottom_normal;
+        found_intersection   = true;
+      }
+    }
+  }
+
+  // --- 4. CREAR HITRECORD SI HAY INTERTSECCIÓN ---
+  if (found_intersection) {
+    HitRecord rec;
+    rec.t        = closest_intersection;
+    rec.p        = intersection_point;
+    rec.prev_ray = r;
+    rec.set_face_normal(r, intersection_normal);
+    rec.material_global_id =
+        static_cast<unsigned int>(scene.cylinders.materialIndex[cylinder_index]);
+    return rec;
+  }
+
+  return std::nullopt;
 }
 
 Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {

@@ -42,6 +42,9 @@ private:
 
   static std::optional<HitRecord> RenderSpheres(SceneSettings const & scene, size_t sphere_index,
                                                 Ray r, float closest_t);
+  static std::optional<HitRecord> RenderCylinders(SceneSettings const & scene,
+                                                  size_t cylinder_index, Ray r, float closest_t);
+
   static Color backgroundColor(Ray const & r, ConfigSettings const & config);
 
   // Funciones de materiales refactorizadas - ahora toman MaterialContext wrapper
