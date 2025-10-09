@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vec3.hpp"
+#include "utilities/vec3.hpp"
 #include <random>
 
 class RandomGenerator{
