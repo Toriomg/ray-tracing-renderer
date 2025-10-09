@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RANDOM_HPP
+#define RANDOM_HPP
 
 #include "utilities/vec3.hpp"
 #include <random>
@@ -15,3 +16,5 @@ public:
 private:
   std::mt19937_64 m_engine;
 };
+
+#endif

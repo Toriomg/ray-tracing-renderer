@@ -1,16 +1,15 @@
-// common/include/ppm_writer.hpp
+#ifndef PPM_WRITER_HPP
+#define PPM_WRITER_HPP
 
-#pragma once
-
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 class PPMWriter {
 public:
-    static bool write_ppm(const std::string& filename,
-                         const std::vector<uint8_t>& r_channel,
-                         const std::vector<uint8_t>& g_channel,
-                         const std::vector<uint8_t>& b_channel,
-                         size_t width, size_t height);
+  static bool write_ppm(std::string const & filename, std::vector<uint8_t> const & r_channel,
+                        std::vector<uint8_t> const & g_channel,
+                        std::vector<uint8_t> const & b_channel, size_t width, size_t height);
 };
+
+#endif

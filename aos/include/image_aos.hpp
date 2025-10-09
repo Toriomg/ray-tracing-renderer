@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IMAGE_AOS_HPP
+#define IMAGE_AOS_HPP
 
 #include <array>
 #include <cstdint>
@@ -75,3 +76,5 @@ public:
   // Función para escribir la imagen en un archivo PPM
   [[nodiscard]] bool write_to_ppm(std::string const & filename) const;
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IMAGE_SOA_HPP
+#define IMAGE_SOA_HPP
 
 #include <../../common/include/constants.hpp>
 #include <../../common/include/utilities/vec3.hpp>
@@ -61,3 +62,5 @@ public:
   // Función para escribir la imagen en un archivo PPM
   [[nodiscard]] bool write_to_ppm(std::string const & filename) const;
 };
+
+#endif
