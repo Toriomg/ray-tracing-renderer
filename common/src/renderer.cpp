@@ -116,3 +116,4 @@ Color Renderer::metalColor(MaterialID material_id, SceneSettings const & scene, 
     // El rayo fue absorbido
     return {0.0F, 0.0F, 0.0F};
 }
+
