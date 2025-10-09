@@ -7,7 +7,19 @@
 
 class Renderer {
 public:
-  static Color rayColor(Ray const & r, SceneSettings const & scene, ConfigSettings const & config,
+  // Clase wrapper para agrupar parámetros comunes de materiales
+  // Usamos punteros en lugar de referencias para cumplir con C++ Core Guidelines
+  struct MaterialContext {
+    SceneSettings const * scene;    // Configuración de la escena
+    ConfigSettings const * config;  // Configuración del renderizado
+    RandomGenerator * materialRng;  // Generador de números aleatorios
+
+    // Constructor que toma punteros en lugar de referencias
+    MaterialContext(SceneSettings const * s, ConfigSettings const * c, RandomGenerator * rng)
+        : scene(s), config(c), materialRng(rng) { }
+  };
+
+  static Color rayColor(Ray const & ray, SceneSettings const & scene, ConfigSettings const & config,
                         RandomGenerator materialRng);
 
 private:
@@ -30,16 +42,13 @@ private:
 
   static std::optional<HitRecord> RenderSpheres(SceneSettings const & scene, size_t sphere_index,
                                                 Ray r, float closest_t);
-  static Color matteColor(MaterialID material_id, SceneSettings const & scene,
-                          ConfigSettings const & config, RandomGenerator materialRng,
-                          HitRecord hit_rec);
-  static Color metalColor(MaterialID material_id, SceneSettings const & scene,
-                          ConfigSettings const & config, RandomGenerator materialRng,
-                          HitRecord hit_rec);
-  static Color refractiveColor(MaterialID material_id, SceneSettings const & scene,
-                               ConfigSettings const & config, RandomGenerator materialRng,
-                               HitRecord hit_rec);
   static Color backgroundColor(Ray const & r, ConfigSettings const & config);
+
+  // Funciones de materiales refactorizadas - ahora toman MaterialContext wrapper
+  static Color matteColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec);
+  static Color metalColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec);
+  static Color refractiveColor(MaterialID material_id, MaterialContext const & ctx,
+                               HitRecord hit_rec);
 };
 
 #endif

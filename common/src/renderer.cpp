@@ -20,15 +20,20 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
   }
   size_t const num_cylinders = scene.cylinders.x.size();
   for (size_t i = 0; i < num_cylinders; ++i) {
+    // TODO: Implementar intersección con cilindros
   }
   if (hit_rec) {
     MaterialID material_id = scene.materialTable[hit_rec->material_global_id];
+
+    // Creamos el contexto de material usando punteros en lugar de referencias
+    // Esto cumple con C++ Core Guidelines y evita el error de clang-tidy
+    MaterialContext ctx(&scene, &config, &materialRng);
+
     switch (material_id.type) {
-      case MATTE: return Renderer::matteColor(material_id, scene, config, materialRng, *hit_rec);
-      case METAL: return Renderer::metalColor(material_id, scene, config, materialRng, *hit_rec);
-      case REFRACTIVE:
-        return Renderer::refractiveColor(material_id, scene, config, materialRng, *hit_rec);
-      default: break;
+      case MATTE:      return Renderer::matteColor(material_id, ctx, *hit_rec);
+      case METAL:      return Renderer::metalColor(material_id, ctx, *hit_rec);
+      case REFRACTIVE: return Renderer::refractiveColor(material_id, ctx, *hit_rec);
+      default:         break;
     }
   }
   return Renderer::backgroundColor(ray, config);
@@ -85,60 +90,60 @@ Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {
   return (1.0F - t_bg) * config.background_light_color + t_bg * config.background_dark_color;
 }
 
-Color Renderer::matteColor(MaterialID material_id, SceneSettings const & scene,  // NOLINT
-                           ConfigSettings const & config, RandomGenerator materialRng,
-                           HitRecord hit_rec) {  // NOLINT meter una wrapper de variables
+Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
   unsigned int matte_idx = material_id.localIndex;
-  Color attenuation      = {scene.matte.r[matte_idx], scene.matte.g[matte_idx],
-                            scene.matte.b[matte_idx]};
-  Vec3 bounce_direction  = hit_rec.normal.normalize() + materialRng.get_vector_minus1_to_1();
+  // Accedemos a los datos de la escena a través del puntero ctx.scene
+  Color attenuation = {ctx.scene->matte.r[matte_idx], ctx.scene->matte.g[matte_idx],
+                       ctx.scene->matte.b[matte_idx]};
+  // Calculamos dirección de rebote aleatoria para material difuso
+  Vec3 bounce_direction = hit_rec.normal.normalize() + ctx.materialRng->get_vector_minus1_to_1();
+
+  // Si la dirección de rebote es demasiado pequeña, usamos la normal como dirección
   if (bounce_direction.is_near_zero()) {
     bounce_direction = hit_rec.normal.normalize();
   }
+
+  // Creamos el nuevo rayo rebotado con profundidad reducida
   Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);
-  return attenuation * rayColor(bounced_ray, scene, config, materialRng);
+
+  // El color final es la atenuación multiplicada por el color del rayo rebotado
+  return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
-Color Renderer::metalColor(MaterialID material_id, SceneSettings const & scene,  // NOLINT
-                           ConfigSettings const & config, RandomGenerator materialRng,
-                           HitRecord hit_rec) {  // NOLINT
+Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
   unsigned int metal_idx = material_id.localIndex;
-  Color attenuation      = {scene.metal.r[metal_idx], scene.metal.g[metal_idx],
-                            scene.metal.b[metal_idx]};
-  float diffusion_factor = scene.metal.diffusion[metal_idx];
+  // Obtenemos la reflectancia y factor de difusión del material metálico a través del puntero
+  Color attenuation      = {ctx.scene->metal.r[metal_idx], ctx.scene->metal.g[metal_idx],
+                            ctx.scene->metal.b[metal_idx]};
+  float diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
   // 1. Calcular dirección de reflejo perfecto
   Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
 
   // 2. Añadir difusión (fuzziness)
   // Se multiplica por el factor de difusión para controlar la "borrosidad"
-  Vec3 fuzz       = diffusion_factor * materialRng.get_unit_sphere().normalize();
+  Vec3 fuzz       = diffusion_factor * ctx.materialRng->get_unit_sphere().normalize();
   Ray bounced_ray = Ray(hit_rec.p, reflected_dir + fuzz, hit_rec.prev_ray.depth - 1);
 
   // 3. Si el rayo reflejado no se va "hacia afuera" de la superficie, se absorbe (color negro)
   // Esto evita que el rayo se refleje "hacia adentro" del objeto si la difusión es muy alta
   if (dot(bounced_ray.direction, hit_rec.normal) > 0) {
-    return attenuation * rayColor(bounced_ray, scene, config, materialRng);
+    return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
   }
   // El rayo fue absorbido
   return {0.0F, 0.0F, 0.0F};
 }
 
-Color Renderer::refractiveColor(MaterialID material_id, SceneSettings const & scene,  // NOLINT
-                                ConfigSettings const & config, RandomGenerator materialRng,
+Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & ctx,
                                 HitRecord hit_rec) {
-  // Obtenemos el indice de refracción inicial para el material
+  // Obtenemos el indice de refracción inicial para el material a través del puntero
   unsigned int indice_refraccion = material_id.localIndex;
-  float irc                      = scene.refractive.ior[indice_refraccion];
-
-  // Calculamos el vector normal de la intersección
-  Vec3 vector_normal = hit_rec.normal;
-
-  // Calculamos el vector unitario de dirección del rayo original
-  Vec3 vector_unitario = hit_rec.prev_ray.direction.normalize();
+  float irc                      = ctx.scene->refractive.ior[indice_refraccion];
+  // vector_normal = hit_rec.normal;
+  // vector_unitario = hit_rec.prev_ray.direction.normalize();
 
   // Calculamos seno y coseno del ángulo de refracción
-  float cos_angulo = std::min(dot(-vector_unitario, vector_normal), 1.0F);
+  float cos_angulo = std::min(dot(-hit_rec.prev_ray.direction.normalize(), hit_rec.normal), 1.0F);
   float sin_angulo = std::sqrt(1.0F - cos_angulo * cos_angulo);
 
   // Cálculo del índice de refracción corregido
@@ -148,26 +153,24 @@ Color Renderer::refractiveColor(MaterialID material_id, SceneSettings const & sc
     refracción_corregido = 1.0F / irc;
   }
 
-  // Definición del vector dirección
-  Vec3 direccion;
+  // Definición del vector dirección en en base a la refracción: refracción_corregido * sin_angulo >
+  // 1
+  Vec3 direccion = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
 
-  // Cálculo del vector dirección en base al índice de refracción corregido
-  if (refracción_corregido * sin_angulo > 1.0F) {
-    // dr = d0 - 2(d0 · dn)dn extraido de la definición del vector
-    direccion = reflect(vector_unitario, vector_normal);
-  } else {
-    // u = ρ′(d0 + (cosθ)dn), v = -√(1 - ||u||²)dn
-    Vec3 u    = refracción_corregido * (vector_unitario + cos_angulo * vector_normal);
-    Vec3 v    = -std::sqrt(std::fabs(1.0F - u.length_squared())) * vector_normal;
+  if (refracción_corregido * sin_angulo <= 1.0F) {
+    /// dr = d0 - 2(d0 · dn)dn extraido de la definición del vector
+    Vec3 u = refracción_corregido *
+             (hit_rec.prev_ray.direction.normalize() + cos_angulo * hit_rec.normal);
+    Vec3 v    = -std::sqrt(std::fabs(1.0F - u.length_squared())) * hit_rec.normal;
     direccion = u + v;
   }
 
   // Creamos el rayo resultante y bajamos la profundidad un nivel
   Ray refracted_ray(hit_rec.p, direccion, hit_rec.prev_ray.depth - 1);
 
-  // La reflectancia siempre es 1,1,1
+  // La reflectancia siempre es 1,1,1 según especificaciones del documento
   Color attenuation(1.0F, 1.0F, 1.0F);
 
   // La atenuación se multiplica por el color del nuevo rayo refractado
-  return attenuation * rayColor(refracted_ray, scene, config, materialRng);
+  return attenuation * rayColor(refracted_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
