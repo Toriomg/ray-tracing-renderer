@@ -9,3 +9,4 @@ sphere: -5  5 0 3 ref1
 sphere: -5 -5 0 3 mat3
 sphere:  5 -5 0 3 metal1
 sphere:  0 -500 0 490 mat4
+sphere:  -2 5 4 3 mat1
