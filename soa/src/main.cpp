@@ -1,8 +1,8 @@
 #include "../../common/include/scene_parser.hpp"
 #include "../../common/include/dataStructs/settings_structs.hpp"
-#include "../../common/include/ray.hpp"
 #include "../../common/include/camera.hpp"
 #include "../../common/include/constants.hpp"
+#include "../../common/include/renderer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
 #include "../../common/include/utilities/random.hpp"
 
@@ -65,16 +65,16 @@ int main() {// NOLINT
                 pixel_height * (static_cast<float>(row) + delta_y);
                 
                 // Crear el rayo
-                Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos);
+                Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos, config->max_depth);
                 // Sacar el color del rayo
-                accumulated_color += rayColor(ray, scene, *config, rngMaterial, config->max_depth);
+                accumulated_color += Renderer::rayColor(ray, scene, *config, rngMaterial);
             }
 
             Color final_pixel_color = accumulated_color * static_cast<float>(scale);
             //TODO: esto es una cutrada pero es la forma rapida de settear el color de uno en uno sin crear unos buffers
-            uint8_t red     = color_utils::float_to_uint8(final_pixel_color.x);
-            uint8_t green   = color_utils::float_to_uint8(final_pixel_color.y);
-            uint8_t blue    = color_utils::float_to_uint8(final_pixel_color.z);
+            uint8_t red     = color_utils::float_to_uint8(color_utils::apply_gamma(final_pixel_color.x, config->gamma));
+            uint8_t green   = color_utils::float_to_uint8(color_utils::apply_gamma(final_pixel_color.y, config->gamma));
+            uint8_t blue    = color_utils::float_to_uint8(color_utils::apply_gamma(final_pixel_color.z, config->gamma));
 
             //Image save
             image.set_pixel(row, col, red, green, blue);
