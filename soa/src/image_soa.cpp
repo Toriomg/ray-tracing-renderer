@@ -1,8 +1,11 @@
 #include "../include/image_soa.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
+#include <../../common/include/constants.hpp>
+#include <../../common/include/utilities/vec3.hpp>
 #include <cmath>
 #include <stdexcept>
+#include <vector>
 
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
 ImageSOA::ImageSOA(size_t width, size_t height)
@@ -38,40 +41,34 @@ uint8_t ImageSOA::get_blue(size_t index) const {
 }
 
 // Métodos para modificar el valor de un pixel dentro de los arrays de colores
-void ImageSOA::set_red(size_t index, uint8_t value) {
+void ImageSOA::set_red(size_t index, float value, float gamma) {
   // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  r_channel_[index] = value;
+  r_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageSOA::set_green(size_t index, uint8_t value) {
+void ImageSOA::set_green(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  g_channel_[index] = value;
+  g_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageSOA::set_blue(size_t index, uint8_t value) {
+void ImageSOA::set_blue(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  b_channel_[index] = value;
+  b_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
 // Método para modificar los 3 arrays a la vez para definir un color completo en un pixel concreto
 // de una sola vez
-void ImageSOA::set_pixel(size_t index, uint8_t red, uint8_t green, uint8_t blue) {
-  if (index >= total_pixels()) {
-    throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
-  }
-  r_channel_[index] = red;
-  g_channel_[index] = green;
-  b_channel_[index] = blue;
-  set_red(index, red);
-  set_green(index, green);
-  set_blue(index, blue);
+void ImageSOA::set_pixel(size_t index, Color const & color, float gamma) {
+  set_red(index, color.x, gamma);
+  set_green(index, color.y, gamma);
+  set_blue(index, color.z, gamma);
 }
 
 // Llenado desde datos float del renderizador

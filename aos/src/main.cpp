@@ -92,6 +92,6 @@ int main() {  // NOLINT
     return 1;
   }
 
-  std::cerr << "\nImagen AOS guardada en: " << FilepathOut << std::endl;
+  std::cerr << "\nImagen AOS guardada en: " << FilepathOut << "\n";
   return 0;
 }

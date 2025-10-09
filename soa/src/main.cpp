@@ -3,7 +3,6 @@
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/ray.hpp"
 #include "../../common/include/scene_parser.hpp"
-#include "../../common/include/utilities/color_utils.hpp"
 #include "../../common/include/utilities/random.hpp"
 
 #include "image_soa.hpp"
@@ -76,16 +75,13 @@ int main() {  // NOLINT
       Color final_pixel_color = accumulated_color * static_cast<float>(scale);
       // TODO: esto es una cutrada pero es la forma rapida de settear el color de uno en uno sin
       // crear unos buffers
-      uint8_t red   = color_utils::float_to_uint8(final_pixel_color.x);
-      uint8_t green = color_utils::float_to_uint8(final_pixel_color.y);
-      uint8_t blue  = color_utils::float_to_uint8(final_pixel_color.z);
 
       // Image save
       size_t indice = image.indice(row, col);
-      image.set_pixel(indice, red, green, blue);
+      image.set_pixel(indice, final_pixel_color);
     }
   }
   if (!image.write_to_ppm(FilepathOut)) {
-    std::cerr << "Error writing into .ppm file";
+    std::cerr << "Error writing into .ppm file /n";
   }
 }

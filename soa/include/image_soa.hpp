@@ -1,5 +1,7 @@
 #pragma once
 
+#include <../../common/include/constants.hpp>
+#include <../../common/include/utilities/vec3.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -28,18 +30,18 @@ public:
   [[nodiscard]] uint8_t get_blue(size_t index) const;
 
   // Métodos para modificar valores de color a un pixel concreto en cada array
-  void set_red(size_t index, uint8_t value);
-  void set_green(size_t index, uint8_t value);
-  void set_blue(size_t index, uint8_t value);
+  void set_red(size_t index, float value, float gamma = Constants::Gamma);
+  void set_green(size_t index, float value, float gamma = Constants::Gamma);
+  void set_blue(size_t index, float value, float gamma = Constants::Gamma);
 
   // Función que permite modificar todos los colores a la vez de un solo pixel (modificar los 3
   // arrays para definir un color)
-  void set_pixel(size_t index, uint8_t red, uint8_t green, uint8_t blue);
+  void set_pixel(size_t index, Color const & color, float gamma = Constants::Gamma);
 
   // Permite llenar todos los arrays a partir de datos en float con valores de 0 a 1 a valores
   // válidos del 0 al 255
   void fill_from_float(std::vector<float> const & r_data, std::vector<float> const & g_data,
-                       std::vector<float> const & b_data, float gamma = 2.2F);
+                       std::vector<float> const & b_data, float gamma = Constants::Gamma);
 
   // Métodos para recibir las dimensiones de la imagen
   [[nodiscard]] size_t width() const { return width_; }
