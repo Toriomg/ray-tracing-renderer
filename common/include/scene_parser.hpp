@@ -1,6 +1,9 @@
-#pragma once
+#ifndef SCENE_PARSER_HPP
+#define SCENE_PARSER_HPP
 
-#include <string>
 #include "dataStructs/settings_structs.hpp"
+#include <string>
 
-[[nodiscard]] SceneSettings loadSceneFromFile(const std::string &filename);
+[[nodiscard]] SceneSettings loadSceneFromFile(std::string const & filename);
+
+#endif
