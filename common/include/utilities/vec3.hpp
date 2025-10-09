@@ -122,6 +122,18 @@ using Point3 = Vec3;
   return {u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x};
 }
 
+[[nodiscard]] constexpr Vec3 reflect(Vec3 const & v, Vec3 const & n) noexcept {
+  return v - 2 * dot(v, n) * n;
+}
+
+[[nodiscard]] constexpr Vec3 refract(Vec3 const & uv, Vec3 const & n,
+                                     float etai_over_etat) noexcept {
+  auto cos_theta      = std::min(dot(-uv, n), 1.0F);
+  Vec3 r_out_perp     = etai_over_etat * (uv + cos_theta * n);
+  Vec3 r_out_parallel = -std::sqrt(std::fabs(1.0F - r_out_perp.length_squared())) * n;
+  return r_out_perp + r_out_parallel;
+}
+
 // --- Stream Output for Debugging ---
 // This allows you to write `std::cout << my_vec;`
 inline std::ostream & operator<<(std::ostream & os, Vec3 const & v) {
