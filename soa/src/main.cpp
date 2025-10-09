@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 std::string const FilepathScene = "/workspace/res/scene_scripts/scene2.txt";
-std::string const FilepathOut   = "/workspace/outputImage.ppm";
+std::string const FilepathOut   = "/workspace/outputImageSOA.ppm";
 
 int main() {  // NOLINT
   // Placeholders temporales
@@ -50,7 +50,7 @@ int main() {  // NOLINT
 
   /* Esto de aquí es ya la guerra hay q refactorizarlo*/
   for (size_t row = 0; row < (imageHeight); row++) {
-    std::cerr << "\rScanlines remaining: " << (imageHeight - 1 - row) << ' ' << std::flush;
+    std::cerr << "\rScanlines remaining: " << (imageHeight - 1 - row) << ' ' << std::flush << '\n';
     for (size_t col = 0; col < (imageWidth); col++) {
       // Por cada pixel
       Color accumulated_color(0.0F, 0.0F, 0.0F);

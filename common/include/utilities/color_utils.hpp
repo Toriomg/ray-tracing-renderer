@@ -2,6 +2,7 @@
 #ifndef COLOR_UTILS_HPP
 #define COLOR_UTILS_HPP
 
+#include <../../common/include/utilities/vec3.hpp>
 #include <cmath>
 #include <cstdint>
 

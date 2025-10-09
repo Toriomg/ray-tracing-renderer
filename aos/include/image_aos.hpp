@@ -1,9 +1,9 @@
 #ifndef IMAGE_AOS_HPP
 #define IMAGE_AOS_HPP
 
-#include <array>
+#include <../../common/include/constants.hpp>
+#include <../../common/include/utilities/vec3.hpp>
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -38,30 +38,22 @@ public:
   [[nodiscard]] uint8_t get_blue(size_t index) const;
 
   // Métodos para modificar valores de un color concreto a un píxel concreto
-  void set_red(size_t index, uint8_t value);
-  void set_green(size_t index, uint8_t value);
-  void set_blue(size_t index, uint8_t value);
+  void set_red(size_t index, float value, float gamma = Constants::Gamma);
+  void set_green(size_t index, float value, float gamma = Constants::Gamma);
+  void set_blue(size_t index, float value, float gamma = Constants::Gamma);
 
   // Devuelve un pixel completo con los tres colores por su indice)
   [[nodiscard]] Pixel const & get_pixel(size_t index) const;
 
   // Modificación de todos los colores de un píxel concreto de una sola vez
-  void set_pixel(size_t index, uint8_t red, uint8_t green, uint8_t blue);
+  void set_pixel(size_t index, Color const & color, float gamma = Constants::Gamma);
 
   // Reestablecer todos los pixeles de la imagen a un color concreto
-  void fill_color(uint8_t red, uint8_t green, uint8_t blue);
+  void fill_color(Color const & color, float gamma = Constants::Gamma);
 
-  // Aplicar una operación concreta a todos los píxeles de la imagen
-  void apply_to_all_pixels(std::function<void(Pixel &)> operation);
-
-  // Rellena todos los pixeles como en la versión de SOA
+  // Rellena todos los pixeles como en la versión de AOS
   void fill_from_float(std::vector<float> const & r_data, std::vector<float> const & g_data,
-                       std::vector<float> const & b_data, float gamma = 2.2F);
-
-  // Rellena todos los pixeles a partir de un vector de arrays de 3 floats (rgb) para ajustarse
-  // mejor a AOS
-  void fill_from_float_pixels(std::vector<std::array<float, 3>> const & float_pixels,
-                              float gamma = 2.2F);
+                       std::vector<float> const & b_data, float gamma = Constants::Gamma);
 
   // Getters para acceder a las dimensiones de la imagen
   [[nodiscard]] size_t width() const { return width_; }

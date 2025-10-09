@@ -1,8 +1,11 @@
 #include "../include/image_aos.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
+#include <../../common/include/constants.hpp>
+#include <../../common/include/utilities/vec3.hpp>
 #include <cmath>
 #include <stdexcept>
+#include <vector>
 
 // Constructor para generar el array de píxeles del tamaño correcto proporcionado por el usuario
 ImageAOS::ImageAOS(size_t width, size_t height)
@@ -38,25 +41,25 @@ uint8_t ImageAOS::get_blue(size_t index) const {
 }
 
 // Métodos para modificar un color específico dentro de un píxel
-void ImageAOS::set_red(size_t index, uint8_t value) {
+void ImageAOS::set_red(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[index].r = value;
+  pixels_[index].r = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageAOS::set_green(size_t index, uint8_t value) {
+void ImageAOS::set_green(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[index].g = value;
+  pixels_[index].g = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageAOS::set_blue(size_t index, uint8_t value) {
+void ImageAOS::set_blue(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[index].b = value;
+  pixels_[index].b = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
 // Acceso directo al píxel completo (ventaja de AOS)
@@ -68,21 +71,22 @@ ImageAOS::Pixel const & ImageAOS::get_pixel(size_t index) const {
 }
 
 // Método para modificar los 3 componentes de color a la vez en un píxel concreto
-void ImageAOS::set_pixel(size_t index, uint8_t red,  // NOLINT(readability-function-size)
-                         uint8_t green, uint8_t blue) {
+void ImageAOS::set_pixel(size_t index, Color const & color, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
   Pixel & pixel = pixels_[index];
-  pixel.r       = red;
-  pixel.g       = green;
-  pixel.b       = blue;
+  pixel.r       = color_utils::float_to_uint8(color_utils::apply_gamma(color.x, gamma));
+  pixel.g       = color_utils::float_to_uint8(color_utils::apply_gamma(color.y, gamma));
+  pixel.b       = color_utils::float_to_uint8(color_utils::apply_gamma(color.z, gamma));
 }
 
 // Llenar toda la imagen con un color específico
-void ImageAOS::fill_color(uint8_t red, uint8_t green, uint8_t blue) {
+void ImageAOS::fill_color(Color const & color, float gamma) {
   for (auto & pixel : pixels_) {
-    pixel = Pixel{red, green, blue};
+    pixel = Pixel{color_utils::float_to_uint8(color_utils::apply_gamma(color.x, gamma)),
+                  color_utils::float_to_uint8(color_utils::apply_gamma(color.y, gamma)),
+                  color_utils::float_to_uint8(color_utils::apply_gamma(color.z, gamma))};
   }
 }
 
