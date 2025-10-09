@@ -2,7 +2,7 @@
 #include "../../common/include/constants.hpp"
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/renderer.hpp"
-#include "../../common/include/utilities/color_utils.hpp"
+#include "../../common/include/scene_parser.hpp"
 #include "../../common/include/utilities/random.hpp"
 
 #include "image_soa.hpp"
@@ -55,8 +55,8 @@ int main() {  // NOLINT
       // Por cada pixel
       Color accumulated_color(0.0F, 0.0F, 0.0F);
       for (int s = 0; s < config->samples_per_pixel; ++s) {
-        // Ray position in proj screen
-        //  random_double da [0,1), al restarle 0.5 da [-0.5, 0.5)
+        // Posición del rayo en la pantalla
+        // random_double da [0,1), al restarle 0.5 da [-0.5, 0.5)
         float delta_x = rngRay.get_float(-0.5F, 0.5F);
         float delta_y = rngRay.get_float(-0.5F, 0.5F);
 
@@ -73,10 +73,7 @@ int main() {  // NOLINT
       }
 
       Color final_pixel_color = accumulated_color * static_cast<float>(scale);
-      // TODO: esto es una cutrada pero es la forma rapida de settear el color de uno en uno sin
-      // crear unos buffers
-
-      // Image save
+      // guardamos la imagen
       size_t indice = image.indice(row, col);
       image.set_pixel(indice, final_pixel_color);
     }

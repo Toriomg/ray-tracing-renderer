@@ -1,9 +1,7 @@
 #ifndef RAY_HPP
- #define RAY_HPP
+#define RAY_HPP
 
- #include "dataStructs/settings_structs.hpp"
- #include "utilities/random.hpp"
- #include "utilities/vec3.hpp"
+#include "utilities/vec3.hpp"
 
 struct Ray {
   Point3 point;
@@ -17,3 +15,5 @@ struct Ray {
 
   [[nodiscard]] Point3 at(float t) const { return point + t * direction; }
 };
+
+#endif
