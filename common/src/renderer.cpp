@@ -231,10 +231,7 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
 
   Vec3 bounce_direction = hit_rec.normal + ctx.materialRng->get_vector_minus1_to_1();
 
-  if (std::fabs(bounce_direction.x) < 1e-8F and
-      std::fabs(bounce_direction.y) < 1e-8F and
-      std::fabs(bounce_direction.z) < 1e-8F)
-  {
+  if(bounce_direction.is_near_zero()){
     bounce_direction = hit_rec.normal;
   }
 
