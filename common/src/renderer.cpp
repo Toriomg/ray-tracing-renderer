@@ -231,7 +231,7 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
 
   Vec3 bounce_direction = hit_rec.normal + ctx.materialRng->get_vector_minus1_to_1();
 
-  if(bounce_direction.is_near_zero()){
+  if (bounce_direction.is_near_zero()) {
     bounce_direction = hit_rec.normal;
   }
 
