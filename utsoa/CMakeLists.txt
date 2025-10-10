@@ -1,5 +1,5 @@
 set(COMMON_SRC_FILES 
-  "${CMAKE_SOURCE_DIR}/soa/src/image_soa.hpp"
+  "${CMAKE_SOURCE_DIR}/soa/include/image_soa.hpp"
 )
 
 set(CURRENT_DIR_SRC_FILES 

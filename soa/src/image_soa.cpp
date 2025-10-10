@@ -16,6 +16,15 @@ ImageSOA::ImageSOA(size_t width, size_t height)
   }
 }
 
+[[nodiscard]] size_t ImageSOA::indice(size_t row, size_t col) const {
+  // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
+  if (row >= height_ or col >= width_) {
+    throw std::out_of_range(
+        "Coordenadas fuera de rango: (" + std::to_string(row) + ", " + std::to_string(col) + ")");
+  }
+  return row * width_ + col;
+}
+
 // Métodos para acceder al valor de un pixel dentro de los arrays de colores
 uint8_t ImageSOA::get_red(size_t index) const {
   // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
@@ -53,12 +62,18 @@ void ImageSOA::set_green(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
+  if (value < 0.0F or value > 255.0F) {
+    throw std::out_of_range("Valor de color fuera de rango: " + std::to_string(value));
+  }
   g_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
 void ImageSOA::set_blue(size_t index, float value, float gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
+  }
+  if (value < 0.0F or value > 255.0F) {
+    throw std::out_of_range("Valor de color fuera de rango: " + std::to_string(value));
   }
   b_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
 }

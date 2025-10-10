@@ -23,7 +23,7 @@ public:
   ImageSOA(size_t width, size_t height);
 
   // Función para calcular el índice de un pixel en los arrays de colores
-  [[nodiscard]] size_t indice(size_t row, size_t col) const { return row * width_ + col; }
+  [[nodiscard]] size_t indice(size_t row, size_t col) const;
 
   // Métodos para acceder a los valores de cada color (cada array)
   [[nodiscard]] uint8_t get_red(size_t index) const;
