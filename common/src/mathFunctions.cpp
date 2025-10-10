@@ -1,53 +1,46 @@
 #include "constants.hpp"
+#include "dataStructs/camera_viewport.hpp"
 #include "utilities/vec3.hpp"
 #include <cmath>
 #include <vector>
 
 int main() {
-  Point3 camera_position = Constants::CameraPosition;
-  Point3 camera_target   = Constants::CameraTarget;
-  float FOV_radians      = Constants::FOV * (Constants::PI / 180.0F);
-  // aspect ratio es un std::pair: 1º anchura, 2º altura
-  std::pair aspect_ratio           = Constants::AspectRatio;
-  Vec3 camera_north                = Constants::CameraNorth;
-  unsigned int const window_height = 1'920;
-  unsigned int const window_width  = 700;
+  // Camera setup
+  CameraData cam{
+    Constants::CameraPosition,                  // Camera position
+    Constants::CameraTarget,                    // Camera target
+    Constants::CameraNorth,                     // Up direction
+    Constants::FOV * (Constants::PI / 180.0F),  // FOV in radians
+    (float) Constants::AspectRatio.first,       // Aspect width
+    (float) Constants::AspectRatio.second,      // Aspect height
+    1'920,                                      // Window width
+    700                                         // Window height
+  };
 
-  Vec3 focal_vector = camera_position - camera_target;
+  // Compute viewport from camera
+  ViewportData vp = compute_viewport(cam);
 
-  float focal_distance = focal_vector.length();
+  // Pixel loop and sample point calculation
+  for (unsigned int pixelCountX = 0; pixelCountX < cam.window_width; pixelCountX++) {
+    for (unsigned int pixelCountY = 0; pixelCountY < cam.window_height; pixelCountY++) {
+      // Pixel size in world space
+      Vec3 pixel_width  = vp.horizontal / (float) cam.window_width;
+      Vec3 pixel_height = vp.vertical / (float) cam.window_height;
 
-  // Altura de la ventana de proyección
-  float proj_window_height = 2 * std::tan(FOV_radians / 2.0F) * focal_distance;
-  // Anchura de la ventana de proyección
-  float proj_window_width = proj_window_height * aspect_ratio.first / aspect_ratio.second;
+      // Generate sample points (currently empty or 1 sample)
+      std::vector<Point3> sample_points(1);
+      unsigned delta_x_random = 0;  // δx
+      unsigned delta_y_random = 0;  // δy
 
-  // Vectores directores de la ventana
-  Vec3 focal_vector_norm = focal_vector.normalize();
-  Vec3 viewport_right    = cross(camera_north, focal_vector_norm).normalize();
-  Vec3 viewport_up       = cross(focal_vector_norm, viewport_right);
-  // Vectores de la ventana de proyección
-  Vec3 viewport_horizontal = proj_window_width * viewport_right;
-  Vec3 viewport_vertical   = proj_window_height * -viewport_up;
-
-  // Origen ventana de proyección.
-  Vec3 pixel_width         = viewport_horizontal / window_width;
-  Vec3 pixel_height        = viewport_vertical / window_height;
-  Point3 viewport_origin   = camera_target - 0.5F * (viewport_horizontal + viewport_vertical);
-  Point3 viewport_position = viewport_origin + 0.5F * (pixel_width + pixel_height);
-
-  /* Trazado de rayos */
-  for (unsigned int pixelCountX = 0; pixelCountX < window_width; pixelCountX++) {
-    for (unsigned int pixelCountY = 0; pixelCountY < window_height; pixelCountY++) {
-      std::vector<Point3> sample_points;
-      // should be random
-      auto delta_x_random = 0;  // δx
-      auto delta_y_random = 0;  // δy
       for (Point3 & pixel_sample_point : sample_points) {
-        pixel_sample_point = viewport_origin +
-                             pixel_width * (pixelCountX + delta_x_random) +
-                             pixel_height * (pixelCountY + delta_y_random);
+        pixel_sample_point = vp.origin +
+                             pixel_width * (float) (pixelCountX + delta_x_random) +
+                             pixel_height * (float) (pixelCountY + delta_y_random);
       }
+
+      // TODO: do something with sample_points
     }
   }
+
+  return 0;
 }
