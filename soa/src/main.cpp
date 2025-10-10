@@ -50,7 +50,7 @@ int main() {  // NOLINT
 
   /* Esto de aquí es ya la guerra hay q refactorizarlo*/
   for (size_t row = 0; row < (imageHeight); row++) {
-    std::cerr << "\rScanlines remaining: " << (imageHeight - 1 - row) << ' ' << std::flush << '\n';
+    std::cerr << "\rScanlines remaining: " << (imageHeight - 1 - row) << ' ' << std::flush;
     for (size_t col = 0; col < (imageWidth); col++) {
       // Por cada pixel
       Color accumulated_color(0.0F, 0.0F, 0.0F);
@@ -78,6 +78,7 @@ int main() {  // NOLINT
       image.set_pixel(indice, final_pixel_color);
     }
   }
+  std::cerr << "\n";
   if (!image.write_to_ppm(FilepathOut)) {
     std::cerr << "Error writing into .ppm file /n";
   }
