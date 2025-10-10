@@ -3,7 +3,7 @@
 #include "utilities/vec3.hpp"
 #include <cstddef>
 
-Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
+Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,  // NOLINT
                          ConfigSettings const & config, RandomGenerator materialRng) {
   if (ray.depth <= 0) {
     return {0.0F, 0.0F, 0.0F};
@@ -18,6 +18,7 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
       hit_rec   = new_hit;
     }
   }
+
   size_t const num_cylinders = scene.cylinders.x.size();
   for (size_t i = 0; i < num_cylinders; ++i) {
     if (auto new_hit = Renderer::RenderCylinders(scene, i, ray, closest_t)) {
@@ -25,11 +26,11 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
       hit_rec   = new_hit;
     }
   }
+
   if (hit_rec) {
     MaterialID material_id = scene.materialTable[hit_rec->material_global_id];
 
     // Creamos el contexto de material usando punteros en lugar de referencias
-    // Esto cumple con C++ Core Guidelines y evita el error de clang-tidy
     MaterialContext ctx(&scene, &config, &materialRng);
 
     switch (material_id.type) {
@@ -85,121 +86,126 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   return rec;
 }
 
+// Intersección de rayos con cilindros
 std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,  // NOLINT
                                                              size_t cylinder_index, Ray r,
                                                              float closest_t) {
-  // Extraemos los datos del cilindro desde la estructura SoA
-  Point3 cylinder_center(scene.cylinders.x[cylinder_index], scene.cylinders.y[cylinder_index],
+  // Extraemos los datos de los cilindros de la escena
+  Point3 centro_cilindro(scene.cylinders.x[cylinder_index], scene.cylinders.y[cylinder_index],
                          scene.cylinders.z[cylinder_index]);
-  float cylinder_radius = scene.cylinders.r[cylinder_index];
-  Vec3 axis_vector(scene.cylinders.vx[cylinder_index], scene.cylinders.vy[cylinder_index],
-                   scene.cylinders.vz[cylinder_index]);
 
-  // Calculamos el vector unitario del eje y la altura
-  Vec3 axis_unit        = axis_vector.normalize();
-  float cylinder_height = axis_vector.length();
-  float half_height     = cylinder_height * 0.5F;
+  // Radio del cilindro
+  float radio_cilindro = scene.cylinders.r[cylinder_index];
 
-  // Umbral mínimo para evitar auto-intersecciones
-  constexpr float epsilon = 0.001F;
+  // Altura del cilindro
+  float h = Vec3(scene.cylinders.vx[cylinder_index], scene.cylinders.vy[cylinder_index],
+                 scene.cylinders.vz[cylinder_index])
+                .length();
 
-  // Variables para almacenar la intersección más cercana
-  float closest_intersection = closest_t;
+  // Vector unitario del eje del cilindro â
+  Vec3 eje_unitario = Vec3(scene.cylinders.vx[cylinder_index], scene.cylinders.vy[cylinder_index],
+                           scene.cylinders.vz[cylinder_index])
+                          .normalize();
+
+  // Variables para trackear la intersección más cercana encontrada
+  float interseccion_cercana = closest_t;
   Vec3 intersection_point;
   Vec3 intersection_normal;
   bool found_intersection = false;
 
-  // --- 1. INTERTSECCIÓN CON SUPERFICIE CURVA ---
-  // Según documento: cálculo con cilindro de altura infinita primero
+  // 1: Intersección con la curva del cilindro
 
-  Vec3 oc = r.point - cylinder_center;
+  // Calculamos el vector desde el origen del rayo hasta el centro del cilindro
+  Vec3 oc = r.point - centro_cilindro;
 
-  // Componentes perpendiculares al eje (documento: v⊥â = v - (v · â)â)
-  Vec3 ray_dir_perp = r.direction - dot(r.direction, axis_unit) * axis_unit;
-  Vec3 oc_perp      = oc - dot(oc, axis_unit) * axis_unit;
+  Vec3 dr_perp = component_perpendicular(r.direction, eje_unitario);  // dr_a
+  Vec3 rc_perp = component_perpendicular(oc, eje_unitario);           // dc_a
 
   // Coeficientes de la ecuación cuadrática para superficie curva
-  float a = dot(ray_dir_perp, ray_dir_perp);
-  float b = 2.0F * dot(ray_dir_perp, oc_perp);
-  float c = dot(oc_perp, oc_perp) - cylinder_radius * cylinder_radius;
+  float a             = dot(dr_perp, dr_perp);
+  float b             = 2.0F * dot(rc_perp, dr_perp);
+  float c             = dot(rc_perp, rc_perp) - radio_cilindro * radio_cilindro;
+  float discriminante = b * b - 4 * a * c;
 
-  float discriminant = b * b - 4.0F * a * c;
+  // para probar las soluciones a la ecuación acorde al caso
+  std::vector<float> lambdas;
 
-  if (discriminant >= 0.0F) {
-    float sqrt_discriminant = std::sqrt(discriminant);
-    float root1             = (-b - sqrt_discriminant) / (2.0F * a);
-    float root2             = (-b + sqrt_discriminant) / (2.0F * a);
+  if (discriminante < 0.0F) {
+    // discriminante < 0 : No hay intersección por lo que no se hace nada
+  } else if (std::fabs(discriminante) < 1e-12F) {
+    // discriminante = 1 : Solo hay una intersección
+    lambdas.push_back(-b / (2.0F * a));
+  } else {
+    // discriminante > 1 : Dos puntos de intersección
+    lambdas.push_back((-b - std::sqrt(discriminante)) / (2.0F * a));
+    lambdas.push_back((-b + std::sqrt(discriminante)) / (2.0F * a));
+  }
 
-    // Probar ambas raíces
-    for (float root : {root1, root2}) {
-      if (root > epsilon and root < closest_intersection) {
-        Point3 potential_point = r.at(root);
+  // Buscamos un punto de intersección valido
+  for (float lambda : lambdas) {
+    if (lambda > 0.001F and lambda < interseccion_cercana) {
+      // heckeamos si el punto de intersección está comprendido en la altura del cilindro
+      Point3 punto_potencial = r.at(lambda);
+      float proyeccion       = dot(punto_potencial - centro_cilindro, eje_unitario);
 
-        // Verificar si el punto está dentro de los límites de altura
-        // Calculamos la proyección sobre el eje (documento: (I - C) · â)
-        Vec3 point_to_center = potential_point - cylinder_center;
-        float projection     = dot(point_to_center, axis_unit);
-
-        if (std::fabs(projection) <= half_height) {
-          closest_intersection = root;
-          intersection_point   = potential_point;
-          // Vector normal para superficie curva (documento: (I - C)⊥â)
-          intersection_normal = (intersection_point - cylinder_center) - projection * axis_unit;
-          intersection_normal = intersection_normal.normalize();
-          found_intersection  = true;
-        }
+      if (std::fabs(proyeccion) <= (h * 0.5F)) {
+        interseccion_cercana = lambda;
+        intersection_point   = punto_potencial;
+        // vector normal del cilindro en el punto de intersección
+        intersection_normal =
+            component_perpendicular(punto_potencial - centro_cilindro, eje_unitario).normalize();
+        found_intersection = true;
       }
     }
   }
 
-  // --- 2. INTERTSECCIÓN CON BASE SUPERIOR ---
-  Point3 top_center = cylinder_center + half_height * axis_unit;
-  Vec3 top_normal   = axis_unit;
+  //  2. intersección con las bases del cilindro
+  Point3 top_center = centro_cilindro + (h * 0.5F) * eje_unitario;
 
-  // Intersección con plano de la base superior
-  float denom_top = dot(r.direction, top_normal);
-  if (std::fabs(denom_top) > epsilon) {
-    float t_top = dot(top_center - r.point, top_normal) / denom_top;
-    if (t_top > epsilon and t_top < closest_intersection) {
-      Point3 potential_point = r.at(t_top);
+  // Vector desde el origen del rayo hasta el centro de la base
+  Vec3 rp_top = top_center - r.point;
 
-      // Verificar si el punto está dentro del radio del círculo
-      Vec3 point_to_top_center = potential_point - top_center;
-      if (point_to_top_center.length() <= cylinder_radius) {
-        closest_intersection = t_top;
+  if (std::fabs(dot(r.direction, eje_unitario)) > 1e-8F) {
+    float dp_bs = dot(rp_top, eje_unitario) / dot(r.direction, eje_unitario);
+
+    if (dp_bs > 0.001F and dp_bs < interseccion_cercana) {
+      Point3 potential_point = r.at(dp_bs);
+
+      // Verificamos si el punto de intersección está dentro de la base
+      if ((potential_point - top_center).length() <= radio_cilindro) {
+        interseccion_cercana = dp_bs;
         intersection_point   = potential_point;
-        intersection_normal  = top_normal;
+        intersection_normal  = eje_unitario;
         found_intersection   = true;
       }
     }
   }
 
-  // --- 3. INTERTSECCIÓN CON BASE INFERIOR ---
-  Point3 bottom_center = cylinder_center - half_height * axis_unit;
-  Vec3 bottom_normal   = -axis_unit;
+  // Calculamos el centro de la base inferior del cilindro
+  Point3 bottom_center = centro_cilindro - (h * 0.5F) * eje_unitario;
 
-  // Intersección con plano de la base inferior
-  float denom_bottom = dot(r.direction, bottom_normal);
-  if (std::fabs(denom_bottom) > epsilon) {
-    float t_bottom = dot(bottom_center - r.point, bottom_normal) / denom_bottom;
-    if (t_bottom > epsilon and t_bottom < closest_intersection) {
-      Point3 potential_point = r.at(t_bottom);
+  Vec3 rp_inf = bottom_center - r.point;
 
-      // Verificar si el punto está dentro del radio del círculo
-      Vec3 point_to_bottom_center = potential_point - bottom_center;
-      if (point_to_bottom_center.length() <= cylinder_radius) {
-        closest_intersection = t_bottom;
+  if (std::fabs(dot(r.direction, -eje_unitario)) > 1e-8F) {
+    float dp_bi = dot(rp_inf, -eje_unitario) / dot(r.direction, -eje_unitario);
+
+    if (dp_bi > 0.001F and dp_bi < interseccion_cercana) {
+      Point3 potential_point = r.at(dp_bi);
+
+      // Verificamos si el punto de intersección está dentro de la base
+      if ((potential_point - bottom_center).length() <= radio_cilindro) {
+        interseccion_cercana = dp_bi;
         intersection_point   = potential_point;
-        intersection_normal  = bottom_normal;
+        intersection_normal  = -eje_unitario;
         found_intersection   = true;
       }
     }
   }
 
-  // --- 4. CREAR HITRECORD SI HAY INTERTSECCIÓN ---
+  // Registro de intersección
   if (found_intersection) {
     HitRecord rec;
-    rec.t        = closest_intersection;
+    rec.t        = interseccion_cercana;
     rec.p        = intersection_point;
     rec.prev_ray = r;
     rec.set_face_normal(r, intersection_normal);
@@ -207,7 +213,6 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
         static_cast<unsigned int>(scene.cylinders.materialIndex[cylinder_index]);
     return rec;
   }
-
   return std::nullopt;
 }
 
@@ -221,85 +226,61 @@ Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {
 
 Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
   unsigned int matte_idx = material_id.localIndex;
-  // Accedemos a los datos de la escena a través del puntero ctx.scene
-  Color attenuation = {ctx.scene->matte.r[matte_idx], ctx.scene->matte.g[matte_idx],
-                       ctx.scene->matte.b[matte_idx]};
-  // Calculamos dirección de rebote aleatoria para material difuso
-  Vec3 bounce_direction = hit_rec.normal.normalize() + ctx.materialRng->get_vector_minus1_to_1();
+  Color attenuation      = {ctx.scene->matte.r[matte_idx], ctx.scene->matte.g[matte_idx],
+                            ctx.scene->matte.b[matte_idx]};
+  Vec3 bounce_direction  = hit_rec.normal.normalize() + ctx.materialRng->get_vector_minus1_to_1();
 
-  // Si la dirección de rebote es demasiado pequeña, usamos la normal como dirección
   if (bounce_direction.is_near_zero()) {
     bounce_direction = hit_rec.normal.normalize();
   }
 
-  // Creamos el nuevo rayo rebotado con profundidad reducida
   Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);
-
-  // El color final es la atenuación multiplicada por el color del rayo rebotado
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
 Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
   unsigned int metal_idx = material_id.localIndex;
-  // Obtenemos la reflectancia y factor de difusión del material metálico a través del puntero
   Color attenuation      = {ctx.scene->metal.r[metal_idx], ctx.scene->metal.g[metal_idx],
                             ctx.scene->metal.b[metal_idx]};
   float diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
-  // 1. Calcular dirección de reflejo perfecto
   Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
+  Vec3 fuzz          = diffusion_factor * ctx.materialRng->get_unit_sphere().normalize();
+  Ray bounced_ray    = Ray(hit_rec.p, reflected_dir + fuzz, hit_rec.prev_ray.depth - 1);
 
-  // 2. Añadir difusión (fuzziness)
-  // Se multiplica por el factor de difusión para controlar la "borrosidad"
-  Vec3 fuzz       = diffusion_factor * ctx.materialRng->get_unit_sphere().normalize();
-  Ray bounced_ray = Ray(hit_rec.p, reflected_dir + fuzz, hit_rec.prev_ray.depth - 1);
-
-  // 3. Si el rayo reflejado no se va "hacia afuera" de la superficie, se absorbe (color negro)
-  // Esto evita que el rayo se refleje "hacia adentro" del objeto si la difusión es muy alta
   if (dot(bounced_ray.direction, hit_rec.normal) > 0) {
     return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
   }
-  // El rayo fue absorbido
+
   return {0.0F, 0.0F, 0.0F};
 }
 
 Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & ctx,
                                 HitRecord hit_rec) {
-  // Obtenemos el indice de refracción inicial para el material a través del puntero
-  unsigned int indice_refraccion = material_id.localIndex;
-  float irc                      = ctx.scene->refractive.ior[indice_refraccion];
-  // vector_normal = hit_rec.normal;
-  // vector_unitario = hit_rec.prev_ray.direction.normalize();
+  unsigned int refractive_idx = material_id.localIndex;
+  float ior                   = ctx.scene->refractive.ior[refractive_idx];
+  Vec3 unit_direction         = hit_rec.prev_ray.direction.normalize();
 
-  // Calculamos seno y coseno del ángulo de refracción
-  float cos_angulo = std::min(dot(-hit_rec.prev_ray.direction.normalize(), hit_rec.normal), 1.0F);
-  float sin_angulo = std::sqrt(1.0F - cos_angulo * cos_angulo);
-
-  // Cálculo del índice de refracción corregido
-  float refracción_corregido = irc;  // Caso en que el rayo golpea desde fuera
+  float refraction_ratio = ior;
   if (!hit_rec.front_face) {
-    // Caso en que el rayo golpea desde dentro
-    refracción_corregido = 1.0F / irc;
+    refraction_ratio = 1.0F / ior;
   }
 
-  // Definición del vector dirección en en base a la refracción: refracción_corregido * sin_angulo >
-  // 1
-  Vec3 direccion = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
+  float cos_theta = std::min(dot(-unit_direction, hit_rec.normal), 1.0F);
+  float sin_theta = std::sqrt(1.0F - cos_theta * cos_theta);
 
-  if (refracción_corregido * sin_angulo <= 1.0F) {
-    /// dr = d0 - 2(d0 · dn)dn extraido de la definición del vector
-    Vec3 u = refracción_corregido *
-             (hit_rec.prev_ray.direction.normalize() + cos_angulo * hit_rec.normal);
-    Vec3 v    = -std::sqrt(std::fabs(1.0F - u.length_squared())) * hit_rec.normal;
-    direccion = u + v;
+  Vec3 direction;
+
+  if (refraction_ratio * sin_theta > 1.0F) {
+    direction = reflect(unit_direction, hit_rec.normal);
+  } else {
+    Vec3 i    = refraction_ratio * (unit_direction + cos_theta * hit_rec.normal);
+    Vec3 j    = -std::sqrt(std::fabs(1.0F - i.length_squared())) * hit_rec.normal;
+    direction = i + j;
   }
 
-  // Creamos el rayo resultante y bajamos la profundidad un nivel
-  Ray refracted_ray(hit_rec.p, direccion, hit_rec.prev_ray.depth - 1);
-
-  // La reflectancia siempre es 1,1,1 según especificaciones del documento
+  Ray refracted_ray(hit_rec.p, direction, hit_rec.prev_ray.depth - 1);
   Color attenuation(1.0F, 1.0F, 1.0F);
 
-  // La atenuación se multiplica por el color del nuevo rayo refractado
   return attenuation * rayColor(refracted_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
