@@ -134,6 +134,13 @@ using Point3 = Vec3;
   return r_out_perp + r_out_parallel;
 }
 
+// Calcula la componente perpendicular de un vector v respecto a un vector unitario u
+[[nodiscard]] constexpr Vec3 component_perpendicular(Vec3 const & v, Vec3 const & u) noexcept {
+  // (v - (v · â)â)
+  return v - dot(v, u) * u;
+  ;
+}
+
 // --- Stream Output for Debugging ---
 // This allows you to write `std::cout << my_vec;`
 inline std::ostream & operator<<(std::ostream & os, Vec3 const & v) {

@@ -9,3 +9,8 @@ sphere: -5  5 0 3 ref1
 sphere: -5 -5 0 3 mat3
 sphere:  5 -5 0 3 metal1
 sphere:  0 -500 0 490 mat4
+sphere:  -2 5 4 3 mat1
+cylinder: 5 5 0 0.8 0 3 0 mat4
+cylinder: -10 10 0 0.6 4 0 0 mat1
+cylinder: 7 1 0 1.0 -1 5 10 metal1
+cylinder: 8 3 -5 0.5 0 0 3 mat2
