@@ -4,6 +4,7 @@
 #include "../../common/include/ray.hpp"
 #include "dataStructs/settings_structs.hpp"
 #include "utilities/random.hpp"
+#include <optional>
 
 class Renderer {
 public:
