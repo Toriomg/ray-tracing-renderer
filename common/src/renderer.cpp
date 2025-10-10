@@ -228,10 +228,14 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
   unsigned int matte_idx = material_id.localIndex;
   Color attenuation      = {ctx.scene->matte.r[matte_idx], ctx.scene->matte.g[matte_idx],
                             ctx.scene->matte.b[matte_idx]};
-  Vec3 bounce_direction  = hit_rec.normal.normalize() + ctx.materialRng->get_vector_minus1_to_1();
 
-  if (bounce_direction.is_near_zero()) {
-    bounce_direction = hit_rec.normal.normalize();
+  Vec3 bounce_direction = hit_rec.normal + ctx.materialRng->get_vector_minus1_to_1();
+
+  if (std::fabs(bounce_direction.x) < 1e-8F and
+      std::fabs(bounce_direction.y) < 1e-8F and
+      std::fabs(bounce_direction.z) < 1e-8F)
+  {
+    bounce_direction = hit_rec.normal;
   }
 
   Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);
