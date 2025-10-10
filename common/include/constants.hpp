@@ -3,7 +3,7 @@
 
 #include "utilities/vec3.hpp"
 #include <limits>
-#include <numbers>  // For std::numbers::pi
+#include <numbers>
 
 namespace Constants {
 

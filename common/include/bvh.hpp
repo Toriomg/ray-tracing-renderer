@@ -2,6 +2,7 @@
 #define BVH_HPP
 
 #include "dataStructs/aabb.hpp"
+#include <cstdint>
 
 struct BVHNode {
   AABB box;

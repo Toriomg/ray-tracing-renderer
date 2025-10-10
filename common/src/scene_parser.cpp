@@ -247,7 +247,7 @@ namespace {
     scene.cylinders.addAxis(vx, vy, vz);
     scene.cylinders.invAxisLen.push_back(invAxisLen);
     scene.cylinders.materialIndex.push_back(materialIndex);
-  return true;
+    return true;
   }
 
   bool processLine(std::string_view line, SceneSettings & scene) {

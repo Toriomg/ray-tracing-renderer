@@ -1,7 +1,7 @@
 #ifndef AABB_HPP
 #define AABB_HPP
 
-#include "utilities/vec3.hpp"
+#include "../utilities/vec3.hpp"
 class Ray;
 
 struct AABB {

@@ -1,9 +1,9 @@
 #ifndef SETTINGS_STRUCTS_HPP
 #define SETTINGS_STRUCTS_HPP
 
+#include "../utilities/vec3.hpp"
 #include "material.hpp"
 #include "object.hpp"
-#include "utilities/vec3.hpp"
 #include <vector>
 
 struct ConfigSettings {

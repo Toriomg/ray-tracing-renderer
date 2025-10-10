@@ -38,8 +38,8 @@ struct Vec3 {
   }
 
   constexpr Vec3 & operator/=(float scalar) noexcept {
-    assert(scalar != 0.0f && "Division by zero!");  // this in release version is not compiled
-    float inv_scalar = (1.0F / scalar);             // Multiplication is faster than division
+    assert(scalar != 0.0F and "Division by zero!");  // this in release version is not compiled
+    float inv_scalar = (1.0F / scalar);              // Multiplication is faster than division
     x *= inv_scalar;
     y *= inv_scalar;
     z *= inv_scalar;
