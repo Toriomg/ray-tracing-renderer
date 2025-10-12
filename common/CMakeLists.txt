@@ -7,6 +7,7 @@ target_sources(common
         src/renderer.cpp
         src/scene_parser.cpp
         src/ppm_writer.cpp
+        src/config_parser.cpp
 )
 
 target_include_directories(common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
