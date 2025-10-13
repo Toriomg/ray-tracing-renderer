@@ -33,7 +33,7 @@ int main() {
     std::cout << "Rendering with ImageSOA..." << '\n';
     ImageSOA imageSoa(imageWidth, imageHeight);
     renderImage(imageSoa, camera, ctx);
-    if (!imageSoa.write_to_ppm(FilepathOutSOA)) {
+    if (!imageSoa.write_to_ppm(FilepathOut)) {
       std::cerr << "Error writing ImageSOA to .ppm file\n";
     }
   }
