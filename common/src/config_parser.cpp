@@ -1,5 +1,6 @@
 #include "config_parser.hpp"
 #include "dataStructs/settings_structs.hpp"
+#include "constants.hpp"
 #include <cerrno>
 #include <charconv>
 #include <fstream>
@@ -404,19 +405,19 @@ ConfigSettings loadConfigFromFile(std::string const & filename) {
   ConfigSettings config;
 
   // Default values
-  config.aspect_ratio           = {16, 9};
-  config.image_width            = 1'920;
-  config.gamma                  = 2.2F;
-  config.camera_pos             = Point3(0.0F, 0.0F, -10.0F);
-  config.camera_target          = Point3(0.0F, 0.0F, 0.0F);
-  config.camera_north           = Vec3(0.0F, 1.0F, 0.0F);
-  config.field_of_view          = 90.0F;
-  config.samples_per_pixel      = 20;
-  config.max_depth              = 5;
-  config.material_rng_seed      = 13;
-  config.ray_rng_seed           = 19;
-  config.background_dark_color  = Color(0.25F, 0.5F, 1.0F);
-  config.background_light_color = Color(1.0F, 1.0F, 1.0F);
+  config.aspect_ratio           = Constants::AspectRatio;
+  config.image_width            = Constants::ImageWidth;
+  config.gamma                  = Constants::Gamma;
+  config.camera_pos             = Constants::CameraPosition;
+  config.camera_target          = Constants::CameraTarget;
+  config.camera_north           = Constants::CameraNorth;
+  config.field_of_view          = Constants::FOV;
+  config.samples_per_pixel      = Constants::SamplesPerPixel;
+  config.max_depth              = Constants::MaxDepth;
+  config.material_rng_seed      = Constants::RNGSeedMaterial;
+  config.ray_rng_seed           = Constants::RNGSeedRay;
+  config.background_dark_color  = Constants::ColorBackgroundDark;
+  config.background_light_color = Constants::ColorBackGroundLight;
 
   std::ifstream file(filename);
   if (!file.is_open()) {

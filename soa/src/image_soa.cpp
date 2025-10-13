@@ -96,5 +96,7 @@ void ImageSOA::fill_from_float(std::vector<float> const & r_data, std::vector<fl
 
 // Escritura a archivo PPM usando la clase PPMWriter
 bool ImageSOA::write_to_ppm(std::string const & filename) const {
-  return PPMWriter::write_ppm(filename, r_channel_, g_channel_, b_channel_, width_, height_);
+  auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
+
+  return PPMWriter::write_ppm(filename, pixels, width_, height_);
 }

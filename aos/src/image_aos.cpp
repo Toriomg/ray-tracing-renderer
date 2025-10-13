@@ -120,12 +120,13 @@ bool ImageAOS::write_to_ppm(std::string const & filename) const {
   r_channel.reserve(pixels_.size());
   g_channel.reserve(pixels_.size());
   b_channel.reserve(pixels_.size());
-
+  
   for (auto const & pixel : pixels_) {
     r_channel.push_back(pixel.r);
     g_channel.push_back(pixel.g);
     b_channel.push_back(pixel.b);
   }
+  auto pixels = PPMWriter::Pixels(r_channel, g_channel, b_channel);
 
-  return PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width_, height_);
+  return PPMWriter::write_ppm(filename, pixels, width_, height_);
 }
