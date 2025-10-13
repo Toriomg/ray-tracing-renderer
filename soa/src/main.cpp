@@ -5,8 +5,8 @@
 
 // File paths
 std::string const FilepathScene  = "/workspace/res/scene_scripts/scene2.txt";
-std::string const FilepathConfig = "/workspace/res/configs/config2.txt";
-std::string const FilepathOutSOA = "/workspace/outputImageSOA.ppm";
+std::string const FilepathConfig = "/workspace/res/config_scripts/config2.txt";
+std::string const FilepathOut    = "/workspace/outputImageSOA.ppm";
 
 int main() {
   // Load configuration and scene
