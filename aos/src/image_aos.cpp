@@ -120,7 +120,7 @@ bool ImageAOS::write_to_ppm(std::string const & filename) const {
   r_channel.reserve(pixels_.size());
   g_channel.reserve(pixels_.size());
   b_channel.reserve(pixels_.size());
-  
+
   for (auto const & pixel : pixels_) {
     r_channel.push_back(pixel.r);
     g_channel.push_back(pixel.g);

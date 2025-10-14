@@ -62,7 +62,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   if (discriminant < 0) {
     return std::nullopt;
   }
-  
+
   // Calculamos la raíz de la ecuación cuadrática para encontrar el punto de impacto 't'
   auto sqrtd = std::sqrt(discriminant);
   auto root  = (-half_b - sqrtd) / a;
@@ -86,93 +86,103 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   return rec;
 }
 
-std::optional<Renderer::Intersection>
-Renderer::intersectCap(Ray const &r, Point3 const &center, Vec3 const &normal, float radius_sq) {
+std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Point3 const & center,
+                                                             Vec3 const & normal, float radius_sq) {
   float const denominator = dot(r.direction, normal);
-  if (std::fabs(denominator) < 1e-8F) { return std::nullopt; } // Rayo paralelo
+  if (std::fabs(denominator) < 1e-8F) {
+    return std::nullopt;
+  }  // Rayo paralelo
 
   float const t = dot(center - r.point, normal) / denominator;
-  if (t <= 0.001F) { return std::nullopt; } // Intersección detrás del rayo
+  if (t <= 0.001F) {
+    return std::nullopt;
+  }  // Intersección detrás del rayo
 
   Point3 const p = r.at(t);
-  if ((p - center).length_squared() > radius_sq) { return std::nullopt; } // Fuera del radio
+  if ((p - center).length_squared() > radius_sq) {
+    return std::nullopt;
+  }  // Fuera del radio
 
   return Intersection{t, p, normal};
 }
 
-std::optional<Renderer::Intersection>
-Renderer::intersectLateralSurface(Ray const &r, CylinderGeometry const &cyl, float closest_t) {
+std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
+    Ray const & r, CylinderGeometry const & cyl, float closest_t) {
   Vec3 const oc      = r.point - cyl.center;
   Vec3 const dr_perp = component_perpendicular(r.direction, cyl.unit_axis);
   Vec3 const rc_perp = component_perpendicular(oc, cyl.unit_axis);
+  float const a      = dr_perp.length_squared();
 
-  float const a = dr_perp.length_squared();
-  // Evitar división por cero si el rayo es paralelo al eje.
-  if (std::fabs(a) < 1e-8F) { return std::nullopt; }
+  if (std::fabs(a) < 1e-8F) {  // Evitar división por cero si el rayo es paralelo al eje.
+    return std::nullopt;
+  }
 
-  float const b      = 2.0F * dot(rc_perp, dr_perp);
-  float const c      = rc_perp.length_squared() - cyl.radius * cyl.radius;
-  float const discr  = b * b - 4 * a * c;
+  float const b     = 2.0F * dot(rc_perp, dr_perp);
+  float const c     = rc_perp.length_squared() - cyl.radius * cyl.radius;
+  float const discr = b * b - 4 * a * c;
 
-  if (discr < 0) { return std::nullopt; }
+  if (discr < 0) {
+    return std::nullopt;
+  }
 
   // --- Lógica corregida para comprobar AMBAS raíces ---
   float const sqrt_discr = std::sqrt(discr);
-
-  // Primera raíz (la más cercana)
-  float t = (-b - sqrt_discr) / (2.0F * a);
+  float t                = (-b - sqrt_discr) / (2.0F * a);  // Primera raíz (la más cercana)
   if (t <= 0.001F or t >= closest_t) {
     // Si la primera raíz no es válida, prueba la segunda
     t = (-b + sqrt_discr) / (2.0F * a);
     if (t <= 0.001F or t >= closest_t) {
-      return std::nullopt; // Ninguna raíz es una intersección válida y más cercana
+      return std::nullopt;  // Ninguna raíz es una intersección válida y más cercana
     }
   }
   // Ahora que tenemos una 't' válida, comprobamos si está dentro de la altura del cilindro
-  Point3 const p            = r.at(t);
-  float const projection    = dot(p - cyl.center, cyl.unit_axis);
-  float const half_height   = cyl.height * 0.5F;
+  Point3 const p          = r.at(t);
+  float const projection  = dot(p - cyl.center, cyl.unit_axis);
+  float const half_height = cyl.height * 0.5F;
 
-  if (std::fabs(projection) <= half_height) {
-    // ¡Hit válido en la superficie lateral!
+  if (std::fabs(projection) <= half_height) {  // ¡Hit válido en la superficie lateral!
     Vec3 normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
     return Intersection{t, p, normal};
   }
-  // La intersección con el cilindro infinito está fuera de las tapas
-  return std::nullopt;
+  return std::nullopt;  // La intersección con el cilindro infinito está fuera de las tapas
 }
 
-void Renderer::updateBestHit(std::optional<Intersection> &best, float &closest,
-                             std::optional<Intersection> const &new_hit) {
+void Renderer::updateBestHit(std::optional<Intersection> & best, float & closest,
+                             std::optional<Intersection> const & new_hit) {
   if (new_hit and new_hit->t < closest) {
     best    = new_hit;
     closest = new_hit->t;
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const &scene, size_t idx, Ray r, float closest_t) {
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
+                                                             size_t idx, Ray r, float closest_t) {
   // --- 1. Setup ---
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
-  
+
   CylinderGeometry const cyl = {
     .center    = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]},
     .unit_axis = raw_axis.normalize(), // Normalizamos para los cálculos de proyección
     .radius    = scene.cylinders.r[idx],
-    .height    = raw_axis.length()     // La altura es el módulo del vector original
+    .height    = raw_axis.length()  // La altura es el módulo del vector original
   };
 
-    // --- 2. Intersección con la superficie lateral curva ---
-    std::optional<Intersection> best_hit;
+  // --- 2. Intersección con la superficie lateral curva ---
+  std::optional<Intersection> best_hit;
   updateBestHit(best_hit, closest_t, intersectLateralSurface(r, cyl, closest_t));
 
   float const radius_sq   = cyl.radius * cyl.radius;
   float const half_height = cyl.height * 0.5F;
-  updateBestHit(best_hit, closest_t,
-                intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
-  updateBestHit(best_hit, closest_t,
-                intersectCap(r, cyl.center - cyl.unit_axis * half_height, -cyl.unit_axis, radius_sq));
+  updateBestHit(
+      best_hit, closest_t,
+      intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
+  updateBestHit(
+      best_hit, closest_t,
+      intersectCap(r, cyl.center - cyl.unit_axis * half_height, -cyl.unit_axis, radius_sq));
   // --- 3. Intersección con las tapas ---
-  if (!best_hit) { return std::nullopt; }
+  if (!best_hit) {
+    return std::nullopt;
+  }
 
   HitRecord rec;
   rec.t                  = best_hit->t;
@@ -202,7 +212,7 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
     bounce_direction = hit_rec.normal;
   }
 
-  Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1); // Creación nuevo rayo
+  Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 

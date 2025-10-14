@@ -1,6 +1,6 @@
 #include "config_parser.hpp"
-#include "dataStructs/settings_structs.hpp"
 #include "constants.hpp"
+#include "dataStructs/settings_structs.hpp"
 #include <cerrno>
 #include <charconv>
 #include <fstream>

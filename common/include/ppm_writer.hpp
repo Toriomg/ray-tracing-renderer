@@ -7,21 +7,18 @@
 
 class PPMWriter {
 public:
-  struct Pixels{
+  struct Pixels {
     std::vector<uint8_t> r_channel;
     std::vector<uint8_t> g_channel;
     std::vector<uint8_t> b_channel;
 
-    Pixels(const std::vector<uint8_t>& r, const std::vector<uint8_t>& g, const std::vector<uint8_t>& b)
-        : r_channel(r),
-          g_channel(g),
-          b_channel(b)
-    {
-    }
+    Pixels(std::vector<uint8_t> const & r, std::vector<uint8_t> const & g,
+           std::vector<uint8_t> const & b)
+        : r_channel(r), g_channel(g), b_channel(b) { }
   };
-  static bool write_ppm(const std::string& filename,
-                     const Pixels& pixels,
-                     size_t width, size_t height);
+
+  static bool write_ppm(std::string const & filename, Pixels const & pixels, size_t width,
+                        size_t height);
 };
 
 #endif
