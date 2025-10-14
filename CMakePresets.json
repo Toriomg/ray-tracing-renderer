@@ -33,6 +33,14 @@
       "cacheVariables": {
         "ENABLE_CLANG_TIDY": "ON"
       }
+    },
+    {
+      "name": "asan",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address -fno-omit-frame-pointer"
+      }
     }
   ],
   "buildPresets": [
@@ -55,6 +63,11 @@
       "name": "clang-tidy-release",
       "configurePreset": "clang-tidy",
       "configuration": "Release"
+    },
+    {
+      "name": "asan-debug",
+      "configurePreset": "asan",
+      "configuration": "debug"
     }
   ]
 }
