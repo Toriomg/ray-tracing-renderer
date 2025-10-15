@@ -5,11 +5,11 @@ ViewportData compute_viewport(CameraData const & cam) {
 
   // Vector from camera target to camera position
   Vec3 focal           = cam.position - cam.target;
-  float focal_distance = focal.length();
+  double focal_distance = focal.length();
 
   // Projection window based on FOV and distance
-  float proj_h = 2 * std::tan(cam.FOV_radians / 2.0F) * focal_distance;
-  float proj_w = proj_h * (cam.aspect_width / cam.aspect_height);
+  double proj_h = 2 * std::tan(cam.FOV_radians / 2.0F) * focal_distance;
+  double proj_w = proj_h * (cam.aspect_width / cam.aspect_height);
 
   // Normalize the focal vector to get the forward direction
   Vec3 focal_norm = focal.normalize();
@@ -26,8 +26,8 @@ ViewportData compute_viewport(CameraData const & cam) {
   vp.origin = cam.target - 0.5F * (vp.horizontal + vp.vertical);
 
   // Compute the position of the center of the first pixel
-  vp.position = vp.origin + 0.5F * (vp.horizontal / (float) cam.window_width +
-                                    vp.vertical / (float) cam.window_height);
+  vp.position = vp.origin + 0.5F * (vp.horizontal / (double) cam.window_width +
+                                    vp.vertical / (double) cam.window_height);
 
   return vp;
 }

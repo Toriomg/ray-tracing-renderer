@@ -44,7 +44,7 @@ namespace {
     return tokens;
   }
 
-  bool parseFloat(std::string_view token, float & value) {
+  bool parsedouble(std::string_view token, double & value) {
     if (token.empty()) {
       return false;
     }
@@ -57,7 +57,7 @@ namespace {
     return result.ec == std::errc() and result.ptr == end;
   }
 
-  bool validateColorComponents(float r, float g, float b) {
+  bool validateColorComponents(double r, double g, double b) {
     // Nos aseguramos de que los colores estan en los rangos correctos
     return r >= 0.0F and r <= 1.0F and g >= 0.0F and g <= 1.0F and b >= 0.0F and b <= 1.0F;
   }
@@ -69,11 +69,11 @@ namespace {
       return false;
     }
 
-    float r = 0.0F;
-    float g = 0.0F;
-    float b = 0.0F;
+    double r = 0.0F;
+    double g = 0.0F;
+    double b = 0.0F;
 
-    if (!parseFloat(tokens[2], r) or !parseFloat(tokens[3], g) or !parseFloat(tokens[4], b)) {
+    if (!parsedouble(tokens[2], r) or !parsedouble(tokens[3], g) or !parsedouble(tokens[4], b)) {
       std::cerr << "Error: invalid color values for matte material\n";
       return false;
     }
@@ -101,15 +101,15 @@ namespace {
       return false;
     }
 
-    float r         = 0.0F;
-    float g         = 0.0F;
-    float b         = 0.0F;
-    float diffusion = 0.0F;
+    double r         = 0.0F;
+    double g         = 0.0F;
+    double b         = 0.0F;
+    double diffusion = 0.0F;
 
-    if (!parseFloat(tokens[2], r) or
-        !parseFloat(tokens[3], g) or
-        !parseFloat(tokens[4], b) or
-        !parseFloat(tokens[5], diffusion))
+    if (!parsedouble(tokens[2], r) or
+        !parsedouble(tokens[3], g) or
+        !parsedouble(tokens[4], b) or
+        !parsedouble(tokens[5], diffusion))
     {
       std::cerr << "Error: invalid parameter values for metal material\n";
       return false;
@@ -139,8 +139,8 @@ namespace {
       return false;
     }
 
-    float ior = 0.0F;
-    if (!parseFloat(tokens[2], ior)) {
+    double ior = 0.0F;
+    if (!parsedouble(tokens[2], ior)) {
       std::cerr << "Error: invalid IOR value for refractive material\n";
       return false;
     }
@@ -175,15 +175,15 @@ namespace {
       return false;
     }
 
-    float x      = 0.0F;
-    float y      = 0.0F;
-    float z      = 0.0F;
-    float radius = 0.0F;
+    double x      = 0.0F;
+    double y      = 0.0F;
+    double z      = 0.0F;
+    double radius = 0.0F;
 
-    if (!parseFloat(tokens[1], x) or
-        !parseFloat(tokens[2], y) or
-        !parseFloat(tokens[3], z) or
-        !parseFloat(tokens[4], radius))
+    if (!parsedouble(tokens[1], x) or
+        !parsedouble(tokens[2], y) or
+        !parsedouble(tokens[3], z) or
+        !parsedouble(tokens[4], radius))
     {
       std::cerr << "Error: parametros de esfera incorrectos\n";
       return false;
@@ -215,16 +215,16 @@ namespace {
                 << tokens.size() - 1 << "\n";
       return false;
     }
-    float x = 0.0F, y = 0.0F, z = 0.0F;
-    float radius = 0.0F;
-    float vx = 0.0F, vy = 0.0F, vz = 0.0F;
-    if (!parseFloat(tokens[1], x) or
-        !parseFloat(tokens[2], y) or
-        !parseFloat(tokens[3], z) or
-        !parseFloat(tokens[4], radius) or
-        !parseFloat(tokens[5], vx) or
-        !parseFloat(tokens[6], vy) or
-        !parseFloat(tokens[7], vz))
+    double x = 0.0F, y = 0.0F, z = 0.0F;
+    double radius = 0.0F;
+    double vx = 0.0F, vy = 0.0F, vz = 0.0F;
+    if (!parsedouble(tokens[1], x) or
+        !parsedouble(tokens[2], y) or
+        !parsedouble(tokens[3], z) or
+        !parsedouble(tokens[4], radius) or
+        !parsedouble(tokens[5], vx) or
+        !parsedouble(tokens[6], vy) or
+        !parsedouble(tokens[7], vz))
     {
       std::cerr << "Error: parámetros del cilindro incorrectos\n";
       return false;
@@ -239,8 +239,8 @@ namespace {
       std::cerr << "Error: material desconocido '" << tokens[8] << "' para esfera\n";
       return false;
     }
-    float const axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
-    float const invAxisLen = (axisLength > 0.0F) ? (1.0F / axisLength) : 1.0F;
+    double const axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
+    double const invAxisLen = (axisLength > 0.0F) ? (1.0F / axisLength) : 1.0F;
 
     scene.cylinders.addCentre(x, y, z);
     scene.cylinders.r.push_back(radius);

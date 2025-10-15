@@ -17,26 +17,21 @@ double RandomGenerator::get_double(double min, double max) {
     return dist(m_engine);
 }
 
-float RandomGenerator::get_float(float min, float max) {
-    std::uniform_real_distribution<float> dist(min, max);
-    return dist(m_engine);
-}
-
 // Genera un vector con componentes en [-1, 1)
 Vec3 RandomGenerator::get_vector_minus1_to_1() {
     return {
-        static_cast<float>(get_double(-1.0, 1.0)),
-        static_cast<float>(get_double(-1.0, 1.0)),
-        static_cast<float>(get_double(-1.0, 1.0))
+        (get_double(-1.0, 1.0)),
+        (get_double(-1.0, 1.0)),
+        (get_double(-1.0, 1.0))
     };
 }
 
 // Genera un vector con componentes en [-range, range)
 Vec3 RandomGenerator::get_vector_in_range(double range) {
     return {
-        static_cast<float>(get_double(-range, range)),
-        static_cast<float>(get_double(-range, range)),
-        static_cast<float>(get_double(-range, range))
+        (get_double(-range, range)),
+        (get_double(-range, range)),
+        (get_double(-range, range))
     };
 }
 

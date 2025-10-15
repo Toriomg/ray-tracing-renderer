@@ -13,7 +13,7 @@ struct AABB {
   AABB(Point3 const & a, Point3 const & b) : min(a), max(b) { }
 
   // Función para comprobar si un rayo intersecta la caja
-  [[nodiscard]] bool hit(Ray const & r, float t_min, float t_max) const;
+  [[nodiscard]] bool hit(Ray const & r, double t_min, double t_max) const;
 };
 
 // Función para crear una caja que engloba a otras dos

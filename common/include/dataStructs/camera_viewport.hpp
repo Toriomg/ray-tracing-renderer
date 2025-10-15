@@ -8,9 +8,9 @@ struct CameraData {
   Point3 position;
   Point3 target;
   Vec3 north;
-  float FOV_radians{};
-  float aspect_width{};
-  float aspect_height{};
+  double FOV_radians{};
+  double aspect_width{};
+  double aspect_height{};
   uint32_t window_width{};
   uint32_t window_height{};
 };

@@ -18,7 +18,7 @@ public:
   };
 
   struct Intersection {  // Struct simple para intersección de cilindros
-    float t = 0.0F;
+    double t = 0.0F;
     Point3 p;
     Vec3 normal;
   };
@@ -30,7 +30,7 @@ private:
   struct HitRecord {
     Point3 p;        // Punto de colisión
     Vec3 normal;     // Vector normal en el punto de colisión
-    float t = 0.0F;  // Parámetro 't' del rayo
+    double t = 0.0F;  // Parámetro 't' del rayo
     Ray prev_ray;
     unsigned int material_global_id = 0;  // ID del material del objeto golpeado
     bool front_face = false;              // Para saber si el rayo golpeó desde fuera o desde dentro
@@ -47,22 +47,22 @@ private:
   struct CylinderGeometry {
     Point3 center;
     Vec3 unit_axis;
-    float radius = 0.0F;
-    float height = 0.0F;
+    double radius = 0.0F;
+    double height = 0.0F;
   };
 
   static std::optional<Intersection> intersectCap(Ray const & r, Point3 const & center,
-                                                  Vec3 const & normal, float radius_sq);
+                                                  Vec3 const & normal, double radius_sq);
   static std::optional<Intersection> intersectLateralSurface(Ray const & r,
                                                              CylinderGeometry const & cyl,
-                                                             float closest_t);
-  static void updateBestHit(std::optional<Intersection> & best, float & closest,
+                                                             double closest_t);
+  static void updateBestHit(std::optional<Intersection> & best, double & closest,
                             std::optional<Intersection> const & new_hit);
 
   static std::optional<HitRecord> RenderSpheres(SceneSettings const & scene, size_t sphere_index,
-                                                Ray r, float closest_t);
+                                                Ray r, double closest_t);
   static std::optional<HitRecord> RenderCylinders(SceneSettings const & scene, size_t idx, Ray r,
-                                                  float closest_t);
+                                                  double closest_t);
 
   static Color backgroundColor(Ray const & r, ConfigSettings const & config);
 

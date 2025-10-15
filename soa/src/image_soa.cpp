@@ -41,39 +41,39 @@ uint8_t ImageSOA::get_blue(size_t index) const {
 }
 
 // Métodos para modificar el valor de un pixel dentro de los arrays de colores
-void ImageSOA::set_red(size_t index, float value, float gamma) {
+void ImageSOA::set_red(size_t index, double value, double gamma) {
   // Aseguramos que las coordenadas están dentro de los límites establecidos y no fuera de rango
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  r_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
+  r_channel_[index] = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageSOA::set_green(size_t index, float value, float gamma) {
+void ImageSOA::set_green(size_t index, double value, double gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  g_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
+  g_channel_[index] = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageSOA::set_blue(size_t index, float value, float gamma) {
+void ImageSOA::set_blue(size_t index, double value, double gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  b_channel_[index] = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
+  b_channel_[index] = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
 // Método para modificar los 3 arrays a la vez para definir un color completo en un pixel concreto
 // de una sola vez
-void ImageSOA::set_pixel(size_t index, Color const & color, float gamma) {
+void ImageSOA::set_pixel(size_t index, Color const & color, double gamma) {
   set_red(index, color.x, gamma);
   set_green(index, color.y, gamma);
   set_blue(index, color.z, gamma);
 }
 
-// Llenado desde datos float del renderizador
-void ImageSOA::fill_from_float(std::vector<float> const & r_data, std::vector<float> const & g_data,
-                               std::vector<float> const & b_data, float gamma) {
+// Llenado desde datos double del renderizador
+void ImageSOA::fill_from_double(std::vector<double> const & r_data, std::vector<double> const & g_data,
+                               std::vector<double> const & b_data, double gamma) {
   // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
   size_t expected_size = width_ * height_;
 
@@ -88,9 +88,9 @@ void ImageSOA::fill_from_float(std::vector<float> const & r_data, std::vector<fl
 
   // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
   for (size_t i = 0; i < expected_size; ++i) {
-    r_channel_[i] = color_utils::float_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-    g_channel_[i] = color_utils::float_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-    b_channel_[i] = color_utils::float_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
+    r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
+    g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
+    b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
   }
 }
 

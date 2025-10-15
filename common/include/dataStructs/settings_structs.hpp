@@ -10,10 +10,10 @@ struct ConfigSettings {
   Point3 camera_pos;
   Point3 camera_target;
   Vec3 camera_north;
-  float field_of_view;
+  double field_of_view;
   std::pair<unsigned int, unsigned int> aspect_ratio;
   int image_width;
-  float gamma;
+  double gamma;
   int max_depth;
   int samples_per_pixel;
   unsigned long material_rng_seed;

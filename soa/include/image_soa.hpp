@@ -31,18 +31,18 @@ public:
   [[nodiscard]] uint8_t get_blue(size_t index) const;
 
   // Métodos para modificar valores de color a un pixel concreto en cada array
-  void set_red(size_t index, float value, float gamma = Constants::Gamma);
-  void set_green(size_t index, float value, float gamma = Constants::Gamma);
-  void set_blue(size_t index, float value, float gamma = Constants::Gamma);
+  void set_red(size_t index, double value, double gamma = Constants::Gamma);
+  void set_green(size_t index, double value, double gamma = Constants::Gamma);
+  void set_blue(size_t index, double value, double gamma = Constants::Gamma);
 
   // Función que permite modificar todos los colores a la vez de un solo pixel (modificar los 3
   // arrays para definir un color)
-  void set_pixel(size_t index, Color const & color, float gamma = Constants::Gamma);
+  void set_pixel(size_t index, Color const & color, double gamma = Constants::Gamma);
 
-  // Permite llenar todos los arrays a partir de datos en float con valores de 0 a 1 a valores
+  // Permite llenar todos los arrays a partir de datos en double con valores de 0 a 1 a valores
   // válidos del 0 al 255
-  void fill_from_float(std::vector<float> const & r_data, std::vector<float> const & g_data,
-                       std::vector<float> const & b_data, float gamma = Constants::Gamma);
+  void fill_from_double(std::vector<double> const & r_data, std::vector<double> const & g_data,
+                       std::vector<double> const & b_data, double gamma = Constants::Gamma);
 
   // Métodos para recibir las dimensiones de la imagen
   [[nodiscard]] size_t width() const { return width_; }

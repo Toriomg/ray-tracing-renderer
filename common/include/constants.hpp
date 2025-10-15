@@ -7,8 +7,8 @@
 
 namespace Constants {
 
-  inline constexpr float PI       = std::numbers::pi_v<float>;
-  inline constexpr float Infinity = std::numeric_limits<float>::infinity();
+  inline constexpr double PI       = std::numbers::pi_v<double>;
+  inline constexpr double Infinity = std::numeric_limits<double>::infinity();
 
   inline constexpr std::pair<unsigned int, unsigned int> AspectRatio = {16, 9};
   inline constexpr int ImageWidth                                    = 1'920;
@@ -16,8 +16,8 @@ namespace Constants {
   inline constexpr Point3 CameraTarget(0.0F, 0.0F, 0.0F);
   inline constexpr Vec3 CameraNorth(0.0F, 1.0F, 0.0F);
   // Field of view
-  inline constexpr float FOV           = 90.0F;
-  inline constexpr float Gamma         = 2.2F;
+  inline constexpr double FOV           = 90.0F;
+  inline constexpr double Gamma         = 2.2F;
   inline constexpr int SamplesPerPixel = 20;
   inline constexpr int MaxDepth        = 5;
   // TODO: select a correct integer type

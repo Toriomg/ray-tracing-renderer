@@ -44,7 +44,7 @@ namespace {
     return tokens;
   }
 
-  bool parseFloat(std::string_view token, float & value) {
+  bool parsedouble(std::string_view token, double & value) {
     if (token.empty()) {
       return false;
     }
@@ -92,7 +92,7 @@ namespace {
     return result.ec == std::errc() and result.ptr == end;
   }
 
-  bool validateColorComponents(float r, float g, float b) {
+  bool validateColorComponents(double r, double g, double b) {
     return r >= 0.0F and r <= 1.0F and g >= 0.0F and g <= 1.0F and b >= 0.0F and b <= 1.0F;
   }
 
@@ -147,8 +147,8 @@ namespace {
       return false;
     }
 
-    float gamma = 0.0F;
-    if (!parseFloat(tokens[1], gamma)) {
+    double gamma = 0.0F;
+    if (!parsedouble(tokens[1], gamma)) {
       std::cerr << "Error: invalid gamma value\n";
       return false;
     }
@@ -164,8 +164,8 @@ namespace {
       return false;
     }
 
-    float x = 0.0F, y = 0.0F, z = 0.0F;
-    if (!parseFloat(tokens[1], x) or !parseFloat(tokens[2], y) or !parseFloat(tokens[3], z)) {
+    double x = 0.0F, y = 0.0F, z = 0.0F;
+    if (!parsedouble(tokens[1], x) or !parsedouble(tokens[2], y) or !parsedouble(tokens[3], z)) {
       std::cerr << "Error: invalid camera position values\n";
       return false;
     }
@@ -181,8 +181,8 @@ namespace {
       return false;
     }
 
-    float x = 0.0F, y = 0.0F, z = 0.0F;
-    if (!parseFloat(tokens[1], x) or !parseFloat(tokens[2], y) or !parseFloat(tokens[3], z)) {
+    double x = 0.0F, y = 0.0F, z = 0.0F;
+    if (!parsedouble(tokens[1], x) or !parsedouble(tokens[2], y) or !parsedouble(tokens[3], z)) {
       std::cerr << "Error: invalid camera target values\n";
       return false;
     }
@@ -198,8 +198,8 @@ namespace {
       return false;
     }
 
-    float x = 0.0F, y = 0.0F, z = 0.0F;
-    if (!parseFloat(tokens[1], x) or !parseFloat(tokens[2], y) or !parseFloat(tokens[3], z)) {
+    double x = 0.0F, y = 0.0F, z = 0.0F;
+    if (!parsedouble(tokens[1], x) or !parsedouble(tokens[2], y) or !parsedouble(tokens[3], z)) {
       std::cerr << "Error: invalid camera north values\n";
       return false;
     }
@@ -214,8 +214,8 @@ namespace {
       return false;
     }
 
-    float fov = 0.0F;
-    if (!parseFloat(tokens[1], fov)) {
+    double fov = 0.0F;
+    if (!parsedouble(tokens[1], fov)) {
       std::cerr << "Error: invalid field of view value\n";
       return false;
     }
@@ -323,8 +323,8 @@ namespace {
       return false;
     }
 
-    float r = 0.0F, g = 0.0F, b = 0.0F;
-    if (!parseFloat(tokens[1], r) or !parseFloat(tokens[2], g) or !parseFloat(tokens[3], b)) {
+    double r = 0.0F, g = 0.0F, b = 0.0F;
+    if (!parsedouble(tokens[1], r) or !parsedouble(tokens[2], g) or !parsedouble(tokens[3], b)) {
       std::cerr << "Error: invalid background dark color values\n";
       return false;
     }
@@ -346,8 +346,8 @@ namespace {
       return false;
     }
 
-    float r = 0.0F, g = 0.0F, b = 0.0F;
-    if (!parseFloat(tokens[1], r) or !parseFloat(tokens[2], g) or !parseFloat(tokens[3], b)) {
+    double r = 0.0F, g = 0.0F, b = 0.0F;
+    if (!parsedouble(tokens[1], r) or !parsedouble(tokens[2], g) or !parsedouble(tokens[3], b)) {
       std::cerr << "Error: invalid background light color values\n";
       return false;
     }

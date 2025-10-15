@@ -11,8 +11,8 @@ int main() {
     Constants::CameraTarget,                    // Camera target
     Constants::CameraNorth,                     // Up direction
     Constants::FOV * (Constants::PI / 180.0F),  // FOV in radians
-    (float) Constants::AspectRatio.first,       // Aspect width
-    (float) Constants::AspectRatio.second,      // Aspect height
+    (double) Constants::AspectRatio.first,       // Aspect width
+    (double) Constants::AspectRatio.second,      // Aspect height
     1'920,                                      // Window width
     700                                         // Window height
   };
@@ -24,8 +24,8 @@ int main() {
   for (unsigned int pixelCountX = 0; pixelCountX < cam.window_width; pixelCountX++) {
     for (unsigned int pixelCountY = 0; pixelCountY < cam.window_height; pixelCountY++) {
       // Pixel size in world space
-      Vec3 pixel_width  = vp.horizontal / (float) cam.window_width;
-      Vec3 pixel_height = vp.vertical / (float) cam.window_height;
+      Vec3 pixel_width  = vp.horizontal / (double) cam.window_width;
+      Vec3 pixel_height = vp.vertical / (double) cam.window_height;
 
       // Generate sample points (currently empty or 1 sample)
       std::vector<Point3> sample_points(1);
@@ -34,8 +34,8 @@ int main() {
 
       for (Point3 & pixel_sample_point : sample_points) {
         pixel_sample_point = vp.origin +
-                             pixel_width * (float) (pixelCountX + delta_x_random) +
-                             pixel_height * (float) (pixelCountY + delta_y_random);
+                             pixel_width * (double) (pixelCountX + delta_x_random) +
+                             pixel_height * (double) (pixelCountY + delta_y_random);
       }
 
       // TODO: do something with sample_points
