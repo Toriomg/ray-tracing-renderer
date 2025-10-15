@@ -24,12 +24,12 @@ public:
   };
 
   static Color rayColor(Ray const & ray, SceneSettings const & scene, ConfigSettings const & config,
-                        RandomGenerator materialRng);
+                        RandomGenerator & materialRng);
 
 private:
   struct HitRecord {
-    Point3 p;        // Punto de colisión
-    Vec3 normal;     // Vector normal en el punto de colisión
+    Point3 p;         // Punto de colisión
+    Vec3 normal;      // Vector normal en el punto de colisión
     double t = 0.0F;  // Parámetro 't' del rayo
     Ray prev_ray;
     unsigned int material_global_id = 0;  // ID del material del objeto golpeado

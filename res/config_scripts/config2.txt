@@ -1,6 +1,6 @@
 # Configuration for scene2.txt
 aspect_ratio: 16 9
-image_width: 900
+image_width: 1920
 gamma: 2.2
 camera_position: 0 0 -10
 camera_target: 0 0 0

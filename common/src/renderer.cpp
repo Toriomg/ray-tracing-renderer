@@ -4,9 +4,9 @@
 #include <cstddef>
 
 Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
-                         ConfigSettings const & config, RandomGenerator materialRng) {
+                         ConfigSettings const & config, RandomGenerator & materialRng) {
   if (ray.depth <= 0) {
-    return {0.0F, 0.0F, 0.0F};
+    return {0.0, 0.0, 0.0};
   }
 
   double closest_t = std::numeric_limits<double>::infinity();
@@ -68,10 +68,10 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   auto root  = (-half_b - sqrtd) / a;
 
   // Si la primera raíz no es válida (detrás del rayo o no es más cercana), prueba la segunda.
-  if (root <= 0.001F or root >= closest_t) {
+  if (root <= 0.001 or root >= closest_t) {
     root = (-half_b + sqrtd) / a;
     // Si la segunda raíz tampoco es válida, no hay colisión útil.
-    if (root <= 0.001F or root >= closest_t) {
+    if (root <= 0.001 or root >= closest_t) {
       return std::nullopt;
     }
   }
@@ -89,12 +89,12 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
 std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Point3 const & center,
                                                              Vec3 const & normal, double radius_sq) {
   double const denominator = dot(r.direction, normal);
-  if (std::fabs(denominator) < 1e-8F) {
+  if (std::fabs(denominator) < 1e-8) {
     return std::nullopt;
   }  // Rayo paralelo
 
   double const t = dot(center - r.point, normal) / denominator;
-  if (t <= 0.001F) {
+  if (t <= 0.001) {
     return std::nullopt;
   }  // Intersección detrás del rayo
 
@@ -113,11 +113,11 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
   Vec3 const rc_perp = component_perpendicular(oc, cyl.unit_axis);
   double const a      = dr_perp.length_squared();
 
-  if (std::fabs(a) < 1e-8F) {  // Evitar división por cero si el rayo es paralelo al eje.
+  if (std::fabs(a) < 1e-8) {  // Evitar división por cero si el rayo es paralelo al eje.
     return std::nullopt;
   }
 
-  double const b     = 2.0F * dot(rc_perp, dr_perp);
+  double const b     = 2.0 * dot(rc_perp, dr_perp);
   double const c     = rc_perp.length_squared() - cyl.radius * cyl.radius;
   double const discr = b * b - 4 * a * c;
 
@@ -127,18 +127,18 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
 
   // --- Lógica corregida para comprobar AMBAS raíces ---
   double const sqrt_discr = std::sqrt(discr);
-  double t                = (-b - sqrt_discr) / (2.0F * a);  // Primera raíz (la más cercana)
-  if (t <= 0.001F or t >= closest_t) {
+  double t                = (-b - sqrt_discr) / (2.0 * a);  // Primera raíz (la más cercana)
+  if (t <= 0.001 or t >= closest_t) {
     // Si la primera raíz no es válida, prueba la segunda
-    t = (-b + sqrt_discr) / (2.0F * a);
-    if (t <= 0.001F or t >= closest_t) {
+    t = (-b + sqrt_discr) / (2.0 * a);
+    if (t <= 0.001 or t >= closest_t) {
       return std::nullopt;  // Ninguna raíz es una intersección válida y más cercana
     }
   }
   // Ahora que tenemos una 't' válida, comprobamos si está dentro de la altura del cilindro
   Point3 const p          = r.at(t);
   double const projection  = dot(p - cyl.center, cyl.unit_axis);
-  double const half_height = cyl.height * 0.5F;
+  double const half_height = cyl.height * 0.5;
 
   if (std::fabs(projection) <= half_height) {  // ¡Hit válido en la superficie lateral!
     Vec3 normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
@@ -172,7 +172,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
   updateBestHit(best_hit, closest_t, intersectLateralSurface(r, cyl, closest_t));
 
   double const radius_sq   = cyl.radius * cyl.radius;
-  double const half_height = cyl.height * 0.5F;
+  double const half_height = cyl.height * 0.5;
   updateBestHit(
       best_hit, closest_t,
       intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
@@ -195,10 +195,10 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
 
 Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {
   Vec3 unit_direction = r.direction.normalize();
-  auto t_bg = 0.5F * (unit_direction.y + 1.0F);  // Mapea la altura del rayo a un valor entre 0 y 1
+  auto t_bg = 0.5 * (unit_direction.y + 1.0);  // Mapea la altura del rayo a un valor entre 0 y 1
 
   // Mezcla lineal entre el color claro y oscuro del fondo
-  return (1.0F - t_bg) * config.background_light_color + t_bg * config.background_dark_color;
+  return (1.0 - t_bg) * config.background_light_color + t_bg * config.background_dark_color;
 }
 
 Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
@@ -212,7 +212,7 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
     bounce_direction = hit_rec.normal;
   }
 
-  Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
+  Ray bounced_ray(hit_rec.p , bounce_direction, hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
@@ -230,7 +230,7 @@ Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, 
     return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
   }
 
-  return {0.0F, 0.0F, 0.0F};
+  return {0.0, 0.0, 0.0};
 }
 
 Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & ctx,
@@ -241,24 +241,24 @@ Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & 
 
   double refraction_ratio = ior;
   if (!hit_rec.front_face) {
-    refraction_ratio = 1.0F / ior;
+    refraction_ratio = 1.0 / ior;
   }
 
   double cos_theta = std::min(dot(-unit_direction, hit_rec.normal), 1.0);
-  double sin_theta = std::sqrt(1.0F - cos_theta * cos_theta);
+  double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
 
   Vec3 direction;
 
-  if (refraction_ratio * sin_theta > 1.0F) {
+  if (refraction_ratio * sin_theta > 1.0) {
     direction = reflect(unit_direction, hit_rec.normal);
   } else {
     Vec3 i    = refraction_ratio * (unit_direction + cos_theta * hit_rec.normal);
-    Vec3 j    = -std::sqrt(std::fabs(1.0F - i.length_squared())) * hit_rec.normal;
+    Vec3 j    = -std::sqrt(std::fabs(1.0 - i.length_squared())) * hit_rec.normal;
     direction = i + j;
   }
 
   Ray refracted_ray(hit_rec.p, direction, hit_rec.prev_ray.depth - 1);
-  Color attenuation(1.0F, 1.0F, 1.0F);
+  Color attenuation(1.0, 1.0, 1.0);
 
   return attenuation * rayColor(refracted_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
