@@ -87,7 +87,8 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
 }
 
 std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Point3 const & center,
-                                                             Vec3 const & normal, double radius_sq) {
+                                                             Vec3 const & normal,
+                                                             double radius_sq) {
   double const denominator = dot(r.direction, normal);
   if (std::fabs(denominator) < 1e-8) {
     return std::nullopt;
@@ -111,7 +112,7 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
   Vec3 const oc      = r.point - cyl.center;
   Vec3 const dr_perp = component_perpendicular(r.direction, cyl.unit_axis);
   Vec3 const rc_perp = component_perpendicular(oc, cyl.unit_axis);
-  double const a      = dr_perp.length_squared();
+  double const a     = dr_perp.length_squared();
 
   if (std::fabs(a) < 1e-8) {  // Evitar división por cero si el rayo es paralelo al eje.
     return std::nullopt;
@@ -136,7 +137,7 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
     }
   }
   // Ahora que tenemos una 't' válida, comprobamos si está dentro de la altura del cilindro
-  Point3 const p          = r.at(t);
+  Point3 const p           = r.at(t);
   double const projection  = dot(p - cyl.center, cyl.unit_axis);
   double const half_height = cyl.height * 0.5;
 
@@ -157,29 +158,34 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
 
 std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
                                                              size_t idx, Ray r, double closest_t) {
-  // --- 1. Setup ---
+  // --- 1. Setup - Using precomputed values from CylinderData ---
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
+
+  // Use the precomputed inverse axis length to avoid sqrt operations
+  double const inv_len = scene.cylinders.invAxisLen[idx];
 
   CylinderGeometry const cyl = {
     .center    = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]},
-    .unit_axis = raw_axis.normalize(), // Normalizamos para los cálculos de proyección
+    .unit_axis = raw_axis * inv_len, // Multiply by inverse length instead of normalize()
     .radius    = scene.cylinders.r[idx],
-    .height    = raw_axis.length()  // La altura es el módulo del vector original
+    .height    = 1.0 / inv_len  // Height = 1 / invAxisLen (since invAxisLen = 1/length)
   };
 
-  // --- 2. Intersección con la superficie lateral curva ---
+  // --- 2. Lateral surface intersection ---
   std::optional<Intersection> best_hit;
   updateBestHit(best_hit, closest_t, intersectLateralSurface(r, cyl, closest_t));
 
   double const radius_sq   = cyl.radius * cyl.radius;
   double const half_height = cyl.height * 0.5;
+
+  // --- 3. Cap intersections ---
   updateBestHit(
       best_hit, closest_t,
       intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
   updateBestHit(
       best_hit, closest_t,
       intersectCap(r, cyl.center - cyl.unit_axis * half_height, -cyl.unit_axis, radius_sq));
-  // --- 3. Intersección con las tapas ---
+
   if (!best_hit) {
     return std::nullopt;
   }
@@ -212,14 +218,14 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
     bounce_direction = hit_rec.normal;
   }
 
-  Ray bounced_ray(hit_rec.p , bounce_direction, hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
+  Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
 Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
-  unsigned int metal_idx = material_id.localIndex;
-  Color attenuation      = {ctx.scene->metal.r[metal_idx], ctx.scene->metal.g[metal_idx],
-                            ctx.scene->metal.b[metal_idx]};
+  unsigned int metal_idx  = material_id.localIndex;
+  Color attenuation       = {ctx.scene->metal.r[metal_idx], ctx.scene->metal.g[metal_idx],
+                             ctx.scene->metal.b[metal_idx]};
   double diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
   Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
@@ -236,7 +242,7 @@ Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, 
 Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & ctx,
                                 HitRecord hit_rec) {
   unsigned int refractive_idx = material_id.localIndex;
-  double ior                   = ctx.scene->refractive.ior[refractive_idx];
+  double ior                  = ctx.scene->refractive.ior[refractive_idx];
   Vec3 unit_direction         = hit_rec.prev_ray.direction.normalize();
 
   double refraction_ratio = ior;
