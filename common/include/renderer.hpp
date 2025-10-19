@@ -39,8 +39,8 @@ private:
 
     // Función para establecer la normal siempre apuntando hacia fuera
     void set_face_normal(Ray const & r, Vec3 const & outward_normal) {
-      bool front_face = dot(r.direction, outward_normal) < 0;
-      normal          = front_face ? outward_normal : -outward_normal;
+      bool const front_face = dot(r.direction, outward_normal) < 0;
+      normal                = front_face ? outward_normal : -outward_normal;
     }  // Índice del objeto golpeado en el array de la escena.
   };
 
