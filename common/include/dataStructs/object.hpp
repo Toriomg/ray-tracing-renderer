@@ -1,12 +1,14 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
+#include "dataStructs/aabb.hpp"
 #include <cmath>
 #include <vector>
 
 struct alignas(16) SphereData {
   std::vector<double> x, y, z, r;           // All the numbers that define the sphere
   std::vector<unsigned int> materialIndex;  // Index of its material
+  std::vector<AABB> aabbs;                  // Caja AABB de la esfera para colisiones
 };
 
 struct alignas(16) CylinderData {
@@ -14,6 +16,7 @@ struct alignas(16) CylinderData {
   std::vector<double> vx, vy, vz;
   std::vector<double> invAxisLen;
   std::vector<int> materialIndex;
+  std::vector<AABB> aabbs;  // caja AABB del cilindro para colisiones
 
   void addCentre(double cx, double cy, double cz) {
     x.push_back(cx);
@@ -35,15 +38,9 @@ struct alignas(16) CylinderData {
     }
   }
 
-  // Optional convenience method
-  // void addCylinder(double cx, double cy, double cz,
-  //                 double avx, double avy, double avz,
-  //                 double radius, int materialIdx) {
-  //   addCentre(cx, cy, cz);
-  //   addAxis(avx, avy, avz);
-  //   r.push_back(radius);
-  //   materialIndex.push_back(materialIdx);
-  // }
+  void addAABB(AABB const & aabb) {
+    aabbs.push_back(aabb);
+  }
 };
 
 #endif
