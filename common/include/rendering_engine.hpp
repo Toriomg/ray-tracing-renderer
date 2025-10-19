@@ -55,6 +55,7 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
       image.set_pixel(index, final_pixel_color, ctx.config->gamma);
     }
   }
+  std::cerr << "\n";
 }
 
 #endif
