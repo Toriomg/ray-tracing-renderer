@@ -174,12 +174,10 @@ namespace {
                 << tokens.size() - 1 << "\n";
       return false;
     }
-
     double x      = 0.0F;
     double y      = 0.0F;
     double z      = 0.0F;
     double radius = 0.0F;
-
     if (!parsedouble(tokens[1], x) or
         !parsedouble(tokens[2], y) or
         !parsedouble(tokens[3], z) or
@@ -188,12 +186,10 @@ namespace {
       std::cerr << "Error: parametros de esfera incorrectos\n";
       return false;
     }
-
     if (radius <= 0.0F) {
       std::cerr << "Error: radio de la esfera debe ser positivo\n";
       return false;
     }
-
     int const materialIndex = findMaterialIndex(tokens[5], scene);
     if (materialIndex == -1) {
       std::cerr << "Error:material desconocido '" << tokens[5] << "' para esfera\n";
@@ -205,6 +201,8 @@ namespace {
     scene.spheres.z.push_back(z);
     scene.spheres.r.push_back(radius);
     scene.spheres.materialIndex.push_back(static_cast<unsigned int>(materialIndex));
+    scene.spheres.aabbs.push_back(AABB::from_sphere({x, y, z}, radius));  // generamos la caja AABB
+
     return true;
   }
 

@@ -8,30 +8,34 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
   if (ray.depth <= 0) {
     return {0.0, 0.0, 0.0};
   }
-
   double closest_t = std::numeric_limits<double>::infinity();
   std::optional<HitRecord> hit_rec;
-  size_t const num_spheres = scene.spheres.x.size();
+  size_t const num_spheres = scene.spheres.x.size();  // Filtro AABB para esferas
   for (size_t i = 0; i < num_spheres; ++i) {
-    if (auto new_hit = Renderer::RenderSpheres(scene, i, ray, closest_t)) {
-      closest_t = new_hit->t;
-      hit_rec   = new_hit;
+    if (AABB::intersect(ray, scene.spheres.aabbs[i], 0.001, closest_t))
+    {  // comprobamos que está dentro de la caja, si no no hace falta calcular la intersección
+      if (auto new_hit = Renderer::RenderSpheres(scene, i, ray, closest_t)) {
+        closest_t = new_hit->t;
+        hit_rec   = new_hit;
+      }
     }
   }
-
-  size_t const num_cylinders = scene.cylinders.x.size();
-  for (size_t i = 0; i < num_cylinders; ++i) {
-    if (auto new_hit = Renderer::RenderCylinders(scene, i, ray, closest_t)) {
-      closest_t = new_hit->t;
-      hit_rec   = new_hit;
+  size_t const num_cylinders = scene.cylinders.x.size();  // gestion de AABB para cilindros
+  for (size_t i = 0; i < num_cylinders; ++i)
+  {  // comprobamos que está dentro de la caja y si no, no se calcula la intersección
+    if (AABB::intersect(ray, scene.cylinders.aabbs[i], 0.001, closest_t)) {
+      if (auto new_hit = Renderer::RenderCylinders(scene, i, ray, closest_t)) {
+        closest_t = new_hit->t;
+        hit_rec   = new_hit;
+      }
     }
   }
 
   if (hit_rec) {
     MaterialID material_id = scene.materialTable[hit_rec->material_global_id];
-
-    // Creamos el contexto de material usando punteros en lugar de referencias
-    MaterialContext ctx(&scene, &config, &materialRng);
+    MaterialContext ctx(
+        &scene, &config,
+        &materialRng);  // Creamos el contexto de material usando punteros en lugar de referencias
 
     switch (material_id.type) {
       case MATTE:      return Renderer::matteColor(material_id, ctx, *hit_rec);
