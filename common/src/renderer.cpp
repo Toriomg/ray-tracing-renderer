@@ -161,29 +161,34 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
 
 std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
                                                              size_t idx, Ray r, double closest_t) {
-  // --- 1. Setup ---
+  // --- 1. Setup - Using precomputed values from CylinderData ---
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
+
+  // Use the precomputed inverse axis length to avoid sqrt operations
+  double const inv_len = scene.cylinders.invAxisLen[idx];
 
   CylinderGeometry const cyl = {
     .center    = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]},
-    .unit_axis = raw_axis.normalize(), // Normalizamos para los cálculos de proyección
+    .unit_axis = raw_axis * inv_len, // Multiply by inverse length instead of normalize()
     .radius    = scene.cylinders.r[idx],
-    .height    = raw_axis.length()  // La altura es el módulo del vector original
+    .height    = 1.0 / inv_len  // Height = 1 / invAxisLen (since invAxisLen = 1/length)
   };
 
-  // --- 2. Intersección con la superficie lateral curva ---
+  // --- 2. Lateral surface intersection ---
   std::optional<Intersection> best_hit;
   updateBestHit(best_hit, closest_t, intersectLateralSurface(r, cyl, closest_t));
 
   double const radius_sq   = cyl.radius * cyl.radius;
   double const half_height = cyl.height * 0.5;
+
+  // --- 3. Cap intersections ---
   updateBestHit(
       best_hit, closest_t,
       intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
   updateBestHit(
       best_hit, closest_t,
       intersectCap(r, cyl.center - cyl.unit_axis * half_height, -cyl.unit_axis, radius_sq));
-  // --- 3. Intersección con las tapas ---
+
   if (!best_hit) {
     return std::nullopt;
   }

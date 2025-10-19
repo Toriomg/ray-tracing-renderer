@@ -208,14 +208,12 @@ namespace {
 
   bool parseCylinder(std::vector<std::string_view> const & tokens, SceneSettings & scene) {
     if (tokens.size() != 9) {
-      std::cerr << "Error: cilindro requiere 8 parámteros (x y z radio vx vy vz "
-                   "material), obtuvo"
+      std::cerr << "Error: cilindro requiere 8 parámetros (x y z radio vx vy vz "
+                   "material), obtuvo "
                 << tokens.size() - 1 << "\n";
       return false;
     }
-    double x = 0.0F, y = 0.0F, z = 0.0F;
-    double radius = 0.0F;
-    double vx = 0.0F, vy = 0.0F, vz = 0.0F;
+    double x = 0.0, y = 0.0, z = 0.0, vx = 0.0, vy = 0.0, vz = 0.0, radius = 0.0;
     if (!parsedouble(tokens[1], x) or
         !parsedouble(tokens[2], y) or
         !parsedouble(tokens[3], z) or
@@ -227,21 +225,24 @@ namespace {
       std::cerr << "Error: parámetros del cilindro incorrectos\n";
       return false;
     }
-    if (radius <= 0.0F) {
+    if (radius <= 0.0) {
       std::cerr << "Error: radio del cilindro debe ser positivo\n";
+      return false;
+    }
+    // Check for zero axis vector
+    if (vx == 0.0 and vy == 0.0 and vz == 0.0) {
+      std::cerr << "Error: vector de axis del cilindro no puede ser cero\n";
       return false;
     }
     int const materialIndex = findMaterialIndex(tokens[8], scene);
     if (materialIndex == -1) {
-      std::cerr << "Error: material desconocido '" << tokens[8] << "' para esfera\n";
+      std::cerr << "Error: material desconocido '" << tokens[8] << "' para cilindro\n";
       return false;
     }
-    double const axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
-    double const invAxisLen = (axisLength > 0.0F) ? (1.0F / axisLength) : 1.0F;
+    // Use the existing CylinderData methods
     scene.cylinders.addCentre(x, y, z);
+    scene.cylinders.addAxis(vx, vy, vz);  // This will compute invAxisLen internally
     scene.cylinders.r.push_back(radius);
-    scene.cylinders.addAxis(vx, vy, vz);
-    scene.cylinders.invAxisLen.push_back(invAxisLen);
     scene.cylinders.materialIndex.push_back(materialIndex);
     scene.cylinders.addAABB(AABB::from_cylinder({x, y, z}, {vx, vy, vz}, radius,
                                                 axisLength));  // Generamos la caja AABB
