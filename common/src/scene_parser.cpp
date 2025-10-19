@@ -243,9 +243,8 @@ namespace {
     scene.cylinders.addAxis(vx, vy, vz);
     scene.cylinders.invAxisLen.push_back(invAxisLen);
     scene.cylinders.materialIndex.push_back(materialIndex);
-    scene.cylinders.addAABB(AABB::from_cylinder(
-        {x, y, z}, {vx, vy, vz}, radius, axisLength));  // Generamos la caja AABB para el cilindro
-
+    scene.cylinders.addAABB(AABB::from_cylinder({x, y, z}, {vx, vy, vz}, radius,
+                                                axisLength));  // Generamos la caja AABB
     return true;
   }
 

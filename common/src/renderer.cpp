@@ -30,7 +30,6 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
       }
     }
   }
-
   if (hit_rec) {
     MaterialID material_id = scene.materialTable[hit_rec->material_global_id];
     MaterialContext ctx(
