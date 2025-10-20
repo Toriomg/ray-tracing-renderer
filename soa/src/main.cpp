@@ -4,7 +4,7 @@
 #include <string>
 
 // File paths
-std::string const FilepathScene  = "/workspace/res/scene_scripts/scene4example.txt";
+std::string const FilepathScene  = "/workspace/res/scene_scripts/dentroEsfera.txt";//scene4example.txt";
 std::string const FilepathConfig = "/workspace/res/config_scripts/config4example.txt";
 std::string const FilepathOut    = "/workspace/outputImageSOA.ppm";
 

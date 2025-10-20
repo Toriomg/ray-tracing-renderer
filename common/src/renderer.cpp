@@ -55,7 +55,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   double sphere_radius = scene.spheres.r[sphere_index];
 
   // ----- Matemática de la intersección Rayo-Esfera -----
-  Vec3 oc           = r.point - sphere_center;
+  Vec3 oc                   = r.point - sphere_center;
   auto a            = r.direction.length_squared();
   auto half_b       = dot(oc, r.direction);
   auto c            = oc.length_squared() - sphere_radius * sphere_radius;
@@ -110,7 +110,7 @@ std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Poin
   return Intersection{t, p, normal};
 }
 
-std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
+std::optional<Renderer::Intersection> Renderer::intersectLateralSurface( //NOLINT
     Ray const & r, CylinderGeometry const & cyl, double closest_t) {
   Vec3 const oc      = r.point - cyl.center;
   Vec3 const dr_perp = component_perpendicular(r.direction, cyl.unit_axis);
@@ -131,24 +131,43 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
 
   // --- Lógica corregida para comprobar AMBAS raíces ---
   double const sqrt_discr = std::sqrt(discr);
-  double t                = (-b - sqrt_discr) / (2.0 * a);  // Primera raíz (la más cercana)
-  if (t <= 0.001 or t >= closest_t) {
-    // Si la primera raíz no es válida, prueba la segunda
-    t = (-b + sqrt_discr) / (2.0 * a);
-    if (t <= 0.001 or t >= closest_t) {
-      return std::nullopt;  // Ninguna raíz es una intersección válida y más cercana
+  double const half_height = cyl.height * 0.5;
+  std::optional<Intersection> best_hit;
+
+  // 1. Evaluar la primera raíz (la más cercana al origen del rayo)
+  double t1 = (-b - sqrt_discr) / (2.0 * a);
+  if (t1 > 0.001 and t1 < closest_t) {
+    Point3 const p1 = r.at(t1);
+    double const projection1 = dot(p1 - cyl.center, cyl.unit_axis);
+    
+    // Comprobamos si esta intersección está dentro de las tapas del cilindro
+    if (std::fabs(projection1) <= half_height) {
+        // Si es válida, la guardamos como nuestra mejor candidata hasta ahora.
+        Vec3 normal = component_perpendicular(p1 - cyl.center, cyl.unit_axis).normalize();
+        best_hit = Intersection{t1, p1, normal};
     }
   }
-  // Ahora que tenemos una 't' válida, comprobamos si está dentro de la altura del cilindro
-  Point3 const p           = r.at(t);
-  double const projection  = dot(p - cyl.center, cyl.unit_axis);
-  double const half_height = cyl.height * 0.5;
 
-  if (std::fabs(projection) <= half_height) {  // ¡Hit válido en la superficie lateral!
-    Vec3 normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
-    return Intersection{t, p, normal};
+  // 2. Evaluar la segunda raíz
+  double t2 = (-b + sqrt_discr) / (2.0 * a);
+  
+  // Determinamos la distancia más cercana actual para no evaluar innecesariamente
+  double current_closest = best_hit ? best_hit->t : closest_t;
+
+  if (t2 > 0.001 and t2 < current_closest) {
+    Point3 const p2 = r.at(t2);
+    double const projection2 = dot(p2 - cyl.center, cyl.unit_axis);
+    
+    // Comprobamos si esta intersección está dentro de las tapas del cilindro
+    if (std::fabs(projection2) <= half_height) {
+        // Si es válida Y más cercana que la anterior, la guardamos.
+        Vec3 normal = component_perpendicular(p2 - cyl.center, cyl.unit_axis).normalize();
+        best_hit = Intersection{t2, p2, normal};
+    }
   }
-  return std::nullopt;  // La intersección con el cilindro infinito está fuera de las tapas
+
+  return best_hit; // Devolvemos la mejor intersección encontrada (o nullopt si ninguna fue válida)
+  // --- FIN DE LA LÓGICA CORREGIDA ---
 }
 
 void Renderer::updateBestHit(std::optional<Intersection> & best, double & closest,
@@ -159,7 +178,7 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene, //NOLINT
                                                              size_t idx, Ray r, double closest_t) {
   // --- 1. Setup - Using precomputed values from CylinderData ---
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
@@ -173,20 +192,19 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
     .radius    = scene.cylinders.r[idx],
     .height    = 1.0 / inv_len  // Height = 1 / invAxisLen (since invAxisLen = 1/length)
   };
-
   // --- 2. Lateral surface intersection ---
+  double local_closest = closest_t;
   std::optional<Intersection> best_hit;
-  updateBestHit(best_hit, closest_t, intersectLateralSurface(r, cyl, closest_t));
-
-  double const radius_sq   = cyl.radius * cyl.radius;
-  double const half_height = cyl.height * 0.5;
+  updateBestHit(best_hit, local_closest, intersectLateralSurface(r, cyl, closest_t));
 
   // --- 3. Cap intersections ---
+  double const radius_sq   = cyl.radius * cyl.radius;
+  double const half_height = cyl.height * 0.5;
   updateBestHit(
-      best_hit, closest_t,
+      best_hit, local_closest,
       intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
   updateBestHit(
-      best_hit, closest_t,
+      best_hit, local_closest,
       intersectCap(r, cyl.center - cyl.unit_axis * half_height, -cyl.unit_axis, radius_sq));
 
   if (!best_hit) {
@@ -231,9 +249,9 @@ Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, 
                              ctx.scene->metal.b[metal_idx]};
   double diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
-  Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
+  Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction, hit_rec.normal);
   Vec3 fuzz          = diffusion_factor * ctx.materialRng->get_vector_minus1_to_1();
-  Vec3 scattered_direction = reflected_dir + fuzz;
+  Vec3 scattered_direction = reflected_dir.normalize() + fuzz;
 
   Ray bounced_ray    = Ray(hit_rec.p, scattered_direction, hit_rec.prev_ray.depth - 1);
 
