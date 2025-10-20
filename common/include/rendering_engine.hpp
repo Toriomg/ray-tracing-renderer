@@ -29,14 +29,16 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
   auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
-  auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<double>(imageWidth));
-  auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<double>(imageHeight));
+  auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0 / static_cast<double>(imageWidth));
+  auto pixel_height = camera.ProjWindow.viewportVertical * (1.0 / static_cast<double>(imageHeight));
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
   for (size_t row = 0; row < imageHeight; row++) {
-    std::cerr << "\rScanlines remaining: " << imageHeight - 1 - row << ". Porcentage: " << 100*(imageHeight - 1 - row)/imageHeight << "% " << std::flush;
+    std::cerr << "\rScanlines remaining: " << imageHeight - 1 - row
+              << ". Porcentage: " << 100 * (imageHeight - 1 - row) / imageHeight << "% "
+              << std::flush;
     for (size_t col = 0; col < imageWidth; col++) {
-      Color accumulated_color(0.0F, 0.0F, 0.0F);
+      Color accumulated_color(0.0, 0.0, 0.0);
       for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {
         double delta_x = ctx.rngRay->get_double(-0.5F, 0.5F);
         double delta_y = ctx.rngRay->get_double(-0.5F, 0.5F);
@@ -48,7 +50,7 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
         Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos, ctx.config->max_depth);
         accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, *ctx.rngMaterial);
       }
-      
+
       Color final_pixel_color = accumulated_color * static_cast<double>(scale);
 
       size_t index = image.indice(row, col);

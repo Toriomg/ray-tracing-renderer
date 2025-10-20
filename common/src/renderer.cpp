@@ -232,14 +232,12 @@ Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, 
   double diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
   Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction.normalize(), hit_rec.normal);
-  Vec3 fuzz          = diffusion_factor * ctx.materialRng->get_unit_sphere().normalize();
-  Ray bounced_ray    = Ray(hit_rec.p, reflected_dir + fuzz, hit_rec.prev_ray.depth - 1);
+  Vec3 fuzz          = diffusion_factor * ctx.materialRng->get_vector_minus1_to_1();
+  Vec3 scattered_direction = reflected_dir + fuzz;
 
-  if (dot(bounced_ray.direction, hit_rec.normal) > 0) {
-    return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
-  }
+  Ray bounced_ray    = Ray(hit_rec.p, scattered_direction, hit_rec.prev_ray.depth - 1);
 
-  return {0.0, 0.0, 0.0};
+  return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
 Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & ctx,
