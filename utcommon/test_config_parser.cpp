@@ -3338,6 +3338,490 @@ TEST_F(ConfigParserGammaTest, ExtremelyLongDecimal) {
 }
 
 // ============================================================================
+// TESTS PARA parseMaxDepth
+// ============================================================================
+
+class ConfigParserMaxDepthTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_max_depth_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserMaxDepthTest, ValidCommonValue) {
+  // Test básico: valor común de profundidad máxima de rebotes
+  writeConfigFile("max_depth: 5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 5);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ValidMinimumValue) {
+  // Valor mínimo válido: 1 rebote
+  // Importante en ray tracing: al menos un rebote debe ser permitido
+  writeConfigFile("max_depth: 1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 1);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ValidLargeValue) {
+  // Valor grande: 50 rebotes (rendering de alta calidad)
+  // Valores altos generan más realismo pero mayor coste computacional
+  writeConfigFile("max_depth: 50\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 50);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ValidTypicalValue) {
+  // Valor típico en producción: 10 rebotes
+  // Balance común entre calidad y rendimiento
+  writeConfigFile("max_depth: 10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ValidMediumValue) {
+  // Valor medio: 3 rebotes (rendering rápido con calidad aceptable)
+  writeConfigFile("max_depth: 3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 3);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ValidHighQualityValue) {
+  // Valor alto para rendering de producción: 20 rebotes
+  writeConfigFile("max_depth: 20\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 20);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ValidVeryLargeValue) {
+  // Valor muy grande: 100 rebotes (casos extremos de calidad)
+  // Documenta que el sistema acepta valores arbitrariamente grandes
+  writeConfigFile("max_depth: 100\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 100);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserMaxDepthTest, ErrorTooFewArguments) {
+  // Menos de 2 tokens: falta el valor
+  writeConfigFile("max_depth:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorTooManyArguments) {
+  // Más de 2 tokens: argumentos extra
+  writeConfigFile("max_depth: 10 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorMultipleExtraArguments) {
+  // Múltiples argumentos extra
+  writeConfigFile("max_depth: 10 20 30\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserMaxDepthTest, ErrorNonNumericValue) {
+  // Valor no numérico
+  writeConfigFile("max_depth: abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorAlphanumericValue) {
+  // Valor alfanumérico mixto
+  writeConfigFile("max_depth: 10abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorPartialNumericValue) {
+  // Valor con letras antes de números
+  writeConfigFile("max_depth: abc10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorEmptyValue) {
+  // Token vacío
+  writeConfigFile("max_depth: \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorFloatingPointValue) {
+  // Valor con decimales (debería ser rechazado por parseInt)
+  // Importante: max_depth debe ser entero, no acepta valores como 10.5 rebotes
+  writeConfigFile("max_depth: 10.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorFloatingPointZero) {
+  // Valor decimal cero
+  writeConfigFile("max_depth: 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorScientificNotation) {
+  // Notación científica (parseInt no la acepta)
+  // Documenta que parseInt rechaza notación científica
+  writeConfigFile("max_depth: 1e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+// ERRORES DE RANGO - Valores no positivos
+
+TEST_F(ConfigParserMaxDepthTest, ErrorZeroValue) {
+  // Valor cero (no positivo) - NO válido
+  // La condición es depth > 0, por lo que 0 es rechazado
+  // Semánticamente: sin rebotes no tiene sentido en ray tracing
+  writeConfigFile("max_depth: 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorNegativeValue) {
+  // Valor negativo (no positivo)
+  // Un número negativo de rebotes no tiene sentido físico
+  writeConfigFile("max_depth: -5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorNegativeSmallValue) {
+  // Valor negativo pequeño: -1
+  writeConfigFile("max_depth: -1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ErrorNegativeLargeValue) {
+  // Valor negativo grande
+  writeConfigFile("max_depth: -100\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserMaxDepthTest, ExtraWhitespaceAroundValue) {
+  // Espacios extra alrededor del valor
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("max_depth:    10   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  max_depth: 10  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# max_depth: 5\nmax_depth: 10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\nmax_depth: 10\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que max_depth se procesa correctamente en un contexto más amplio
+  writeConfigFile("gamma: 2.2\n"
+                  "max_depth: 8\n"
+                  "samples_per_pixel: 100\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 8);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+}
+
+TEST_F(ConfigParserMaxDepthTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  writeConfigFile("max_depth: 5\n"
+                  "max_depth: 15\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 15);
+}
+
+TEST_F(ConfigParserMaxDepthTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeConfigFile("max_depth: 0010\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, PlusSignPrefix) {
+  // Signo + explícito
+  // NOTA: parseInt NO acepta el signo + explícito
+  // Este test documenta ese comportamiento
+  writeConfigFile("max_depth: +10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // parseInt rechaza el signo +, mantiene valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, IntMaxValue) {
+  // Valor máximo para int (típicamente 2147483647)
+  // Este test verifica que valores muy grandes pero válidos funcionan
+  // Aunque en la práctica, una profundidad tan grande no tiene sentido
+  writeConfigFile("max_depth: 2147483647\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 2'147'483'647);
+}
+
+TEST_F(ConfigParserMaxDepthTest, IntOverflowProtection) {
+  // Valor que excede INT_MAX (debería causar overflow)
+  // Este test verifica la robustez ante valores extremos
+  // INT_MAX típicamente es 2147483647
+  writeConfigFile("max_depth: 2147483648\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debería fallar el parsing y mantener el valor por defecto
+  // porque std::from_chars detectará el overflow
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, VeryLargeOverflow) {
+  // Valor extremadamente grande que causa overflow
+  writeConfigFile("max_depth: 999999999999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, MultipleDecimalPoints) {
+  // Valor con múltiples puntos decimales (inválido)
+  writeConfigFile("max_depth: 10.0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, SpecialCharactersInValue) {
+  // Caracteres especiales que podrían causar problemas
+  writeConfigFile("max_depth: 10!\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, HexadecimalNotation) {
+  // Notación hexadecimal (no debería ser aceptada por parseInt en base 10)
+  writeConfigFile("max_depth: 0xA\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, OctalNotation) {
+  // Notación octal (012 = 10 en octal)
+  // parseInt en base 10 no interpreta esto como octal
+  writeConfigFile("max_depth: 012\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Se parsea como decimal 12, no como octal 10
+  ASSERT_EQ(config.max_depth, 12);
+}
+
+TEST_F(ConfigParserMaxDepthTest, RealisticLowValue) {
+  // Valor bajo realista: 2 rebotes (preview rápido)
+  // Útil para iteraciones rápidas durante desarrollo
+  writeConfigFile("max_depth: 2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 2);
+}
+
+TEST_F(ConfigParserMaxDepthTest, RealisticHighValue) {
+  // Valor alto realista: 15 rebotes (alta calidad)
+  writeConfigFile("max_depth: 15\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 15);
+}
+
+TEST_F(ConfigParserMaxDepthTest, CombinedWithRenderingParameters) {
+  // Test de integración: verifica que max_depth se puede usar
+  // junto con otros parámetros relacionados con ray tracing
+  writeConfigFile("max_depth: 12\n"
+                  "samples_per_pixel: 200\n"
+                  "field_of_view: 60\n"
+                  "gamma: 2.2\n"
+                  "camera_position: 0 0 5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 12);
+  ASSERT_EQ(config.samples_per_pixel, 200);
+  ASSERT_DOUBLE_EQ(config.field_of_view, 60.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+  ASSERT_DOUBLE_EQ(config.camera_pos.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_pos.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_pos.z, 5.0);
+}
+
+TEST_F(ConfigParserMaxDepthTest, TrailingWhitespaceAndComments) {
+  // Whitespace y comentarios después del valor
+  // Verifica que el parser maneja correctamente este caso
+  writeConfigFile("max_depth: 10   # Maximum ray bounce depth\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // El tokenizer debería tomar solo "10" y "# comentario" como tokens extras
+  // lo cual resulta en error de parsing (demasiados argumentos)
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, NegativeZero) {
+  // Caso curioso: -0 es técnicamente 0, que no es válido
+  writeConfigFile("max_depth: -0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // -0 es parseado como 0, que no es válido (debe ser positivo)
+  ASSERT_EQ(config.max_depth, Constants::MaxDepth);
+}
+
+TEST_F(ConfigParserMaxDepthTest, TabsAsWhitespace) {
+  // Tabs como espacios en blanco
+  // Verifica que trimWhitespace maneja tabs correctamente
+  writeConfigFile("max_depth:\t10\t\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaxDepthTest, MixedWhitespace) {
+  // Mezcla de espacios y tabs
+  writeConfigFile("  \tmax_depth:  \t 10 \t \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+// ============================================================================
 // Main para ejecutar los tests
 // ============================================================================
 
