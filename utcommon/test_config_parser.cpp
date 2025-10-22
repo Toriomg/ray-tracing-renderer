@@ -3338,6 +3338,689 @@ TEST_F(ConfigParserGammaTest, ExtremelyLongDecimal) {
 }
 
 // ============================================================================
+// TESTS PARA parseBackgroundDarkColor
+// ============================================================================
+
+class ConfigParserBackgroundDarkColorTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_background_dark_color_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidDefaultFromPDF) {
+  // Valor por defecto del PDF: azul cielo oscuro
+  // Este es un color típico para el fondo oscuro en un gradiente de cielo
+  writeConfigFile("background_dark_color: 0.25 0.5 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidBlackColor) {
+  // Negro puro: (0, 0, 0)
+  // Útil para fondos completamente oscuros
+  writeConfigFile("background_dark_color: 0 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidWhiteColor) {
+  // Blanco puro: (1, 1, 1)
+  // Aunque inusual para "dark color", es técnicamente válido
+  writeConfigFile("background_dark_color: 1 1 1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidCustomColor) {
+  // Color personalizado: gris azulado oscuro
+  writeConfigFile("background_dark_color: 0.1 0.2 0.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.1);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.2);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.3);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidMidToneGray) {
+  // Gris medio: (0.5, 0.5, 0.5)
+  writeConfigFile("background_dark_color: 0.5 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidDarkBlue) {
+  // Azul oscuro: color típico para cielo nocturno
+  writeConfigFile("background_dark_color: 0.0 0.0 0.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.3);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidDarkRed) {
+  // Rojo oscuro
+  writeConfigFile("background_dark_color: 0.3 0.0 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.3);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ValidDecimalPrecision) {
+  // Valores con múltiples decimales para verificar precisión
+  writeConfigFile("background_dark_color: 0.123456 0.654321 0.999999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.123456);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.654321);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.999999);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorTooFewArguments_NoValues) {
+  // Menos de 4 tokens: faltan todos los valores
+  writeConfigFile("background_dark_color:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorTooFewArguments_OneValue) {
+  // Solo un valor (falta g y b)
+  writeConfigFile("background_dark_color: 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorTooFewArguments_TwoValues) {
+  // Solo dos valores (falta b)
+  writeConfigFile("background_dark_color: 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorTooManyArguments) {
+  // Más de 4 tokens: argumentos extra
+  writeConfigFile("background_dark_color: 0.5 0.5 0.5 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorMultipleExtraArguments) {
+  // Múltiples argumentos extra
+  writeConfigFile("background_dark_color: 0.5 0.5 0.5 extra1 extra2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorNonNumericRComponent) {
+  // Componente R no numérico
+  writeConfigFile("background_dark_color: abc 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorNonNumericGComponent) {
+  // Componente G no numérico
+  writeConfigFile("background_dark_color: 0.5 abc 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorNonNumericBComponent) {
+  // Componente B no numérico
+  writeConfigFile("background_dark_color: 0.5 0.5 abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorAllNonNumeric) {
+  // Todos los componentes no numéricos
+  writeConfigFile("background_dark_color: abc def ghi\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorEmptyValues) {
+  // Valores vacíos
+  writeConfigFile("background_dark_color:   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+// ERRORES DE RANGO - Componentes fuera del rango [0, 1]
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorRComponentBelowZero) {
+  // Componente R menor que 0
+  writeConfigFile("background_dark_color: -0.1 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorGComponentBelowZero) {
+  // Componente G menor que 0
+  writeConfigFile("background_dark_color: 0.5 -0.1 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorBComponentBelowZero) {
+  // Componente B menor que 0
+  writeConfigFile("background_dark_color: 0.5 0.5 -0.1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorRComponentAboveOne) {
+  // Componente R mayor que 1
+  writeConfigFile("background_dark_color: 1.1 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorGComponentAboveOne) {
+  // Componente G mayor que 1
+  writeConfigFile("background_dark_color: 0.5 1.1 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorBComponentAboveOne) {
+  // Componente B mayor que 1
+  writeConfigFile("background_dark_color: 0.5 0.5 1.1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorAllComponentsBelowZero) {
+  // Todos los componentes menores que 0
+  writeConfigFile("background_dark_color: -0.1 -0.2 -0.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorAllComponentsAboveOne) {
+  // Todos los componentes mayores que 1
+  writeConfigFile("background_dark_color: 1.1 1.2 1.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorVeryLargeValue) {
+  // Valor muy grande (fuera de rango)
+  writeConfigFile("background_dark_color: 100.0 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ErrorVeryLargeNegativeValue) {
+  // Valor negativo muy grande
+  writeConfigFile("background_dark_color: -100.0 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+// CASOS LÍMITE - Valores en los bordes del rango válido
+
+TEST_F(ConfigParserBackgroundDarkColorTest, BoundaryExactlyZero) {
+  // Todos los componentes exactamente 0.0 (ya cubierto en ValidBlackColor)
+  // Este test es redundante pero documenta explícitamente el límite inferior
+  writeConfigFile("background_dark_color: 0.0 0.0 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, BoundaryExactlyOne) {
+  // Todos los componentes exactamente 1.0 (ya cubierto en ValidWhiteColor)
+  // Este test es redundante pero documenta explícitamente el límite superior
+  writeConfigFile("background_dark_color: 1.0 1.0 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, BoundaryMixedZeroOne) {
+  // Mezcla de valores 0.0 y 1.0
+  writeConfigFile("background_dark_color: 0.0 1.0 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, BoundaryVeryCloseToZero) {
+  // Valores muy cercanos a 0 pero válidos
+  writeConfigFile("background_dark_color: 0.0001 0.0001 0.0001\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0001);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.0001);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0001);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, BoundaryVeryCloseToOne) {
+  // Valores muy cercanos a 1 pero válidos
+  writeConfigFile("background_dark_color: 0.9999 0.9999 0.9999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.9999);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.9999);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.9999);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ExtraWhitespaceAroundValues) {
+  // Espacios extra alrededor de los valores
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("background_dark_color:    0.5   0.5   0.5   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  background_dark_color: 0.5 0.5 0.5  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# background_dark_color: 1.0 1.0 1.0\nbackground_dark_color: 0.25 0.5 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\nbackground_dark_color: 0.25 0.5 1.0\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que background_dark_color se procesa correctamente en contexto más amplio
+  writeConfigFile("gamma: 2.2\n"
+                  "background_dark_color: 0.25 0.5 1.0\n"
+                  "background_light_color: 1.0 1.0 1.0\n"
+                  "samples_per_pixel: 100\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  writeConfigFile("background_dark_color: 0.0 0.0 0.0\n"
+                  "background_dark_color: 0.25 0.5 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ScientificNotationValidRange) {
+  // Notación científica dentro del rango válido [0, 1]
+  // parsedouble acepta notación científica
+  // 5e-1 = 0.5, 1e-1 = 0.1, 9e-1 = 0.9
+  writeConfigFile("background_dark_color: 5e-1 1e-1 9e-1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.1);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.9);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, ScientificNotationOutOfRange) {
+  // Notación científica fuera del rango válido
+  // 1e1 = 10.0, que está fuera de [0, 1]
+  writeConfigFile("background_dark_color: 1e1 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (fuera de rango)
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, NegativeZeroComponent) {
+  // -0.0 es equivalente a 0.0 en punto flotante (válido)
+  writeConfigFile("background_dark_color: -0.0 -0.0 -0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, IntegerValues) {
+  // Valores enteros (sin punto decimal) deben ser aceptados
+  writeConfigFile("background_dark_color: 0 1 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeConfigFile("background_dark_color: 00.5 00.5 00.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, PlusSignPrefix) {
+  // Signo + explícito (parsedouble lo acepta)
+  writeConfigFile("background_dark_color: +0.5 +0.5 +0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, TrailingWhitespaceAndComments) {
+  // Whitespace y comentarios después de los valores
+  // Verifica que el parser maneja correctamente este caso
+  writeConfigFile("background_dark_color: 0.25 0.5 1.0   # Sky gradient dark color\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // El tokenizer debería tomar "0.25", "0.5", "1.0" y "# comentario" como tokens
+  // lo cual resulta en error de parsing (demasiados argumentos)
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, TabsAsWhitespace) {
+  // Tabs como espacios en blanco
+  // Verifica que trimWhitespace maneja tabs correctamente
+  writeConfigFile("background_dark_color:\t0.5\t0.5\t0.5\t\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, MixedWhitespace) {
+  // Mezcla de espacios y tabs
+  writeConfigFile("  \tbackground_dark_color:  \t 0.5 \t 0.5 \t 0.5 \t \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, InfinityValue) {
+  // Valor infinito (fuera de rango [0, 1])
+  // parsedouble acepta "inf", pero debe ser rechazado por validateColorComponents
+  writeConfigFile("background_dark_color: inf 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (inf > 1.0)
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, NaNValue) {
+  // Valor NaN (no válido)
+  // parsedouble acepta "nan", pero validateColorComponents debería rechazarlo
+  writeConfigFile("background_dark_color: nan 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (nan falla la comparación)
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, IntegrationWithLightColor) {
+  // Test de integración: verifica que dark y light colors pueden coexistir
+  // Documenta un gradiente típico de cielo
+  writeConfigFile("background_dark_color: 0.25 0.5 1.0\n"
+                  "background_light_color: 0.5 0.7 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Dark color (azul oscuro)
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+
+  // Light color (azul claro)
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.7);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, IntegrationWithAllRenderingParams) {
+  // Test de integración completo con múltiples parámetros
+  writeConfigFile("gamma: 2.2\n"
+                  "background_dark_color: 0.1 0.2 0.3\n"
+                  "background_light_color: 0.8 0.9 1.0\n"
+                  "samples_per_pixel: 100\n"
+                  "max_depth: 10\n"
+                  "field_of_view: 75\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.1);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.2);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.3);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+  ASSERT_EQ(config.max_depth, 10);
+  ASSERT_DOUBLE_EQ(config.field_of_view, 75.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserBackgroundDarkColorTest, AlphanumericInComponent) {
+  // Valor alfanumérico mixto en un componente
+  writeConfigFile("background_dark_color: 0.5abc 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, Constants::ColorBackgroundDark.x);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, Constants::ColorBackgroundDark.y);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, Constants::ColorBackgroundDark.z);
+}
+
+// ============================================================================
 // TESTS PARA parseMaterialRngSeed
 // ============================================================================
 
