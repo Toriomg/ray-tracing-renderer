@@ -1941,6 +1941,547 @@ TEST_F(ConfigParserCameraNorthTest, CombinedCameraParameters) {
 }
 
 // ============================================================================
+// TESTS PARA parseFieldOfView
+// ============================================================================
+
+class ConfigParserFieldOfViewTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_field_of_view_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserFieldOfViewTest, ValidCommonValue) {
+  // Test básico: FOV común de 90 grados
+  writeConfigFile("field_of_view: 90\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidValueWithDecimals) {
+  // Valor con decimales
+  writeConfigFile("field_of_view: 65.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 65.5);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidNearLowerBound) {
+  // Cerca del límite inferior (pero mayor que 0)
+  writeConfigFile("field_of_view: 0.1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 0.1);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidVerySmallPositive) {
+  // Valor muy pequeño pero válido
+  writeConfigFile("field_of_view: 0.001\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 0.001);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidNearUpperBound) {
+  // Cerca del límite superior (pero menor que 180)
+  writeConfigFile("field_of_view: 179.9\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 179.9);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidVeryCloseToUpperBound) {
+  // Muy cerca del límite superior
+  writeConfigFile("field_of_view: 179.999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 179.999);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidNarrowFOV) {
+  // FOV estrecho (teleobjetivo)
+  writeConfigFile("field_of_view: 30\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 30.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidWideFOV) {
+  // FOV ancho (gran angular)
+  writeConfigFile("field_of_view: 120\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 120.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidStandardFOV) {
+  // FOV estándar (similar a ojo humano)
+  writeConfigFile("field_of_view: 45\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 45.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidScientificNotation) {
+  // Notación científica: 9e1 = 90.0
+  writeConfigFile("field_of_view: 9e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidScientificNotationWithDecimal) {
+  // Notación científica con decimal: 6.55e1 = 65.5
+  writeConfigFile("field_of_view: 6.55e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 65.5);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ValidScientificNotationNegativeExponent) {
+  // Notación científica con exponente negativo: 1e-1 = 0.1
+  writeConfigFile("field_of_view: 1e-1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 0.1);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorTooFewArguments) {
+  // Menos de 2 tokens: falta el valor
+  writeConfigFile("field_of_view:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorTooManyArguments) {
+  // Más de 2 tokens: argumentos extra
+  writeConfigFile("field_of_view: 90 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorMultipleExtraArguments) {
+  // Múltiples argumentos extra
+  writeConfigFile("field_of_view: 90 65 45\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorNonNumericValue) {
+  // Valor no numérico
+  writeConfigFile("field_of_view: abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorAlphanumericValue) {
+  // Valor alfanumérico mixto
+  writeConfigFile("field_of_view: 90abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorPartialNumericValue) {
+  // Valor con letras antes de números
+  writeConfigFile("field_of_view: abc90\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorEmptyValue) {
+  // Token vacío
+  writeConfigFile("field_of_view: \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+// ERRORES DE RANGO - Límites y valores fuera de rango
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorEqualToLowerBound) {
+  // Valor igual al límite inferior (0) - NO válido
+  // La condición es fov > 0, por lo que 0 es rechazado
+  writeConfigFile("field_of_view: 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorEqualToLowerBoundDecimal) {
+  // Valor 0.0 con decimal explícito
+  writeConfigFile("field_of_view: 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorLessThanLowerBound) {
+  // Valor menor que el límite inferior (negativo)
+  writeConfigFile("field_of_view: -10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorNegativeSmallValue) {
+  // Valor negativo pequeño
+  writeConfigFile("field_of_view: -0.1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorNegativeVeryLarge) {
+  // Valor negativo muy grande
+  writeConfigFile("field_of_view: -1000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorEqualToUpperBound) {
+  // Valor igual al límite superior (180) - NO válido
+  // La condición es fov < 180, por lo que 180 es rechazado
+  writeConfigFile("field_of_view: 180\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorEqualToUpperBoundDecimal) {
+  // Valor 180.0 con decimal explícito
+  writeConfigFile("field_of_view: 180.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorGreaterThanUpperBound) {
+  // Valor mayor que el límite superior
+  writeConfigFile("field_of_view: 200\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorSlightlyGreaterThanUpperBound) {
+  // Valor ligeramente mayor que el límite superior
+  writeConfigFile("field_of_view: 180.001\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorVeryLargeValue) {
+  // Valor muy grande (fuera de rango)
+  writeConfigFile("field_of_view: 360\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ErrorExtremelyLargeValue) {
+  // Valor extremadamente grande
+  writeConfigFile("field_of_view: 10000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserFieldOfViewTest, ExtraWhitespaceAroundValue) {
+  // Espacios extra alrededor del valor
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("field_of_view:    90   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  field_of_view: 90  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# field_of_view: 45\nfield_of_view: 90\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\nfield_of_view: 90\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que field_of_view se procesa correctamente en un contexto más amplio
+  writeConfigFile("gamma: 2.2\n"
+                  "field_of_view: 75.5\n"
+                  "image_width: 1920\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 75.5);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+  ASSERT_EQ(config.image_width, 1'920);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  writeConfigFile("field_of_view: 90\n"
+                  "field_of_view: 65\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 65.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeConfigFile("field_of_view: 0090\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, PlusSignPrefix) {
+  // Signo + explícito (válido para doubles)
+  writeConfigFile("field_of_view: +90\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 90.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, DoubleOverflowProtection) {
+  // Valor que podría causar overflow en double
+  writeConfigFile("field_of_view: 1e400\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // std::from_chars debería detectar el overflow y fallar el parsing
+  // mantiene el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, InvalidInfinityString) {
+  // String "inf" - std::from_chars típicamente NO acepta esto
+  writeConfigFile("field_of_view: inf\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, InvalidNaNString) {
+  // String "nan" - std::from_chars típicamente NO acepta esto
+  writeConfigFile("field_of_view: nan\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, MultipleDecimalPoints) {
+  // Valor con múltiples puntos decimales (inválido)
+  writeConfigFile("field_of_view: 90.5.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, SpecialCharactersInValue) {
+  // Caracteres especiales que podrían causar problemas
+  writeConfigFile("field_of_view: 90!\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, HexadecimalNotation) {
+  // Notación hexadecimal (no debería ser aceptada)
+  writeConfigFile("field_of_view: 0x5A\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ExtremelyLongDecimal) {
+  // Número con muchísimos decimales para verificar precisión
+  writeConfigFile("field_of_view: 90.123456789012345\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // El valor será parseado con la precisión disponible de double
+  ASSERT_NEAR(config.field_of_view, 90.123456789012345, 1e-15);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, NegativeZero) {
+  // Caso curioso: -0.0 es técnicamente 0.0, que es inválido para FOV
+  writeConfigFile("field_of_view: -0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (0 no es válido)
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, BoundaryTestJustAboveZero) {
+  // Valor extremadamente pequeño pero mayor que 0
+  // Este test verifica el límite inferior con precisión de double
+  writeConfigFile("field_of_view: 1e-10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 1e-10);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, BoundaryTestJustBelow180) {
+  // Valor extremadamente cercano a 180 pero menor
+  // Este test verifica el límite superior con precisión de double
+  writeConfigFile("field_of_view: 179.9999999999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.field_of_view, 179.9999999999);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, CombinedWithCameraParameters) {
+  // Test de integración: verifica que field_of_view se puede usar
+  // junto con otros parámetros de cámara
+  writeConfigFile("camera_position: 10 5 -10\n"
+                  "camera_target: 0 0 0\n"
+                  "camera_north: 0 1 0\n"
+                  "field_of_view: 75\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_pos.x, 10.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_north.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.field_of_view, 75.0);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ScientificNotationOutOfRange) {
+  // Notación científica que resulta en un valor fuera de rango
+  writeConfigFile("field_of_view: 2e2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // 2e2 = 200, que está fuera del rango válido
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+TEST_F(ConfigParserFieldOfViewTest, ScientificNotationNegative) {
+  // Notación científica con valor negativo resultante
+  writeConfigFile("field_of_view: -9e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // -9e1 = -90, que está fuera del rango válido
+  ASSERT_DOUBLE_EQ(config.field_of_view, Constants::FOV);
+}
+
+// ============================================================================
 // TESTS PARA parseAspectRatio
 // ============================================================================
 
