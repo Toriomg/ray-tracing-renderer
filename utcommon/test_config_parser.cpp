@@ -780,6 +780,412 @@ TEST_F(ConfigParserAspectRatioTest, ExtremelyLargeValidValues) {
 }
 
 // ============================================================================
+// TESTS PARA parseGamma
+// ============================================================================
+
+class ConfigParserGammaTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_gamma_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserGammaTest, ValidBasicCase) {
+  // Test básico: gamma común 2.2
+  writeConfigFile("gamma: 2.2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, ValidAlternativeValue) {
+  // Otro valor válido: gamma 1.8
+  writeConfigFile("gamma: 1.8\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 1.8);
+}
+
+TEST_F(ConfigParserGammaTest, ValidIntegerValue) {
+  // Valor entero: gamma 2 (debería convertirse a 2.0)
+  writeConfigFile("gamma: 2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.0);
+}
+
+TEST_F(ConfigParserGammaTest, ValidScientificNotation) {
+  // Notación científica: 1e-1 = 0.1
+  // Este test verifica que parsedouble acepta notación científica
+  writeConfigFile("gamma: 1e-1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 0.1);
+}
+
+TEST_F(ConfigParserGammaTest, ValidScientificNotationPositiveExponent) {
+  // Notación científica con exponente positivo: 2.2e0 = 2.2
+  writeConfigFile("gamma: 2.2e0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, ValidScientificNotationLargeExponent) {
+  // Notación científica con exponente mayor: 1.5e2 = 150.0
+  writeConfigFile("gamma: 1.5e2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 150.0);
+}
+
+TEST_F(ConfigParserGammaTest, ValidZeroValue) {
+  // Valor cero (técnicamente válido aunque poco práctico para gamma)
+  // parseGamma no valida rangos, solo acepta doubles válidos
+  writeConfigFile("gamma: 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 0.0);
+}
+
+TEST_F(ConfigParserGammaTest, ValidZeroDecimal) {
+  // Valor cero con decimales
+  writeConfigFile("gamma: 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 0.0);
+}
+
+TEST_F(ConfigParserGammaTest, ValidNegativeValue) {
+  // Valor negativo (técnicamente válido según parseGamma, no hay validación de rango)
+  writeConfigFile("gamma: -1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, -1.0);
+}
+
+TEST_F(ConfigParserGammaTest, ValidSmallPositiveValue) {
+  // Valor pequeño positivo
+  writeConfigFile("gamma: 0.001\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 0.001);
+}
+
+TEST_F(ConfigParserGammaTest, ValidLargeValue) {
+  // Valor grande pero válido
+  writeConfigFile("gamma: 100.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 100.5);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserGammaTest, ErrorTooFewArguments) {
+  // Menos de 2 tokens: falta el valor
+  writeConfigFile("gamma:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, ErrorTooManyArguments) {
+  // Más de 2 tokens: argumentos extra
+  writeConfigFile("gamma: 2.2 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, ErrorMultipleExtraArguments) {
+  // Múltiples argumentos extra
+  writeConfigFile("gamma: 2.2 1.8 3.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserGammaTest, ErrorNonNumericValue) {
+  // Valor no numérico
+  writeConfigFile("gamma: abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, ErrorAlphanumericValue) {
+  // Valor alfanumérico mixto
+  writeConfigFile("gamma: 2.2abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, ErrorPartialNumericValue) {
+  // Valor con caracteres numéricos y no numéricos al inicio
+  writeConfigFile("gamma: abc2.2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, ErrorEmptyValue) {
+  // Token vacío (debería ser detectado por parsedouble)
+  writeConfigFile("gamma: \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserGammaTest, ExtraWhitespaceAroundValue) {
+  // Espacios extra alrededor del valor
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("gamma:    2.2   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  gamma: 2.2  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# gamma: 1.0\ngamma: 2.2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\ngamma: 2.2\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que gamma se procesa correctamente en un contexto más amplio
+  writeConfigFile("aspect_ratio: 16 9\n"
+                  "gamma: 1.8\n"
+                  "image_width: 1920\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 1.8);
+  ASSERT_EQ(config.aspect_ratio.first, 16U);
+  ASSERT_EQ(config.aspect_ratio.second, 9U);
+  ASSERT_EQ(config.image_width, 1'920);
+}
+
+TEST_F(ConfigParserGammaTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  // Este comportamiento es común en parsers de configuración
+  writeConfigFile("gamma: 2.2\n"
+                  "gamma: 1.8\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 1.8);
+}
+
+TEST_F(ConfigParserGammaTest, VeryLargeValidValue) {
+  // Valor muy grande pero válido para double
+  // Este test verifica que no hay límites artificiales
+  writeConfigFile("gamma: 1000000.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 1000000.5);
+}
+
+TEST_F(ConfigParserGammaTest, VerySmallValidValue) {
+  // Valor muy pequeño pero válido
+  writeConfigFile("gamma: 0.0000001\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 0.0000001);
+}
+
+TEST_F(ConfigParserGammaTest, ScientificNotationNegativeExponent) {
+  // Notación científica con exponente negativo: 2.2e-3 = 0.0022
+  writeConfigFile("gamma: 2.2e-3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 0.0022);
+}
+
+TEST_F(ConfigParserGammaTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  // Verifica que se parsean correctamente
+  writeConfigFile("gamma: 002.200\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, PlusSignPrefix) {
+  // Signo + explícito
+  // std::from_chars para doubles SÍ acepta el signo +
+  writeConfigFile("gamma: +2.2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserGammaTest, DoubleOverflowProtection) {
+  // Valor que podría causar overflow en double
+  // Este test verifica la robustez ante valores extremos
+  // Un valor mayor que DBL_MAX debería ser manejado por std::from_chars
+  writeConfigFile("gamma: 1e400\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // std::from_chars debería detectar el overflow y fallar el parsing
+  // mantiene el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, DoubleUnderflowToZero) {
+  // Valor extremadamente pequeño que podría underflow a cero
+  // Esto debería ser válido ya que parsedouble lo acepta
+  writeConfigFile("gamma: 1e-400\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debería ser parseado como 0.0 (underflow)
+  ASSERT_DOUBLE_EQ(config.gamma, 0.0);
+}
+
+TEST_F(ConfigParserGammaTest, InvalidInfinityString) {
+  // String "inf" - std::from_chars puede o no aceptar esto
+  // Este test documenta el comportamiento actual
+  writeConfigFile("gamma: inf\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // std::from_chars típicamente NO acepta "inf" como string
+  // mantiene el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, InvalidNaNString) {
+  // String "nan" - std::from_chars puede o no aceptar esto
+  // Este test documenta el comportamiento actual
+  writeConfigFile("gamma: nan\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // std::from_chars típicamente NO acepta "nan" como string
+  // mantiene el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, MultipleDecimalPoints) {
+  // Valor con múltiples puntos decimales (inválido)
+  writeConfigFile("gamma: 2.2.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, SpecialCharactersInValue) {
+  // Caracteres especiales que podrían causar problemas
+  writeConfigFile("gamma: 2.2!\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, HexadecimalNotation) {
+  // Notación hexadecimal (no debería ser aceptada por std::from_chars en modo decimal)
+  writeConfigFile("gamma: 0x1.8p1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.gamma, Constants::Gamma);
+}
+
+TEST_F(ConfigParserGammaTest, ExtremelyLongDecimal) {
+  // Número con muchísimos decimales para verificar precisión
+  // Este test es importante porque verifica que parsedouble maneja
+  // números con alta precisión correctamente
+  writeConfigFile("gamma: 2.2222222222222222222222222222\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // El valor será parseado con la precisión disponible de double
+  // Verificamos que es aproximadamente correcto
+  ASSERT_NEAR(config.gamma, 2.2222222222222222, 1e-15);
+}
+
+// ============================================================================
 // Main para ejecutar los tests
 // ============================================================================
 
