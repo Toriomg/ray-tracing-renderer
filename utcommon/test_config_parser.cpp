@@ -4021,6 +4021,711 @@ TEST_F(ConfigParserBackgroundDarkColorTest, AlphanumericInComponent) {
 }
 
 // ============================================================================
+// TESTS PARA parseBackgroundLightColor
+// ============================================================================
+
+class ConfigParserBackgroundLightColorTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_background_light_color_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidDefaultFromPDF) {
+  // Valor por defecto del PDF: blanco puro (cielo brillante)
+  // Este es el color típico para el fondo claro en un gradiente de cielo
+  writeConfigFile("background_light_color: 1 1 1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidBlackColor) {
+  // Negro puro: (0, 0, 0)
+  // Aunque inusual para "light color", es técnicamente válido
+  writeConfigFile("background_light_color: 0 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidMidToneGray) {
+  // Gris medio: (0.5, 0.5, 0.5)
+  writeConfigFile("background_light_color: 0.5 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidCustomColor) {
+  // Color personalizado típico para gradiente de cielo: azul claro
+  writeConfigFile("background_light_color: 0.8 0.9 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.8);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.9);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidLightBlue) {
+  // Azul claro: color típico para cielo diurno
+  writeConfigFile("background_light_color: 0.5 0.7 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.7);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidWarmWhite) {
+  // Blanco cálido (ligeramente amarillento)
+  writeConfigFile("background_light_color: 1.0 1.0 0.9\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.9);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidDecimalPrecision) {
+  // Valores con múltiples decimales para verificar precisión
+  writeConfigFile("background_light_color: 0.123456 0.654321 0.999999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.123456);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.654321);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.999999);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ValidSunsetColors) {
+  // Colores típicos de atardecer (naranja/rosa claro)
+  writeConfigFile("background_light_color: 1.0 0.8 0.6\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.8);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.6);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorTooFewArguments_NoValues) {
+  // Menos de 4 tokens: faltan todos los valores
+  writeConfigFile("background_light_color:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorTooFewArguments_OneValue) {
+  // Solo un valor (falta g y b)
+  writeConfigFile("background_light_color: 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorTooFewArguments_TwoValues) {
+  // Solo dos valores (falta b)
+  writeConfigFile("background_light_color: 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorTooManyArguments) {
+  // Más de 4 tokens: argumentos extra
+  writeConfigFile("background_light_color: 0.5 0.5 0.5 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorMultipleExtraArguments) {
+  // Múltiples argumentos extra
+  writeConfigFile("background_light_color: 0.5 0.5 0.5 extra1 extra2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorNonNumericRComponent) {
+  // Componente R no numérico
+  writeConfigFile("background_light_color: abc 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorNonNumericGComponent) {
+  // Componente G no numérico
+  writeConfigFile("background_light_color: 0.5 abc 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorNonNumericBComponent) {
+  // Componente B no numérico
+  writeConfigFile("background_light_color: 0.5 0.5 abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorAllNonNumeric) {
+  // Todos los componentes no numéricos
+  writeConfigFile("background_light_color: abc def ghi\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorEmptyValues) {
+  // Valores vacíos
+  writeConfigFile("background_light_color:   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorAlphanumericInComponent) {
+  // Valor alfanumérico mixto en un componente
+  writeConfigFile("background_light_color: 0.5abc 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+// ERRORES DE RANGO - Componentes fuera del rango [0, 1]
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorRComponentBelowZero) {
+  // Componente R menor que 0
+  writeConfigFile("background_light_color: -0.1 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorGComponentBelowZero) {
+  // Componente G menor que 0
+  writeConfigFile("background_light_color: 0.5 -0.1 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorBComponentBelowZero) {
+  // Componente B menor que 0
+  writeConfigFile("background_light_color: 0.5 0.5 -0.1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorRComponentAboveOne) {
+  // Componente R mayor que 1
+  writeConfigFile("background_light_color: 1.1 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorGComponentAboveOne) {
+  // Componente G mayor que 1
+  writeConfigFile("background_light_color: 0.5 1.1 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorBComponentAboveOne) {
+  // Componente B mayor que 1
+  writeConfigFile("background_light_color: 0.5 0.5 1.1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorBComponentFarBelowZero) {
+  // Componente B muy por debajo de 0 (caso -1)
+  writeConfigFile("background_light_color: 0.5 0.5 -1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorBComponentFarAboveOne) {
+  // Componente B muy por encima de 1 (caso 2)
+  writeConfigFile("background_light_color: 0.5 0.5 2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorAllComponentsBelowZero) {
+  // Todos los componentes menores que 0
+  writeConfigFile("background_light_color: -0.1 -0.2 -0.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorAllComponentsAboveOne) {
+  // Todos los componentes mayores que 1
+  writeConfigFile("background_light_color: 1.1 1.2 1.3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorVeryLargeValue) {
+  // Valor muy grande (fuera de rango)
+  writeConfigFile("background_light_color: 100.0 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ErrorVeryLargeNegativeValue) {
+  // Valor negativo muy grande
+  writeConfigFile("background_light_color: -100.0 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+// CASOS LÍMITE - Valores en los bordes del rango válido
+
+TEST_F(ConfigParserBackgroundLightColorTest, BoundaryExactlyZero) {
+  // Todos los componentes exactamente 0.0
+  writeConfigFile("background_light_color: 0.0 0.0 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, BoundaryExactlyOne) {
+  // Todos los componentes exactamente 1.0 (valor por defecto)
+  writeConfigFile("background_light_color: 1.0 1.0 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, BoundaryMixedZeroOne) {
+  // Mezcla de valores 0.0 y 1.0
+  writeConfigFile("background_light_color: 0.0 1.0 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, BoundaryVeryCloseToZero) {
+  // Valores muy cercanos a 0 pero válidos
+  writeConfigFile("background_light_color: 0.0001 0.0001 0.0001\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.0001);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.0001);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.0001);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, BoundaryVeryCloseToOne) {
+  // Valores muy cercanos a 1 pero válidos
+  writeConfigFile("background_light_color: 0.9999 0.9999 0.9999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.9999);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.9999);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.9999);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserBackgroundLightColorTest, ExtraWhitespaceAroundValues) {
+  // Espacios extra alrededor de los valores
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("background_light_color:    1.0   1.0   1.0   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  background_light_color: 1.0 1.0 1.0  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ScientificNotationValidRange) {
+  // Notación científica dentro del rango válido [0, 1]
+  // parsedouble acepta notación científica
+  // 5e-1 = 0.5, 1e-1 = 0.1, 9e-1 = 0.9
+  writeConfigFile("background_light_color: 5e-1 1e-1 9e-1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.1);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.9);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, ScientificNotationOutOfRange) {
+  // Notación científica fuera del rango válido
+  // 1e1 = 10.0, que está fuera de [0, 1]
+  writeConfigFile("background_light_color: 1e1 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (fuera de rango)
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, NegativeZeroComponent) {
+  // -0.0 es equivalente a 0.0 en punto flotante (válido)
+  writeConfigFile("background_light_color: -0.0 -0.0 -0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, IntegerValues) {
+  // Valores enteros (sin punto decimal) deben ser aceptados
+  writeConfigFile("background_light_color: 0 1 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeConfigFile("background_light_color: 00.5 00.5 00.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, PlusSignPrefix) {
+  // Signo + explícito (parsedouble lo acepta)
+  writeConfigFile("background_light_color: +0.5 +0.5 +0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 0.5);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, TabsAsWhitespace) {
+  // Tabs como espacios en blanco
+  // Verifica que trimWhitespace maneja tabs correctamente
+  writeConfigFile("background_light_color:\t1.0\t1.0\t1.0\t\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, MixedWhitespace) {
+  // Mezcla de espacios y tabs
+  writeConfigFile("  \tbackground_light_color:  \t 1.0 \t 1.0 \t 1.0 \t \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, InfinityValue) {
+  // Valor infinito (fuera de rango [0, 1])
+  // parsedouble acepta "inf", pero debe ser rechazado por validateColorComponents
+  writeConfigFile("background_light_color: inf 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (inf > 1.0)
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, NaNValue) {
+  // Valor NaN (no válido)
+  // parsedouble acepta "nan", pero validateColorComponents debería rechazarlo
+  writeConfigFile("background_light_color: nan 0.5 0.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (nan falla la comparación)
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# background_light_color: 0.0 0.0 0.0\nbackground_light_color: 1.0 1.0 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\nbackground_light_color: 1.0 1.0 1.0\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  writeConfigFile("background_light_color: 0.0 0.0 0.0\n"
+                  "background_light_color: 1.0 1.0 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, TrailingWhitespaceAndComments) {
+  // Whitespace y comentarios después de los valores
+  // El tokenizer toma "1.0", "1.0", "1.0" y "#" como tokens (demasiados argumentos)
+  writeConfigFile("background_light_color: 1.0 1.0 1.0   # Sky gradient light color\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (error de parsing por argumentos extra)
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, Constants::ColorBackGroundLight.x);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, Constants::ColorBackGroundLight.y);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, Constants::ColorBackGroundLight.z);
+}
+
+// TESTS DE INTEGRACIÓN
+
+TEST_F(ConfigParserBackgroundLightColorTest, IntegrationWithDarkColor) {
+  // Test de integración: verifica que dark y light colors pueden coexistir
+  // Documenta un gradiente típico de cielo
+  writeConfigFile("background_dark_color: 0.25 0.5 1.0\n"
+                  "background_light_color: 0.5 0.7 1.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Light color (azul claro)
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.7);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+
+  // Dark color (azul oscuro)
+  ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
+  ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1.0);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, IntegrationWithAllRenderingParams) {
+  // Test de integración completo con múltiples parámetros
+  writeConfigFile("gamma: 2.2\n"
+                  "background_dark_color: 0.1 0.2 0.3\n"
+                  "background_light_color: 0.8 0.9 1.0\n"
+                  "samples_per_pixel: 100\n"
+                  "max_depth: 10\n"
+                  "field_of_view: 75\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 0.8);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 0.9);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+  ASSERT_EQ(config.max_depth, 10);
+  ASSERT_DOUBLE_EQ(config.field_of_view, 75.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserBackgroundLightColorTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que background_light_color se procesa correctamente en contexto más amplio
+  writeConfigFile("gamma: 2.2\n"
+                  "background_light_color: 1.0 1.0 1.0\n"
+                  "background_dark_color: 0.25 0.5 1.0\n"
+                  "samples_per_pixel: 100\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.background_light_color.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.y, 1.0);
+  ASSERT_DOUBLE_EQ(config.background_light_color.z, 1.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+}
+
+// ============================================================================
 // TESTS PARA parseMaterialRngSeed
 // ============================================================================
 
