@@ -36,4 +36,12 @@ rm -rf out
 
 # Ejecuta archivos en _Avignon_
 /*esta incompleto*/
+borra la carpeta out/ !!!!!!!!!
 Haz desde _Avignon_: `sbatch ./scripts/build.sh` y después `sbatch ./scripts/run.sh`
+
+# Valgrind
+
+valgrind --tool=cachegrind program
+
+cg_annotate cachegrind.out.XXXXX --auto=yes
+
