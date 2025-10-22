@@ -38,22 +38,22 @@ public:
   [[nodiscard]] uint8_t get_blue(size_t index) const;
 
   // Métodos para modificar valores de un color concreto a un píxel concreto
-  void set_red(size_t index, float value, float gamma = Constants::Gamma);
-  void set_green(size_t index, float value, float gamma = Constants::Gamma);
-  void set_blue(size_t index, float value, float gamma = Constants::Gamma);
+  void set_red(size_t index, double value, double gamma = Constants::Gamma);
+  void set_green(size_t index, double value, double gamma = Constants::Gamma);
+  void set_blue(size_t index, double value, double gamma = Constants::Gamma);
 
   // Devuelve un pixel completo con los tres colores por su indice)
   [[nodiscard]] Pixel const & get_pixel(size_t index) const;
 
   // Modificación de todos los colores de un píxel concreto de una sola vez
-  void set_pixel(size_t index, Color const & color, float gamma = Constants::Gamma);
+  void set_pixel(size_t index, Color const & color, double gamma = Constants::Gamma);
 
   // Reestablecer todos los pixeles de la imagen a un color concreto
-  void fill_color(Color const & color, float gamma = Constants::Gamma);
+  void fill_color(Color const & color, double gamma = Constants::Gamma);
 
   // Rellena todos los pixeles como en la versión de AOS
-  void fill_from_float(std::vector<float> const & r_data, std::vector<float> const & g_data,
-                       std::vector<float> const & b_data, float gamma = Constants::Gamma);
+  void fill_from_double(std::vector<double> const & r_data, std::vector<double> const & g_data,
+                       std::vector<double> const & b_data, double gamma = Constants::Gamma);
 
   // Getters para acceder a las dimensiones de la imagen
   [[nodiscard]] size_t width() const { return width_; }

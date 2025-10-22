@@ -1,36 +1,34 @@
 #include "camera.hpp"
 #include "constants.hpp"
-#include "dataStructs/settings_structs.hpp" 
-#include <cmath> 
+#include "dataStructs/settings_structs.hpp"
+#include <cmath>
 #include <utility>
 
-Camera::Camera(std::shared_ptr<ConfigSettings>& config)
-    : cameraPos{config->camera_pos},
-      cameraTarget{config->camera_target},
-      cameraNorth{config->camera_north},
-      FOV{config->field_of_view}
-{
-    focalVector = cameraPos - cameraTarget;
+Camera::Camera(std::shared_ptr<ConfigSettings> & config)
+    : cameraPos{config->camera_pos}, cameraTarget{config->camera_target},
+      cameraNorth{config->camera_north}, FOV{config->field_of_view} {
+  focalVector = cameraPos - cameraTarget;
 
-    float  FOV_radians = FOV * (Constants::PI / 180.0F);
-    ProjWindow.projWindowHeight = 2 * std::tan(FOV_radians/2.0F) * focalVector.length();
+  double FOV_radians           = FOV * (Constants::PI / 180.0F);
+  ProjWindow.projWindowHeight = 2 * std::tan(FOV_radians / 2.0F) * focalVector.length();
 
-    std::pair AspRt = config->aspect_ratio;
-    ProjWindow.projWindowWidth = ProjWindow.projWindowHeight * 
-                             (static_cast<float>(AspRt.first) / static_cast<float>(AspRt.second));
-    // Vectores directores de la ventana
-    Vec3 focalVectorNorm = focalVector.normalize();
-    cameraRight = cross(cameraNorth, focalVectorNorm).normalize();
-    cameraUp = cross(focalVectorNorm, cameraRight);
+  std::pair AspRt            = config->aspect_ratio;
+  ProjWindow.projWindowWidth = ProjWindow.projWindowHeight *
+                               (static_cast<double>(AspRt.first) / static_cast<double>(AspRt.second));
+  // Vectores directores de la ventana
+  Vec3 focalVectorNorm = focalVector.normalize();
+  cameraRight          = cross(cameraNorth, focalVectorNorm).normalize();
+  cameraUp             = cross(focalVectorNorm, cameraRight);
 
-    // Vectores de la ventana de proyección
-    ProjWindow.viewportHorizontal = ProjWindow.projWindowWidth * cameraRight;
-    ProjWindow.viewportVertical   = ProjWindow.projWindowHeight * -cameraUp;
+  // Vectores de la ventana de proyección
+  ProjWindow.viewportHorizontal = ProjWindow.projWindowWidth * cameraRight;
+  ProjWindow.viewportVertical   = ProjWindow.projWindowHeight * -cameraUp;
 
-    ProjWindow.imageWidth = config->image_width;
-    ProjWindow.imageHeight = static_cast<int>(static_cast<float>(ProjWindow.imageWidth) * 
-    (static_cast<float>(AspRt.second) / static_cast<float>(AspRt.first)));
+  ProjWindow.imageWidth = config->image_width;
+  ProjWindow.imageHeight =
+      static_cast<int>(static_cast<double>(ProjWindow.imageWidth) *
+                       (static_cast<double>(AspRt.second) / static_cast<double>(AspRt.first)));
 
-    ProjWindow.viewportOrigin = cameraTarget - 0.5F * 
-        (ProjWindow.viewportHorizontal + ProjWindow.viewportVertical);
+  ProjWindow.viewportOrigin =
+      cameraTarget - 0.5F * (ProjWindow.viewportHorizontal + ProjWindow.viewportVertical);
 }

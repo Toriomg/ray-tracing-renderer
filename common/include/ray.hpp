@@ -13,7 +13,7 @@ struct Ray {
 
   constexpr Ray() noexcept = default;
 
-  [[nodiscard]] Point3 at(float t) const { return point + t * direction; }
+  [[nodiscard]] Point3 at(double t) const { return point + t * direction; }
 };
 
 #endif

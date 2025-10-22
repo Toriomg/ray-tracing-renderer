@@ -9,7 +9,7 @@
 namespace color_utils {
 
   // Aplica corrección gamma a un valor entre 0.0 y 1.0 para obtener colores válidos
-  inline float apply_gamma(float value, float gamma) {
+  inline double apply_gamma(double value, double gamma) {
     if (value <= 0.0F) {
       return 0.0F;
     }
@@ -19,9 +19,9 @@ namespace color_utils {
     return std::pow(value, 1.0F / gamma);
   }
 
-  // Convierte un valor float [0,1] a uint8_t [0,255] para cumplir con los valores esperados de
+  // Convierte un valor double [0,1] a uint8_t [0,255] para cumplir con los valores esperados de
   // color
-  inline uint8_t float_to_uint8(float value) {
+  inline uint8_t double_to_uint8(double value) {
     if (value <= 0.0F) {
       return 0;
     }

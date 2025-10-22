@@ -1,84 +1,42 @@
-#include "../../common/include/camera.hpp"
-#include "../../common/include/constants.hpp"
-#include "../../common/include/dataStructs/settings_structs.hpp"
-#include "../../common/include/renderer.hpp"
-#include "../../common/include/scene_parser.hpp"
-#include "../../common/include/utilities/random.hpp"
-
-#include "image_soa.hpp"
-#include <cstddef>
+#include "../../common/include/config_parser.hpp"
+#include "./../include/rendering_engine.hpp"
 #include <iostream>
 #include <string>
-std::string const FilepathScene = "/workspace/res/scene_scripts/scene2.txt";
-std::string const FilepathOut   = "/workspace/outputImageSOA.ppm";
 
-int main() {  // NOLINT
-  // Placeholders temporales
-  // TODO: cambiar por los parsers
-  std::shared_ptr<ConfigSettings> config = std::make_shared<ConfigSettings>(ConfigSettings{
-    Constants::CameraPosition,        // .camera_pos
-    Constants::CameraTarget,          // .camera_target
-    Constants::CameraNorth,           // .camera_north
-    Constants::FOV,                   // .field_of_view
-    Constants::AspectRatio,           // .aspect_ratio
-    900,                              // .image_width
-    Constants::Gamma,                 // .gamma
-    Constants::MaxDepth,              // .max_depth
-    Constants::SamplesPerPixel,       // .samples_per_pixel
-    Constants::RNGSeedMaterial,       // .material_rng_seed
-    Constants::RNGSeedRay,            // .ray_rng_seed
-    Constants::ColorBackgroundDark,   // .background_dark_color
-    Constants::ColorBackGroundLight,  // .background_light_color
-  });
-  SceneSettings scene                    = loadSceneFromFile(FilepathScene);
+// File paths
+std::string const FilepathScene  = "./res/scene_scripts/scene2.txt";
+std::string const FilepathConfig = "./res/config_scripts/config2.txt";
+std::string const FilepathOut    = "./outputImageSOA.ppm";
 
-  // Crear randomizadores
-  auto rngRay      = RandomGenerator(config->ray_rng_seed);
-  auto rngMaterial = RandomGenerator(config->material_rng_seed);
+int main() {
+  // Load configuration and scene
+  ConfigSettings config = loadConfigFromFile(FilepathConfig);
+  SceneSettings scene   = loadSceneFromFile(FilepathScene);
 
-  auto camera = Camera(config);  // Crear la cámara
+  // Create shared_ptr for Camera
+  std::shared_ptr<ConfigSettings> config_ptr = std::make_shared<ConfigSettings>(config);
 
-  // Image width
+  // Create random generators
+  auto rngRay      = RandomGenerator(config.ray_rng_seed);
+  auto rngMaterial = RandomGenerator(config.material_rng_seed);
+
+  // Create camera
+  auto camera      = Camera(config_ptr);
   auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
-  auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0F / static_cast<float>(imageWidth));
-  auto pixel_height = camera.ProjWindow.viewportVertical * (1.0F / static_cast<float>(imageHeight));
+  // Create render context
+  RenderContext ctx(&scene, &config, &rngRay, &rngMaterial);
 
-  ImageSOA image     = ImageSOA(imageWidth, imageHeight);
-  double const scale = 1.0 / static_cast<double>(config->samples_per_pixel);
-
-  /* Esto de aquí es ya la guerra hay q refactorizarlo*/
-  for (size_t row = 0; row < (imageHeight); row++) {
-    std::cerr << "\rScanlines remaining: " << (imageHeight - 1 - row) << ' ' << std::flush << '\n';
-    for (size_t col = 0; col < (imageWidth); col++) {
-      // Por cada pixel
-      Color accumulated_color(0.0F, 0.0F, 0.0F);
-      for (int s = 0; s < config->samples_per_pixel; ++s) {
-        // Posición del rayo en la pantalla
-        // random_double da [0,1), al restarle 0.5 da [-0.5, 0.5)
-        float delta_x = rngRay.get_float(-0.5F, 0.5F);
-        float delta_y = rngRay.get_float(-0.5F, 0.5F);
-
-        Point3 pixel_sample_point =
-            camera.ProjWindow.viewportOrigin +
-            pixel_width *
-                (static_cast<float>(col) + delta_x) +  // El ancho se multiplica por la columna
-            pixel_height * (static_cast<float>(row) + delta_y);
-
-        // Crear el rayo
-        Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos, config->max_depth);
-        // Sacar el color del rayo
-        accumulated_color += Renderer::rayColor(ray, scene, *config, rngMaterial);
-      }
-
-      Color final_pixel_color = accumulated_color * static_cast<float>(scale);
-      // guardamos la imagen
-      size_t indice = image.indice(row, col);
-      image.set_pixel(indice, final_pixel_color);
+  // Render with ImageSOA
+  {
+    std::cout << "Rendering with ImageSOA..." << '\n';
+    ImageSOA imageSoa(imageWidth, imageHeight);
+    renderImage(imageSoa, camera, ctx);
+    if (!imageSoa.write_to_ppm(FilepathOut)) {
+      std::cerr << "Error writing ImageSOA to .ppm file\n";
     }
   }
-  if (!image.write_to_ppm(FilepathOut)) {
-    std::cerr << "Error writing into .ppm file /n";
-  }
+
+  return 0;
 }

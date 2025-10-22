@@ -41,25 +41,25 @@ uint8_t ImageAOS::get_blue(size_t index) const {
 }
 
 // Métodos para modificar un color específico dentro de un píxel
-void ImageAOS::set_red(size_t index, float value, float gamma) {
+void ImageAOS::set_red(size_t index, double value, double gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[index].r = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
+  pixels_[index].r = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageAOS::set_green(size_t index, float value, float gamma) {
+void ImageAOS::set_green(size_t index, double value, double gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[index].g = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
+  pixels_[index].g = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageAOS::set_blue(size_t index, float value, float gamma) {
+void ImageAOS::set_blue(size_t index, double value, double gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
-  pixels_[index].b = color_utils::float_to_uint8(color_utils::apply_gamma(value, gamma));
+  pixels_[index].b = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
 // Acceso directo al píxel completo (ventaja de AOS)
@@ -71,28 +71,28 @@ ImageAOS::Pixel const & ImageAOS::get_pixel(size_t index) const {
 }
 
 // Método para modificar los 3 componentes de color a la vez en un píxel concreto
-void ImageAOS::set_pixel(size_t index, Color const & color, float gamma) {
+void ImageAOS::set_pixel(size_t index, Color const & color, double gamma) {
   if (index >= total_pixels()) {
     throw std::out_of_range("Índice de píxel fuera de rango: " + std::to_string(index));
   }
   Pixel & pixel = pixels_[index];
-  pixel.r       = color_utils::float_to_uint8(color_utils::apply_gamma(color.x, gamma));
-  pixel.g       = color_utils::float_to_uint8(color_utils::apply_gamma(color.y, gamma));
-  pixel.b       = color_utils::float_to_uint8(color_utils::apply_gamma(color.z, gamma));
+  pixel.r       = color_utils::double_to_uint8(color_utils::apply_gamma(color.x, gamma));
+  pixel.g       = color_utils::double_to_uint8(color_utils::apply_gamma(color.y, gamma));
+  pixel.b       = color_utils::double_to_uint8(color_utils::apply_gamma(color.z, gamma));
 }
 
 // Llenar toda la imagen con un color específico
-void ImageAOS::fill_color(Color const & color, float gamma) {
+void ImageAOS::fill_color(Color const & color, double gamma) {
   for (auto & pixel : pixels_) {
-    pixel = Pixel{color_utils::float_to_uint8(color_utils::apply_gamma(color.x, gamma)),
-                  color_utils::float_to_uint8(color_utils::apply_gamma(color.y, gamma)),
-                  color_utils::float_to_uint8(color_utils::apply_gamma(color.z, gamma))};
+    pixel = Pixel{color_utils::double_to_uint8(color_utils::apply_gamma(color.x, gamma)),
+                  color_utils::double_to_uint8(color_utils::apply_gamma(color.y, gamma)),
+                  color_utils::double_to_uint8(color_utils::apply_gamma(color.z, gamma))};
   }
 }
 
-// Llenado desde datos float del renderizador
-void ImageAOS::fill_from_float(std::vector<float> const & r_data, std::vector<float> const & g_data,
-                               std::vector<float> const & b_data, float gamma) {
+// Llenado desde datos double del renderizador
+void ImageAOS::fill_from_double(std::vector<double> const & r_data, std::vector<double> const & g_data,
+                               std::vector<double> const & b_data, double gamma) {
   // Calculamos el tamaño esperado del array a partir de las dimensiones de la imagen
   size_t expected_size = width_ * height_;
 
@@ -107,9 +107,9 @@ void ImageAOS::fill_from_float(std::vector<float> const & r_data, std::vector<fl
 
   // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
   for (size_t i = 0; i < expected_size; ++i) {
-    pixels_[i].r = color_utils::float_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-    pixels_[i].g = color_utils::float_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-    pixels_[i].b = color_utils::float_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
+    pixels_[i].r = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
+    pixels_[i].g = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
+    pixels_[i].b = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
   }
 }
 
@@ -126,6 +126,7 @@ bool ImageAOS::write_to_ppm(std::string const & filename) const {
     g_channel.push_back(pixel.g);
     b_channel.push_back(pixel.b);
   }
+  auto pixels = PPMWriter::Pixels(r_channel, g_channel, b_channel);
 
-  return PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width_, height_);
+  return PPMWriter::write_ppm(filename, pixels, width_, height_);
 }

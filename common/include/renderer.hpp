@@ -8,26 +8,29 @@
 
 class Renderer {
 public:
-  // Clase wrapper para agrupar parámetros comunes de materiales
-  // Usamos punteros en lugar de referencias para cumplir con C++ Core Guidelines
   struct MaterialContext {
     SceneSettings const * scene;    // Configuración de la escena
     ConfigSettings const * config;  // Configuración del renderizado
     RandomGenerator * materialRng;  // Generador de números aleatorios
 
-    // Constructor que toma punteros en lugar de referencias
     MaterialContext(SceneSettings const * s, ConfigSettings const * c, RandomGenerator * rng)
         : scene(s), config(c), materialRng(rng) { }
   };
 
+  struct Intersection {  // Struct simple para intersección de cilindros
+    double t = 0.0F;
+    Point3 p;
+    Vec3 normal;
+  };
+
   static Color rayColor(Ray const & ray, SceneSettings const & scene, ConfigSettings const & config,
-                        RandomGenerator materialRng);
+                        RandomGenerator & materialRng);
 
 private:
   struct HitRecord {
-    Point3 p;        // Punto de colisión
-    Vec3 normal;     // Vector normal en el punto de colisión
-    float t = 0.0F;  // Parámetro 't' del rayo
+    Point3 p;         // Punto de colisión
+    Vec3 normal;      // Vector normal en el punto de colisión
+    double t = 0.0F;  // Parámetro 't' del rayo
     Ray prev_ray;
     unsigned int material_global_id = 0;  // ID del material del objeto golpeado
     bool front_face = false;              // Para saber si el rayo golpeó desde fuera o desde dentro
@@ -36,19 +39,33 @@ private:
 
     // Función para establecer la normal siempre apuntando hacia fuera
     void set_face_normal(Ray const & r, Vec3 const & outward_normal) {
-      bool front_face = dot(r.direction, outward_normal) < 0;
-      normal          = front_face ? outward_normal : -outward_normal;
+      bool const front_face = dot(r.direction, outward_normal) < 0;
+      normal                = front_face ? outward_normal : -outward_normal;
     }  // Índice del objeto golpeado en el array de la escena.
   };
 
+  struct CylinderGeometry {
+    Point3 center;
+    Vec3 unit_axis;
+    double radius = 0.0F;
+    double height = 0.0F;
+  };
+
+  static std::optional<Intersection> intersectCap(Ray const & r, Point3 const & center,
+                                                  Vec3 const & normal, double radius_sq);
+  static std::optional<Intersection> intersectLateralSurface(Ray const & r,
+                                                             CylinderGeometry const & cyl,
+                                                             double closest_t);
+  static void updateBestHit(std::optional<Intersection> & best, double & closest,
+                            std::optional<Intersection> const & new_hit);
+
   static std::optional<HitRecord> RenderSpheres(SceneSettings const & scene, size_t sphere_index,
-                                                Ray r, float closest_t);
-  static std::optional<HitRecord> RenderCylinders(SceneSettings const & scene,
-                                                  size_t cylinder_index, Ray r, float closest_t);
+                                                Ray r, double closest_t);
+  static std::optional<HitRecord> RenderCylinders(SceneSettings const & scene, size_t idx, Ray r,
+                                                  double closest_t);
 
   static Color backgroundColor(Ray const & r, ConfigSettings const & config);
 
-  // Funciones de materiales refactorizadas - ahora toman MaterialContext wrapper
   static Color matteColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec);
   static Color metalColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec);
   static Color refractiveColor(MaterialID material_id, MaterialContext const & ctx,

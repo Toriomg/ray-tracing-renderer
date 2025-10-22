@@ -4,15 +4,15 @@
 #include <vector>
 
 struct MatteMaterials {
-  std::vector<float> r, g, b;
+  std::vector<double> r, g, b;
 };
 
 struct MetalMaterials {
-  std::vector<float> r, g, b, diffusion;
+  std::vector<double> r, g, b, diffusion;
 };
 
 struct RefractiveMaterials {
-  std::vector<float> ior;
+  std::vector<double> ior;
 };
 
 enum MaterialType { MATTE = 0, METAL = 1, REFRACTIVE = 2 };
