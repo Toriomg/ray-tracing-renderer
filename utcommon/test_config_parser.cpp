@@ -3338,6 +3338,516 @@ TEST_F(ConfigParserGammaTest, ExtremelyLongDecimal) {
 }
 
 // ============================================================================
+// TESTS PARA parseMaterialRngSeed
+// ============================================================================
+
+class ConfigParserMaterialRngSeedTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_material_rng_seed_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidCommonValue) {
+  // Test básico: valor común para semilla de RNG de materiales
+  // Las semillas de RNG son importantes para reproducibilidad en renderizado
+  writeConfigFile("material_rng_seed: 13\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidMinimumValue) {
+  // Valor mínimo válido: 1
+  // La función requiere seed > 0, por lo que 1 es el mínimo
+  writeConfigFile("material_rng_seed: 1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 1UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidLargeValue) {
+  // Valor grande dentro del rango de unsigned long
+  // Importante para verificar que parseUnsignedLong maneja valores grandes
+  writeConfigFile("material_rng_seed: 123456789012345\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 123'456'789'012'345UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidTypicalValue) {
+  // Valor típico usado en práctica: 42 (seed común)
+  writeConfigFile("material_rng_seed: 42\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 42UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidMediumValue) {
+  // Valor medio: 1000
+  writeConfigFile("material_rng_seed: 1000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 1'000UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidVeryLargeValue) {
+  // Valor muy grande: mil millones
+  // Verifica que parseUnsignedLong maneja valores muy grandes correctamente
+  writeConfigFile("material_rng_seed: 1000000000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 1'000'000'000UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ValidTimestampLikeValue) {
+  // Valor similar a timestamp UNIX (uso común para seeds)
+  // 1698000000 ≈ octubre 2023
+  writeConfigFile("material_rng_seed: 1698000000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 1'698'000'000UL);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorTooFewArguments) {
+  // Menos de 2 tokens: falta el valor
+  writeConfigFile("material_rng_seed:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorTooManyArguments) {
+  // Más de 2 tokens: argumentos extra
+  writeConfigFile("material_rng_seed: 13 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorMultipleExtraArguments) {
+  // Múltiples argumentos extra
+  writeConfigFile("material_rng_seed: 13 42 99\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorNonNumericValue) {
+  // Valor no numérico
+  writeConfigFile("material_rng_seed: abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorAlphanumericValue) {
+  // Valor alfanumérico mixto
+  writeConfigFile("material_rng_seed: 13abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorPartialNumericValue) {
+  // Valor con letras antes de números
+  writeConfigFile("material_rng_seed: abc13\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorEmptyValue) {
+  // Token vacío
+  writeConfigFile("material_rng_seed: \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorFloatingPointValue) {
+  // Valor con decimales (debería ser rechazado por parseUnsignedLong)
+  // Las semillas de RNG deben ser enteros, no acepta valores como 13.5
+  writeConfigFile("material_rng_seed: 13.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorFloatingPointZero) {
+  // Valor decimal cero
+  writeConfigFile("material_rng_seed: 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorScientificNotation) {
+  // Notación científica (parseUnsignedLong no la acepta)
+  writeConfigFile("material_rng_seed: 1e3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+// ERRORES DE RANGO - Valores no positivos
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorZeroValue) {
+  // Valor cero (no positivo) - NO válido
+  // La condición es seed > 0, por lo que 0 es rechazado
+  // Semánticamente: una semilla de 0 no es práctica para RNG
+  writeConfigFile("material_rng_seed: 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorNegativeValue) {
+  // Valor negativo (parseUnsignedLong debería rechazarlo)
+  // unsigned long no puede almacenar valores negativos
+  writeConfigFile("material_rng_seed: -13\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorNegativeSmallValue) {
+  // Valor negativo pequeño: -1
+  writeConfigFile("material_rng_seed: -1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ErrorNegativeLargeValue) {
+  // Valor negativo grande
+  writeConfigFile("material_rng_seed: -1000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserMaterialRngSeedTest, ExtraWhitespaceAroundValue) {
+  // Espacios extra alrededor del valor
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("material_rng_seed:    13   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  material_rng_seed: 13  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# material_rng_seed: 99\nmaterial_rng_seed: 13\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\nmaterial_rng_seed: 13\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que material_rng_seed se procesa correctamente en contexto más amplio
+  writeConfigFile("gamma: 2.2\n"
+                  "material_rng_seed: 42\n"
+                  "ray_rng_seed: 123\n"
+                  "max_depth: 10\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 42UL);
+  ASSERT_EQ(config.ray_rng_seed, 123UL);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+  ASSERT_EQ(config.max_depth, 10);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  writeConfigFile("material_rng_seed: 13\n"
+                  "material_rng_seed: 42\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 42UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeConfigFile("material_rng_seed: 00013\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, PlusSignPrefix) {
+  // Signo + explícito
+  // NOTA: parseUnsignedLong NO acepta el signo + explícito
+  // Este test documenta ese comportamiento
+  writeConfigFile("material_rng_seed: +13\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // parseUnsignedLong rechaza el signo +, mantiene valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, UnsignedLongMaxValue) {
+  // Valor máximo para unsigned long (típicamente 18446744073709551615 en 64-bit)
+  // Este test verifica que valores muy grandes pero válidos funcionan
+  // Nota: ULONG_MAX puede variar según la plataforma
+  writeConfigFile("material_rng_seed: 18446744073709551615\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 18'446'744'073'709'551'615UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, UnsignedLongOverflowProtection) {
+  // Valor que excede ULONG_MAX (debería causar overflow)
+  // Este test verifica la robustez ante valores extremos
+  // ULONG_MAX típicamente es 18446744073709551615
+  writeConfigFile("material_rng_seed: 18446744073709551616\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debería fallar el parsing y mantener el valor por defecto
+  // porque std::from_chars detectará el overflow
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, VeryLargeOverflow) {
+  // Valor extremadamente grande que causa overflow
+  writeConfigFile("material_rng_seed: 999999999999999999999999\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, MultipleDecimalPoints) {
+  // Valor con múltiples puntos decimales (inválido)
+  writeConfigFile("material_rng_seed: 13.0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, SpecialCharactersInValue) {
+  // Caracteres especiales que podrían causar problemas
+  writeConfigFile("material_rng_seed: 13!\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, HexadecimalNotation) {
+  // Notación hexadecimal (no debería ser aceptada por parseUnsignedLong en base 10)
+  writeConfigFile("material_rng_seed: 0xD\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, OctalNotation) {
+  // Notación octal (015 = 13 en octal)
+  // parseUnsignedLong en base 10 no interpreta esto como octal
+  writeConfigFile("material_rng_seed: 015\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Se parsea como decimal 15, no como octal 13
+  ASSERT_EQ(config.material_rng_seed, 15UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, CommonPrimeNumberSeed) {
+  // Número primo común usado como seed: 7919
+  // Los números primos son populares para seeds de RNG
+  writeConfigFile("material_rng_seed: 7919\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 7'919UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, PowerOfTwo) {
+  // Potencia de 2: 65536 (2^16)
+  writeConfigFile("material_rng_seed: 65536\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 65'536UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, CombinedWithBothRngSeeds) {
+  // Test de integración: verifica que material_rng_seed y ray_rng_seed
+  // pueden coexistir con valores diferentes
+  writeConfigFile("material_rng_seed: 111\n"
+                  "ray_rng_seed: 222\n"
+                  "samples_per_pixel: 100\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 111UL);
+  ASSERT_EQ(config.ray_rng_seed, 222UL);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, TrailingWhitespaceAndComments) {
+  // Whitespace y comentarios después del valor
+  // Verifica que el parser maneja correctamente este caso
+  writeConfigFile("material_rng_seed: 13   # Reproducible material generation\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // El tokenizer debería tomar solo "13" y "# comentario" como tokens extras
+  // lo cual resulta en error de parsing (demasiados argumentos)
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, NegativeZero) {
+  // Caso curioso: -0
+  // parseUnsignedLong rechazará el signo negativo
+  writeConfigFile("material_rng_seed: -0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto (parseUnsignedLong rechaza signos)
+  ASSERT_EQ(config.material_rng_seed, Constants::RNGSeedMaterial);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, TabsAsWhitespace) {
+  // Tabs como espacios en blanco
+  // Verifica que trimWhitespace maneja tabs correctamente
+  writeConfigFile("material_rng_seed:\t13\t\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, MixedWhitespace) {
+  // Mezcla de espacios y tabs
+  writeConfigFile("  \tmaterial_rng_seed:  \t 13 \t \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 13UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, LargeRealisticValue) {
+  // Valor grande realista basado en timestamp de microsegundos
+  // 1698000000000000 (microsegundos desde epoch)
+  writeConfigFile("material_rng_seed: 1698000000000000\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 1'698'000'000'000'000UL);
+}
+
+TEST_F(ConfigParserMaterialRngSeedTest, IntegrationWithAllRenderingParams) {
+  // Test de integración completo con múltiples parámetros
+  writeConfigFile("gamma: 2.2\n"
+                  "material_rng_seed: 12345\n"
+                  "ray_rng_seed: 67890\n"
+                  "samples_per_pixel: 100\n"
+                  "max_depth: 10\n"
+                  "field_of_view: 75\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_EQ(config.material_rng_seed, 12'345UL);
+  ASSERT_EQ(config.ray_rng_seed, 67'890UL);
+  ASSERT_EQ(config.samples_per_pixel, 100);
+  ASSERT_EQ(config.max_depth, 10);
+  ASSERT_DOUBLE_EQ(config.field_of_view, 75.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+// ============================================================================
 // TESTS PARA parseMaxDepth
 // ============================================================================
 
