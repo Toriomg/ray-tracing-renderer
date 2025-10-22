@@ -5,6 +5,7 @@ set(COMMON_SRC_FILES
 
 set(CURRENT_DIR_SRC_FILES 
   "${CMAKE_CURRENT_SOURCE_DIR}/test_vector.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_config_parser.cpp"
   #aqui se añade el test del fichero puesto arriba
 )
 

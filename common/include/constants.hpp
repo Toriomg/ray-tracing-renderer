@@ -4,6 +4,7 @@
 #include "utilities/vec3.hpp"
 #include <limits>
 #include <numbers>
+#include <utility>
 
 namespace Constants {
 
@@ -16,8 +17,8 @@ namespace Constants {
   inline constexpr Point3 CameraTarget(0.0F, 0.0F, 0.0F);
   inline constexpr Vec3 CameraNorth(0.0F, 1.0F, 0.0F);
   // Field of view
-  inline constexpr double FOV           = 90.0F;
-  inline constexpr double Gamma         = 2.2F;
+  inline constexpr double FOV          = 90.0F;
+  inline constexpr double Gamma        = 2.2F;
   inline constexpr int SamplesPerPixel = 20;
   inline constexpr int MaxDepth        = 5;
   // TODO: select a correct integer type
