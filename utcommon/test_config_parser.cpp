@@ -846,6 +846,526 @@ TEST_F(ConfigParserCameraPositionTest, NegativeZero) {
 }
 
 // ============================================================================
+// TESTS PARA parseCameraTarget
+// ============================================================================
+
+class ConfigParserCameraTargetTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_config_camera_target_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeConfigFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(ConfigParserCameraTargetTest, ValidBasicCase) {
+  // Test básico: target en el origen (punto común de enfoque)
+  writeConfigFile("camera_target: 0 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidAlternativeValue) {
+  // Otro caso válido: target con valores mixtos (entero, decimal, científico)
+  writeConfigFile("camera_target: 1 -2.5 3.1e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -2.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 31.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidAllPositiveValues) {
+  // Todos los valores positivos
+  writeConfigFile("camera_target: 5.5 10.25 15.75\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 5.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 10.25);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 15.75);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidAllNegativeValues) {
+  // Todos los valores negativos
+  writeConfigFile("camera_target: -3.5 -7.5 -11.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, -3.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -7.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, -11.5);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidIntegerValues) {
+  // Valores enteros (deberían convertirse a double)
+  writeConfigFile("camera_target: 5 10 15\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 5.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 10.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 15.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidScientificNotation) {
+  // Notación científica: 1e1 = 10.0, 2e0 = 2.0, 3e-1 = 0.3
+  writeConfigFile("camera_target: 1e1 2e0 3e-1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 10.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 2.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.3);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidScientificNotationNegativeExponent) {
+  // Notación científica con exponentes negativos
+  writeConfigFile("camera_target: 5e-2 1.5e-1 -2.2e-3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.05);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.15);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, -0.0022);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidScientificNotationLargeExponent) {
+  // Notación científica con exponentes grandes
+  writeConfigFile("camera_target: 2e3 -3e4 4.5e5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 2000.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -30000.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 450000.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidVeryLargeValues) {
+  // Valores muy grandes pero válidos para double
+  // Importante para escenas con objetos distantes
+  writeConfigFile("camera_target: 500000.5 1000000.25 -750000.75\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 500000.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 1000000.25);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, -750000.75);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidVerySmallValues) {
+  // Valores muy pequeños (cercanos a cero)
+  // Útil para targets precisos cerca del origen
+  writeConfigFile("camera_target: 0.0005 -0.00025 0.000125\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0005);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -0.00025);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.000125);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ValidMixedFormats) {
+  // Mezcla de enteros, decimales y notación científica
+  writeConfigFile("camera_target: 5 -7.25 1.5e2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 5.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -7.25);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 150.0);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(ConfigParserCameraTargetTest, ErrorTooFewArguments_None) {
+  // Menos de 4 tokens: faltan todos los valores
+  writeConfigFile("camera_target:\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorTooFewArguments_OnlyX) {
+  // Solo un valor (falta y, z)
+  writeConfigFile("camera_target: 1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorTooFewArguments_XAndY) {
+  // Solo dos valores (falta z)
+  writeConfigFile("camera_target: 1 -2.5\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorTooManyArguments_OneExtra) {
+  // Más de 4 tokens: un argumento extra
+  writeConfigFile("camera_target: 0 0 0 extra\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorTooManyArguments_Multiple) {
+  // Múltiples argumentos extra
+  writeConfigFile("camera_target: 0 0 0 1 2 3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(ConfigParserCameraTargetTest, ErrorNonNumericX) {
+  // Primer valor (x) no numérico
+  writeConfigFile("camera_target: abc 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorNonNumericY) {
+  // Segundo valor (y) no numérico
+  writeConfigFile("camera_target: 0 abc 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorNonNumericZ) {
+  // Tercer valor (z) no numérico
+  writeConfigFile("camera_target: 0 0 abc\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorAllNonNumeric) {
+  // Todos los valores no numéricos
+  writeConfigFile("camera_target: foo bar baz\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorAlphanumericMixed) {
+  // Valores con mezcla de letras y números
+  writeConfigFile("camera_target: 1abc -2.5def 3e1ghi\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ErrorPartialNumericValues) {
+  // Valores con letras antes de números
+  writeConfigFile("camera_target: abc1 def2.5 ghi3e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(ConfigParserCameraTargetTest, ExtraWhitespaceAroundValues) {
+  // Espacios extra alrededor de los valores
+  // Verifica que trimWhitespace funciona correctamente
+  writeConfigFile("camera_target:    1    -2.5    3.1e1   \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -2.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 31.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeConfigFile("  camera_target: 0 0 0  \n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, MultipleSpacesBetweenValues) {
+  // Múltiples espacios entre valores
+  writeConfigFile("camera_target: 0     0     0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeConfigFile("# camera_target: 10 20 30\ncamera_target: 0 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeConfigFile("\n\ncamera_target: 1 -2.5 31\n\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -2.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 31.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, MultipleConfigParameters) {
+  // Múltiples parámetros de configuración
+  // Verifica que camera_target se procesa correctamente en un contexto más amplio
+  writeConfigFile("camera_position: 10 20 -5.5\n"
+                  "camera_target: 0 0 0\n"
+                  "gamma: 2.2\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_pos.x, 10.0);
+  ASSERT_DOUBLE_EQ(config.camera_pos.y, 20.0);
+  ASSERT_DOUBLE_EQ(config.gamma, 2.2);
+}
+
+TEST_F(ConfigParserCameraTargetTest, LastValueWinsOnDuplicate) {
+  // Si hay valores duplicados, el último debe prevalecer
+  writeConfigFile("camera_target: 5 10 15\n"
+                  "camera_target: 0 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeConfigFile("camera_target: 001 -002.5 0031\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, -2.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 31.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, PlusSignPrefix) {
+  // Signo + explícito (válido para doubles)
+  writeConfigFile("camera_target: +1 +2.5 +3.1e1\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 1.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 2.5);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 31.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, DoubleOverflowProtection) {
+  // Valor que podría causar overflow en double (x muy grande)
+  writeConfigFile("camera_target: 1e400 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // std::from_chars debería detectar el overflow y fallar el parsing
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, DoubleUnderflowToZero) {
+  // Valores extremadamente pequeños que underflow a cero
+  writeConfigFile("camera_target: 1e-400 1e-400 1e-400\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, InvalidInfinityString) {
+  // String "inf" - std::from_chars típicamente NO acepta esto
+  // Este test documenta el comportamiento con valores infinitos como string
+  writeConfigFile("camera_target: inf 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, InvalidNaNString) {
+  // String "nan" - std::from_chars típicamente NO acepta esto
+  writeConfigFile("camera_target: 0 nan 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, MultipleDecimalPoints) {
+  // Valor con múltiples puntos decimales (inválido)
+  writeConfigFile("camera_target: 1.2.3 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, SpecialCharactersInValues) {
+  // Caracteres especiales que podrían causar problemas
+  writeConfigFile("camera_target: 1! -2.5@ 3#\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, HexadecimalNotation) {
+  // Notación hexadecimal (no debería ser aceptada)
+  writeConfigFile("camera_target: 0x1 0x2 0x3\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Debe mantener el valor por defecto
+  ASSERT_DOUBLE_EQ(config.camera_target.x, Constants::CameraTarget.x);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, Constants::CameraTarget.y);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, Constants::CameraTarget.z);
+}
+
+TEST_F(ConfigParserCameraTargetTest, ExtremelyLongDecimal) {
+  // Números con muchísimos decimales para verificar precisión
+  writeConfigFile("camera_target: 1.123456789012345 -2.987654321098765 31.555555555555555\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // El valor será parseado con la precisión disponible de double
+  ASSERT_NEAR(config.camera_target.x, 1.123456789012345, 1e-15);
+  ASSERT_NEAR(config.camera_target.y, -2.987654321098765, 1e-15);
+  ASSERT_NEAR(config.camera_target.z, 31.555555555555555, 1e-15);
+}
+
+TEST_F(ConfigParserCameraTargetTest, NegativeZero) {
+  // Caso curioso: -0.0 es técnicamente válido en double
+  writeConfigFile("camera_target: -0.0 -0.0 0.0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // -0.0 y 0.0 son iguales en comparaciones
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+TEST_F(ConfigParserCameraTargetTest, CombinedWithCameraPosition) {
+  // Test de integración: verifica que camera_target y camera_position
+  // se pueden usar juntos correctamente, lo cual es común en una configuración real
+  writeConfigFile("camera_position: 10 0 -10\n"
+                  "camera_target: 0 0 0\n");
+
+  ConfigSettings config = loadConfigFromFile(temp_filename);
+
+  // Verifica ambos parámetros
+  ASSERT_DOUBLE_EQ(config.camera_pos.x, 10.0);
+  ASSERT_DOUBLE_EQ(config.camera_pos.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_pos.z, -10.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.x, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.y, 0.0);
+  ASSERT_DOUBLE_EQ(config.camera_target.z, 0.0);
+}
+
+// ============================================================================
 // TESTS PARA parseAspectRatio
 // ============================================================================
 
