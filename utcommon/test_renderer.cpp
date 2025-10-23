@@ -30,6 +30,18 @@ namespace {
     scene.materialTable.push_back({MaterialType::MATTE, local_index});
   }
 
+  void setupMetalMaterial(SceneSettings & scene, std::string const & name, Color color,
+                          double diffusion) {
+    scene.materialNames.push_back(name);
+    scene.metal.r.push_back(color.x);
+    scene.metal.g.push_back(color.y);
+    scene.metal.b.push_back(color.z);
+    scene.metal.diffusion.push_back(diffusion);
+
+    auto local_index = static_cast<unsigned int>(scene.metal.r.size() - 1);
+    scene.materialTable.push_back({MaterialType::METAL, local_index});
+  }
+
   void setupSingleCylinderScene(SceneSettings & scene, Point3 center, Vec3 axis, double radius,
                                 double height, unsigned int mat_id) {
     scene.cylinders.x.push_back(center.x);
@@ -631,5 +643,74 @@ TEST_F(RendererTest, MatteMaterialNearZeroBounce) {
   // Verificar las aserciones de atenuación
   ASSERT_LE(result.x, attenuation.x);
   ASSERT_LE(result.y, attenuation.y);
+  ASSERT_LE(result.z, attenuation.z);
+}
+
+// ============================================================================
+// TESTS PARA metalColor
+// ============================================================================
+
+// Test 1: Metal material with perfect reflection (diffusion = 0.0)
+TEST_F(RendererTest, MetalMaterialPerfectReflection) {
+  // Setup: Establecer max_depth = 2 para permitir 1 rebote
+  config.max_depth = 2;
+
+  // Definir color de atenuación y diffusion = 0.0 (espejo perfecto)
+  Color attenuation(0.9, 0.9, 0.9);
+  double diffusion = 0.0;
+
+  // Limpiar materiales del SetUp y añadir nuevo material metal
+  clearScene(scene);
+  setupMetalMaterial(scene, "perfect_mirror", attenuation, diffusion);
+
+  // Configurar una esfera simple para ser golpeada
+  setupSingleSphereScene(scene, Point3(0, 0, -1), 0.5, 0);
+
+  // Lanzar un rayo frontal
+  Ray ray(Point3(0, 0, 0), Vec3(0, 0, -1), config.max_depth);
+
+  // Llamar a rayColor
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // Verificar las aserciones de atenuación
+  ASSERT_GE(result.x, 0.0);
+  ASSERT_LE(result.x, attenuation.x);
+  ASSERT_GE(result.y, 0.0);
+  ASSERT_LE(result.y, attenuation.y);
+  ASSERT_GE(result.z, 0.0);
+  ASSERT_LE(result.z, attenuation.z);
+
+  // Verificar que no sea negro (el rebote depth=1 debe golpear el fondo)
+  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0);
+}
+
+// Test 2: Metal material with fuzzed reflection (diffusion > 0.0)
+TEST_F(RendererTest, MetalMaterialFuzzedReflection) {
+  // Setup: Establecer max_depth = 2 para permitir 1 rebote
+  config.max_depth = 2;
+
+  // Definir color de atenuación y diffusion > 0.0 (metal difuso)
+  Color attenuation(0.8, 0.6, 0.2);
+  double diffusion = 0.3;
+
+  // Limpiar materiales del SetUp y añadir nuevo material metal
+  clearScene(scene);
+  setupMetalMaterial(scene, "fuzzed_metal", attenuation, diffusion);
+
+  // Configurar una esfera simple para ser golpeada
+  setupSingleSphereScene(scene, Point3(0, 0, -1), 0.5, 0);
+
+  // Lanzar un rayo frontal
+  Ray ray(Point3(0, 0, 0), Vec3(0, 0, -1), config.max_depth);
+
+  // Llamar a rayColor
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // Verificar las aserciones (acotadas) - puede ser negro si se absorbe
+  ASSERT_GE(result.x, 0.0);
+  ASSERT_LE(result.x, attenuation.x);
+  ASSERT_GE(result.y, 0.0);
+  ASSERT_LE(result.y, attenuation.y);
+  ASSERT_GE(result.z, 0.0);
   ASSERT_LE(result.z, attenuation.z);
 }
