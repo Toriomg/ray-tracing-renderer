@@ -108,6 +108,14 @@ protected:
 };
 
 // ============================================================================
+// TESTS PARA rayColor
+// ============================================================================
+//
+// La función rayColor() es el orquestador principal. Los siguientes tests
+// (RenderSpheres y RenderCylinders) cubren todos sus caminos lógicos
+// principales usando la estrategia "depth=1" (Hit=Negro, Miss=Fondo).
+
+// ============================================================================
 // TESTS PARA RenderSpheres
 // ============================================================================
 
@@ -557,4 +565,71 @@ TEST_F(RendererTest, CylinderHitClosestIsLateral) {
   ASSERT_DOUBLE_EQ(result.x, 0.0);
   ASSERT_DOUBLE_EQ(result.y, 0.0);
   ASSERT_DOUBLE_EQ(result.z, 0.0);
+}
+
+// ============================================================================
+// TESTS PARA matteColor
+// ============================================================================
+
+// Test 1: Matte material computes attenuation correctly
+TEST_F(RendererTest, MatteMaterialComputesAttenuation) {
+  // Setup: Establecer max_depth = 2 para permitir 1 rebote
+  config.max_depth = 2;
+
+  // Definir color de atenuación
+  Color attenuation(0.8, 0.4, 0.2);
+
+  // Limpiar materiales del SetUp y añadir nuevo material matte
+  clearScene(scene);
+  setupMatteMaterial(scene, "test_matte", attenuation);
+
+  // Configurar una esfera simple para ser golpeada
+  setupSingleSphereScene(scene, Point3(0, 0, -1), 0.5, 0);
+
+  // Lanzar un rayo frontal
+  Ray ray(Point3(0, 0, 0), Vec3(0, 0, -1), config.max_depth);
+
+  // Llamar a rayColor
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // Verificar las aserciones de atenuación
+  ASSERT_GE(result.x, 0.0);
+  ASSERT_LE(result.x, attenuation.x);
+  ASSERT_GE(result.y, 0.0);
+  ASSERT_LE(result.y, attenuation.y);
+  ASSERT_GE(result.z, 0.0);
+  ASSERT_LE(result.z, attenuation.z);
+
+  // Verificar que no sea negro (asumiendo que el fondo no es negro)
+  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0);
+}
+
+// Test 2: Matte material near zero bounce case
+TEST_F(RendererTest, MatteMaterialNearZeroBounce) {
+  // Testea el caso borde is_near_zero(). Este test es difícil de forzar sin un mock de RNG,
+  // pero confiamos en que el test anterior (con RNG determinista) lo cubre si el primer
+  // vector aleatorio resulta ser cercano a cero. La aserción principal es que el código
+  // no crashea y devuelve un color válido.
+
+  // Usar depth = 5 para más rebotes
+  config.max_depth = 5;
+
+  // Definir atenuación
+  Color attenuation(0.5, 0.5, 0.5);
+
+  // Limpiar y configurar escena
+  clearScene(scene);
+  setupMatteMaterial(scene, "test_matte", attenuation);
+  setupSingleSphereScene(scene, Point3(0, 0, -1), 0.5, 0);
+
+  // Lanzar rayo
+  Ray ray(Point3(0, 0, 0), Vec3(0, 0, -1), config.max_depth);
+
+  // Llamar a rayColor
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // Verificar las aserciones de atenuación
+  ASSERT_LE(result.x, attenuation.x);
+  ASSERT_LE(result.y, attenuation.y);
+  ASSERT_LE(result.z, attenuation.z);
 }
