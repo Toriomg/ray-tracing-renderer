@@ -1714,3 +1714,658 @@ TEST_F(SceneParserMetalMaterialTest, DuplicateMaterialNameAllowed) {
   ASSERT_EQ(scene.materialTable[0].localIndex, 0);
   ASSERT_EQ(scene.materialTable[1].localIndex, 1);
 }
+
+// ============================================================================
+// TESTS PARA parseRefractiveMaterial
+// ============================================================================
+
+class SceneParserRefractiveMaterialTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_scene_refractive_material_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeSceneFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidBasicCase) {
+  // Caso válido básico: refractive: glass 1.5
+  // Verifica que se añade correctamente el material con nombre "glass" y IOR = 1.5
+  writeSceneFile("refractive: glass 1.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió 1 material refractive
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+
+  // Verificar el valor IOR
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+
+  // Verificar que se añadió el nombre del material
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+
+  // Verificar que se añadió la entrada en materialTable
+  ASSERT_EQ(scene.materialTable.size(), 1);
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidIORCloseToOne) {
+  // Caso válido con IOR cercano a 1 (aire/vacío): IOR = 1.001
+  writeSceneFile("refractive: air_like 1.001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió el material
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+
+  // Verificar IOR cercano a 1
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.001);
+
+  // Verificar nombre
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "air_like");
+
+  // Verificar materialTable
+  ASSERT_EQ(scene.materialTable.size(), 1);
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidHighIOR) {
+  // Caso válido con IOR alto (diamante): IOR = 2.4
+  writeSceneFile("refractive: diamond 2.4\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió el material
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+
+  // Verificar IOR alto
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 2.4);
+
+  // Verificar nombre
+  ASSERT_EQ(scene.materialNames[0], "diamond");
+
+  // Verificar materialTable
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidVerySmallIOR) {
+  // Caso válido con IOR muy pequeño pero > 0: IOR = 0.00001
+  // Aunque físicamente poco realista, es técnicamente válido según la validación
+  writeSceneFile("refractive: near_vacuum 0.00001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió el material
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+
+  // Verificar IOR muy pequeño
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 0.00001);
+
+  // Verificar nombre
+  ASSERT_EQ(scene.materialNames[0], "near_vacuum");
+
+  // Verificar materialTable
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidWater) {
+  // Agua: IOR = 1.33
+  writeSceneFile("refractive: water 1.33\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.33);
+  ASSERT_EQ(scene.materialNames[0], "water");
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidDecimalPrecision) {
+  // Valores con múltiples decimales para verificar precisión
+  writeSceneFile("refractive: precise_glass 1.5168\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5168);
+  ASSERT_EQ(scene.materialNames[0], "precise_glass");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidMultipleMaterials) {
+  // Múltiples materiales refractivos en el mismo archivo
+  // Verifica que los índices locales se incrementan correctamente
+  writeSceneFile("refractive: glass 1.5\n"
+                 "refractive: water 1.33\n"
+                 "refractive: diamond 2.4\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 materiales
+  ASSERT_EQ(scene.refractive.ior.size(), 3);
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialTable.size(), 3);
+
+  // Verificar primer material (glass)
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+
+  // Verificar segundo material (water)
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[1], 1.33);
+  ASSERT_EQ(scene.materialNames[1], "water");
+  ASSERT_EQ(scene.materialTable[1].localIndex, 1);
+
+  // Verificar tercer material (diamond)
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[2], 2.4);
+  ASSERT_EQ(scene.materialNames[2], "diamond");
+  ASSERT_EQ(scene.materialTable[2].localIndex, 2);
+
+  // Verificar que todos son de tipo REFRACTIVE
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[1].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[2].type, MaterialType::REFRACTIVE);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidVeryHighIOR) {
+  // IOR muy alto (teóricamente posible): IOR = 10.0
+  writeSceneFile("refractive: exotic_material 10.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 10.0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidComplexMaterialName) {
+  // Nombres de material complejos: con guiones, guiones bajos, números
+  writeSceneFile("refractive: borosilicate-glass_v2 1.47\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "borosilicate-glass_v2");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidIntegerIOR) {
+  // Valor entero (sin punto decimal) debe ser aceptado
+  writeSceneFile("refractive: integer_ior 2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 2.0);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorTooFewArguments_NoValues) {
+  // Menos de 3 tokens: falta todo (solo el comando)
+  writeSceneFile("refractive:\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (error de parsing)
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorTooFewArguments_OnlyName) {
+  // Solo nombre, falta IOR
+  writeSceneFile("refractive: glass\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorTooManyArguments_OneExtra) {
+  // Más de 3 tokens: un argumento extra
+  writeSceneFile("refractive: glass 1.5 extra\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (error de parsing)
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorTooManyArguments_Multiple) {
+  // Múltiples argumentos extra
+  writeSceneFile("refractive: glass 1.5 extra1 extra2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorNonNumericIOR) {
+  // IOR no numérico
+  writeSceneFile("refractive: glass abc\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorAlphanumericMixedInIOR) {
+  // Valor alfanumérico mixto (parsedouble debería rechazarlo)
+  writeSceneFile("refractive: glass 1.5abc\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorEmptyIORValue) {
+  // Valor IOR vacío
+  writeSceneFile("refractive: glass  \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// ERRORES DE RANGO - IOR <= 0
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorIORZero) {
+  // IOR igual a cero (inválido según código: ior <= 0.0)
+  writeSceneFile("refractive: glass 0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (IOR debe ser > 0)
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorIORExactlyZero) {
+  // IOR exactamente 0.0
+  writeSceneFile("refractive: glass 0.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorIORNegative) {
+  // IOR negativo: -1.5
+  writeSceneFile("refractive: glass -1.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (IOR negativo no tiene sentido físico)
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorIORNegativeSmall) {
+  // IOR negativo pequeño: -0.1
+  writeSceneFile("refractive: glass -0.1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ErrorIORVeryNegative) {
+  // IOR muy negativo: -100.0
+  writeSceneFile("refractive: glass -100.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// CASOS LÍMITE - Valores en los bordes del rango válido
+
+TEST_F(SceneParserRefractiveMaterialTest, BoundaryIORJustAboveZero) {
+  // IOR justo por encima de 0.0 (válido): 0.0001
+  writeSceneFile("refractive: almost_zero 0.0001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 0.0001);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, BoundaryIORExactlyOne) {
+  // IOR exactamente 1.0 (vacío perfecto)
+  writeSceneFile("refractive: vacuum 1.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, BoundaryIORVeryCloseToOne) {
+  // IOR muy cercano a 1.0: 1.0001
+  writeSceneFile("refractive: near_vacuum 1.0001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.0001);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, BoundaryIORJustBelowZeroInvalid) {
+  // IOR justo por debajo de 0.0 (inválido): -0.0001
+  writeSceneFile("refractive: glass -0.0001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.refractive.ior.empty());
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(SceneParserRefractiveMaterialTest, ExtraWhitespaceAroundValues) {
+  // Espacios extra alrededor de los valores
+  // Verifica que trimWhitespace funciona correctamente
+  writeSceneFile("refractive:    glass   1.5   \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeSceneFile("  refractive: glass 1.5  \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, TabsAsWhitespace) {
+  // Tabs como espacios en blanco
+  // Verifica que trimWhitespace maneja tabs correctamente
+  writeSceneFile("refractive:\tglass\t1.5\t\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, MixedWhitespace) {
+  // Mezcla de espacios y tabs
+  writeSceneFile("  \trefractive:  \t glass \t 1.5 \t \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeSceneFile("# refractive: ignored 2.0\nrefractive: glass 1.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Solo debe haber 1 material (no 2)
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeSceneFile("\n\nrefractive: glass 1.5\n\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ScientificNotationValidIOR) {
+  // Notación científica válida para IOR > 0
+  // parsedouble acepta notación científica
+  // 1.5e0 = 1.5, 2.4e0 = 2.4
+  writeSceneFile("refractive: glass_sci 1.5e0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ScientificNotationHighIOR) {
+  // Notación científica para IOR alto
+  // 2.4e0 = 2.4, 1e1 = 10.0
+  writeSceneFile("refractive: exotic 1e1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 10.0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ScientificNotationSmallIOR) {
+  // Notación científica para IOR pequeño pero válido
+  // 1e-3 = 0.001
+  writeSceneFile("refractive: tiny_ior 1e-3\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 0.001);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeSceneFile("refractive: glass 001.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, PlusSignPrefix) {
+  // Signo + explícito (parsedouble lo acepta)
+  writeSceneFile("refractive: glass +1.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, InfinityValue) {
+  // Valor infinito (técnicamente parsedouble lo acepta y es > 0)
+  // Aunque físicamente no tiene sentido
+  writeSceneFile("refractive: glass inf\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Si parsedouble acepta inf y ior > 0, se añadirá
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_TRUE(std::isinf(scene.refractive.ior[0]));
+  ASSERT_GT(scene.refractive.ior[0], 0.0);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, NaNValue) {
+  // Valor NaN (no válido)
+  // parsedouble acepta "nan", pero debería fallar la comparación ior <= 0
+  writeSceneFile("refractive: glass nan\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (nan falla la comparación > 0)
+  ASSERT_TRUE(scene.refractive.ior.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, NegativeZero) {
+  // -0.0 es equivalente a 0.0 en punto flotante (inválido, no es > 0)
+  writeSceneFile("refractive: glass -0.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (-0.0 no es > 0)
+  ASSERT_TRUE(scene.refractive.ior.empty());
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, MaterialNameWithNumbers) {
+  // Nombre de material con números
+  writeSceneFile("refractive: glass123 1.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "glass123");
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, MaterialNameCaseSensitive) {
+  // Verificar que los nombres de material son case-sensitive
+  writeSceneFile("refractive: glass 1.5\n"
+                 "refractive: Glass 1.6\n"
+                 "refractive: GLASS 1.7\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.refractive.ior.size(), 3);
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+  ASSERT_EQ(scene.materialNames[1], "Glass");
+  ASSERT_EQ(scene.materialNames[2], "GLASS");
+}
+
+// TESTS DE INTEGRACIÓN
+
+TEST_F(SceneParserRefractiveMaterialTest, IntegrationWithOtherMaterials) {
+  // Test de integración: refractive mezclado con matte y metal
+  // Verifica que los índices en materialTable son correctos
+  writeSceneFile("matte: red_matte 0.8 0.1 0.1\n"
+                 "refractive: glass 1.5\n"
+                 "metal: gold 0.9 0.8 0.1 0.2\n"
+                 "refractive: water 1.33\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 1 matte, 2 refractive, 1 metal
+  ASSERT_EQ(scene.matte.r.size(), 1);
+  ASSERT_EQ(scene.refractive.ior.size(), 2);
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.materialNames.size(), 4);
+  ASSERT_EQ(scene.materialTable.size(), 4);
+
+  // Verificar material matte #0
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::MATTE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+  ASSERT_EQ(scene.materialNames[0], "red_matte");
+
+  // Verificar material refractive #1 (glass)
+  ASSERT_EQ(scene.materialTable[1].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[1].localIndex, 0);  // Primer refractive
+  ASSERT_EQ(scene.materialNames[1], "glass");
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+
+  // Verificar material metal #2
+  ASSERT_EQ(scene.materialTable[2].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[2].localIndex, 0);
+  ASSERT_EQ(scene.materialNames[2], "gold");
+
+  // Verificar material refractive #3 (water)
+  ASSERT_EQ(scene.materialTable[3].type, MaterialType::REFRACTIVE);
+  ASSERT_EQ(scene.materialTable[3].localIndex, 1);  // Segundo refractive
+  ASSERT_EQ(scene.materialNames[3], "water");
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[1], 1.33);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, ValidAfterErrorLine) {
+  // Verificar que un material válido después de una línea con error se procesa correctamente
+  writeSceneFile("refractive: error_glass 0\n"      // Línea con error (IOR = 0)
+                 "refractive: valid_glass 1.5\n");  // Línea válida
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Solo debe haberse añadido el material válido
+  ASSERT_EQ(scene.refractive.ior.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "valid_glass");
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+}
+
+TEST_F(SceneParserRefractiveMaterialTest, DuplicateMaterialNameAllowed) {
+  // Verificar que se permiten nombres duplicados
+  writeSceneFile("refractive: glass 1.5\n"
+                 "refractive: glass 1.6\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Ambos materiales deben haberse añadido
+  ASSERT_EQ(scene.refractive.ior.size(), 2);
+  ASSERT_EQ(scene.materialNames.size(), 2);
+  ASSERT_EQ(scene.materialNames[0], "glass");
+  ASSERT_EQ(scene.materialNames[1], "glass");
+
+  // Verificar que tienen diferentes valores IOR
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[0], 1.5);
+  ASSERT_DOUBLE_EQ(scene.refractive.ior[1], 1.6);
+
+  // Verificar índices locales diferentes
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+  ASSERT_EQ(scene.materialTable[1].localIndex, 1);
+}
