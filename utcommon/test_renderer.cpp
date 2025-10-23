@@ -6,31 +6,6 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-// ============================================================================
-// ESTRATEGIA DE TESTING "CAJA NEGRA" ROBUSTA
-// ============================================================================
-// En lugar de testear RenderSpheres (privado) directamente, testeamos a través
-// de rayColor (API pública) explotando el caso base de la recursión (depth=0).
-//
-// ESTRATEGIA:
-// - Si un rayo con depth=1 GOLPEA una esfera:
-//   * rayColor llama a RenderSpheres -> encuentra hit
-//   * Llama a matteColor (u otro material)
-//   * matteColor crea rayo rebotado con depth=0
-//   * rayColor(depth=0) retorna Color(0,0,0) [caso base]
-//   * Resultado final: Color(0,0,0)
-//
-// - Si un rayo con depth=1 NO GOLPEA:
-//   * RenderSpheres retorna nullopt
-//   * rayColor retorna backgroundColor
-//
-// VENTAJAS:
-// - Aserción binaria y fuerte (negro vs fondo)
-// - No modifica código de producción
-// - Testea la lógica de intersección indirectamente
-// - Robusto ante cambios internos
-// ============================================================================
-
 namespace {
 
   void setupSingleSphereScene(SceneSettings & scene, Point3 center, double radius,
@@ -53,6 +28,22 @@ namespace {
 
     auto local_index = static_cast<unsigned int>(scene.matte.r.size() - 1);
     scene.materialTable.push_back({MaterialType::MATTE, local_index});
+  }
+
+  void setupSingleCylinderScene(SceneSettings & scene, Point3 center, Vec3 axis, double radius,
+                                double height, unsigned int mat_id) {
+    scene.cylinders.x.push_back(center.x);
+    scene.cylinders.y.push_back(center.y);
+    scene.cylinders.z.push_back(center.z);
+    scene.cylinders.vx.push_back(axis.x);
+    scene.cylinders.vy.push_back(axis.y);
+    scene.cylinders.vz.push_back(axis.z);
+    scene.cylinders.r.push_back(radius);
+    scene.cylinders.invAxisLen.push_back(1.0 / height);
+    scene.cylinders.materialIndex.push_back(static_cast<int>(mat_id));
+
+    // Generar AABB para el cilindro
+    scene.cylinders.aabbs.push_back(AABB::from_cylinder(center, axis, radius, height));
   }
 
   void clearScene(SceneSettings & scene) {
@@ -378,6 +369,191 @@ TEST_F(RendererTest, RayColorOffCenterHit) {
   Color result = Renderer::rayColor(ray, scene, config, rng);
 
   // ASERCIÓN ROBUSTA: Debe golpear (0.5 < radio 1.0)
+  ASSERT_DOUBLE_EQ(result.x, 0.0);
+  ASSERT_DOUBLE_EQ(result.y, 0.0);
+  ASSERT_DOUBLE_EQ(result.z, 0.0);
+}
+
+// ============================================================================
+// TESTS PARA - RenderCylinders
+// ============================================================================
+
+// Test 1: Hit en superficie lateral del cilindro
+TEST_F(RendererTest, CylinderHitLateralSurface) {
+  // Setup: Material y cilindro base
+  // Centro (0, -10, 0), Eje Y (0,1,0), Radio 2.0, Altura 4.0
+  // El cilindro está en coordenadas y: [-12, -8]
+  setupMatteMaterial(scene, "cyan_matte", Color(0.0, 1.0, 1.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (0, -10, 0) hacia -Z (golpea superficie lateral)
+  Ray ray(Point3(0, -10, 0), Vec3(0, 0, -1), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Hit en lateral con depth=1 debe dar negro
+  ASSERT_DOUBLE_EQ(result.x, 0.0);
+  ASSERT_DOUBLE_EQ(result.y, 0.0);
+  ASSERT_DOUBLE_EQ(result.z, 0.0);
+}
+
+// Test 2: Hit en tapa superior del cilindro
+TEST_F(RendererTest, CylinderHitTopCap) {
+  // Setup: Cilindro con tapa superior en y=-8
+  setupMatteMaterial(scene, "yellow_matte", Color(1.0, 1.0, 0.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (0, 0, 0) hacia (0, -1, 0) (golpea tapa superior)
+  Ray ray(Point3(0, 0, 0), Vec3(0, -1, 0), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Hit en tapa superior con depth=1 debe dar negro
+  ASSERT_DOUBLE_EQ(result.x, 0.0);
+  ASSERT_DOUBLE_EQ(result.y, 0.0);
+  ASSERT_DOUBLE_EQ(result.z, 0.0);
+}
+
+// Test 3: Hit en tapa inferior del cilindro
+TEST_F(RendererTest, CylinderHitBottomCap) {
+  // Setup: Cilindro con tapa inferior en y=-12
+  setupMatteMaterial(scene, "magenta_matte", Color(1.0, 0.0, 1.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (0, -20, 0) hacia (0, 1, 0) (golpea tapa inferior)
+  Ray ray(Point3(0, -20, 0), Vec3(0, 1, 0), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Hit en tapa inferior con depth=1 debe dar negro
+  ASSERT_DOUBLE_EQ(result.x, 0.0);
+  ASSERT_DOUBLE_EQ(result.y, 0.0);
+  ASSERT_DOUBLE_EQ(result.z, 0.0);
+}
+
+// Test 4: Miss - Rayo pasa completamente de largo
+TEST_F(RendererTest, CylinderMissCompletely) {
+  // Setup: Cilindro en (0, -10, 0)
+  setupMatteMaterial(scene, "red_matte", Color(1.0, 0.0, 0.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (10, 10, 0) hacia (0, 0, -1) (muy lejos del cilindro)
+  Ray ray(Point3(10, 10, 0), Vec3(0, 0, -1), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
+  Vec3 unit_dir  = Vec3(0, 0, -1).normalize();
+  double t       = 0.5 * (unit_dir.y + 1.0);
+  Color expected = (1.0 - t) * config.background_dark_color + t * config.background_light_color;
+
+  ASSERT_NEAR(result.x, expected.x, 0.01);
+  ASSERT_NEAR(result.y, expected.y, 0.01);
+  ASSERT_NEAR(result.z, expected.z, 0.01);
+}
+
+// Test 5: Miss - Golpea cilindro infinito pero fuera de altura
+TEST_F(RendererTest, CylinderMissHitsInfiniteLateralOutsideHeight) {
+  // Setup: Cilindro con altura limitada (y: -12 a -8)
+  setupMatteMaterial(scene, "blue_matte", Color(0.0, 0.0, 1.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (0, 0, 0) [y=0, muy por encima] hacia (0, 0, -1)
+  // Golpearía el cilindro infinito pero está fuera de la altura válida
+  Ray ray(Point3(0, 0, 0), Vec3(0, 0, -1), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
+  Vec3 unit_dir  = Vec3(0, 0, -1).normalize();
+  double t       = 0.5 * (unit_dir.y + 1.0);
+  Color expected = (1.0 - t) * config.background_dark_color + t * config.background_light_color;
+
+  ASSERT_NEAR(result.x, expected.x, 0.01);
+  ASSERT_NEAR(result.y, expected.y, 0.01);
+  ASSERT_NEAR(result.z, expected.z, 0.01);
+}
+
+// Test 6: Miss - Golpea plano de tapa pero fuera del radio
+TEST_F(RendererTest, CylinderMissHitsCapPlaneOutsideRadius) {
+  // Setup: Cilindro con radio 2.0
+  setupMatteMaterial(scene, "green_matte", Color(0.0, 1.0, 0.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (5, 0, 0) hacia (0, -1, 0)
+  // Golpea el plano de la tapa superior pero x=5 está fuera del radio 2.0
+  Ray ray(Point3(5, 0, 0), Vec3(0, -1, 0), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
+  Vec3 unit_dir  = Vec3(0, -1, 0).normalize();
+  double t       = 0.5 * (unit_dir.y + 1.0);
+  Color expected = (1.0 - t) * config.background_dark_color + t * config.background_light_color;
+
+  ASSERT_NEAR(result.x, expected.x, 0.01);
+  ASSERT_NEAR(result.y, expected.y, 0.01);
+  ASSERT_NEAR(result.z, expected.z, 0.01);
+}
+
+// Test 7: Miss - Rayo paralelo a las tapas
+TEST_F(RendererTest, CylinderMissRayParallelToCap) {
+  // Setup: Cilindro con eje Y
+  setupMatteMaterial(scene, "orange_matte", Color(1.0, 0.5, 0.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (0, -10, 0) hacia (1, 0, 0)
+  // Paralelo a las tapas (perpendicular al eje Y), denominador cero en intersectCap
+  Ray ray(Point3(0, -10, 0), Vec3(1, 0, 0), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
+  Vec3 unit_dir  = Vec3(1, 0, 0).normalize();
+  double t       = 0.5 * (unit_dir.y + 1.0);
+  Color expected = (1.0 - t) * config.background_dark_color + t * config.background_light_color;
+
+  ASSERT_NEAR(result.x, expected.x, 0.01);
+  ASSERT_NEAR(result.y, expected.y, 0.01);
+  ASSERT_NEAR(result.z, expected.z, 0.01);
+}
+
+// Test 8: Miss - Rayo paralelo al eje del cilindro (fuera del radio)
+TEST_F(RendererTest, CylinderMissRayParallelToAxis) {
+  // Setup: Cilindro con eje Y, radio 2.0
+  setupMatteMaterial(scene, "white_matte", Color(1.0, 1.0, 1.0));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (5, 0, 0) [x=5, fuera del radio] hacia (0, 1, 0) [paralelo al eje]
+  // Denominador cero en intersectLateralSurface
+  Ray ray(Point3(5, 0, 0), Vec3(0, 1, 0), 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
+  Vec3 unit_dir  = Vec3(0, 1, 0).normalize();
+  double t       = 0.5 * (unit_dir.y + 1.0);
+  Color expected = (1.0 - t) * config.background_dark_color + t * config.background_light_color;
+
+  ASSERT_NEAR(result.x, expected.x, 0.01);
+  ASSERT_NEAR(result.y, expected.y, 0.01);
+  ASSERT_NEAR(result.z, expected.z, 0.01);
+}
+
+// Test 9: Hit - Lateral es más cercano que tapa (updateBestHit)
+TEST_F(RendererTest, CylinderHitClosestIsLateral) {
+  // Setup: Cilindro base
+  setupMatteMaterial(scene, "purple_matte", Color(0.5, 0.0, 0.5));
+  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+
+  // Rayo con depth=1 desde (1, -7, -1) hacia (0, -1, -1)
+  // Este rayo debería golpear la superficie lateral antes que la tapa superior
+  Vec3 direction = Vec3(0, -1, -1).normalize();
+  Ray ray(Point3(1, -7, -1), direction, 1);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: Hit con depth=1 debe dar negro
   ASSERT_DOUBLE_EQ(result.x, 0.0);
   ASSERT_DOUBLE_EQ(result.y, 0.0);
   ASSERT_DOUBLE_EQ(result.z, 0.0);
