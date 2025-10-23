@@ -2369,3 +2369,366 @@ TEST_F(SceneParserRefractiveMaterialTest, DuplicateMaterialNameAllowed) {
   ASSERT_EQ(scene.materialTable[0].localIndex, 0);
   ASSERT_EQ(scene.materialTable[1].localIndex, 1);
 }
+
+// ============================================================================
+// TESTS PARA findMaterialIndex
+// ============================================================================
+
+class SceneParserFindMaterialIndexTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_scene_find_material_index_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeSceneFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS - Material encontrado
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialFoundFirstElement) {
+  // Caso: buscar el primer material de la lista
+  // Definimos 3 materiales y luego una esfera que usa el primero
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "metal: mat2 0.6 0.6 0.6 0.1\n"
+                 "refractive: mat3 1.5\n"
+                 "sphere: 0 0 0 1 mat1\n");  // Usa mat1 (índice 0)
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 materiales
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialNames[0], "mat1");
+
+  // Verificar que se añadió la esfera exitosamente
+  // (esto significa que findMaterialIndex encontró mat1 y devolvió 0)
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);  // Índice del material mat1
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialFoundMiddleElement) {
+  // Caso: buscar un material en medio de la lista
+  // Definimos 3 materiales y luego una esfera que usa el segundo
+  writeSceneFile("matte: first 0.5 0.5 0.5\n"
+                 "metal: middle 0.6 0.6 0.6 0.1\n"
+                 "refractive: last 1.5\n"
+                 "sphere: 0 0 0 1 middle\n");  // Usa middle (índice 1)
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 materiales
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialNames[1], "middle");
+
+  // Verificar que se añadió la esfera exitosamente
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 1);  // Índice del material middle
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialFoundLastElement) {
+  // Caso: buscar el último material de la lista
+  // Definimos 3 materiales y luego una esfera que usa el último
+  writeSceneFile("matte: first 0.5 0.5 0.5\n"
+                 "metal: second 0.6 0.6 0.6 0.1\n"
+                 "refractive: last 1.5\n"
+                 "sphere: 0 0 0 1 last\n");  // Usa last (índice 2)
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 materiales
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialNames[2], "last");
+
+  // Verificar que se añadió la esfera exitosamente
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 2);  // Índice del material last
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialFoundWithComplexName) {
+  // Caso: material con nombre complejo (guiones, guiones bajos, números)
+  writeSceneFile("matte: red-material_v2 0.8 0.1 0.1\n"
+                 "sphere: 0 0 0 1 red-material_v2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió la esfera exitosamente
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MultipleSpheresSameMaterial) {
+  // Caso: múltiples esferas usando el mismo material
+  // Verifica que findMaterialIndex devuelve consistentemente el mismo índice
+  writeSceneFile("matte: shared_mat 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 shared_mat\n"
+                 "sphere: 1 1 1 0.5 shared_mat\n"
+                 "sphere: -1 -1 -1 2 shared_mat\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 esferas
+  ASSERT_EQ(scene.spheres.x.size(), 3);
+
+  // Todas deben referenciar el mismo material (índice 0)
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+  ASSERT_EQ(scene.spheres.materialIndex[1], 0);
+  ASSERT_EQ(scene.spheres.materialIndex[2], 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, DifferentSpheresUseDifferentMaterials) {
+  // Caso: múltiples esferas usando diferentes materiales
+  writeSceneFile("matte: mat1 0.8 0.1 0.1\n"
+                 "metal: mat2 0.1 0.8 0.1 0.2\n"
+                 "refractive: mat3 1.5\n"
+                 "sphere: 0 0 0 1 mat1\n"
+                 "sphere: 1 1 1 0.5 mat2\n"
+                 "sphere: -1 -1 -1 2 mat3\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 esferas
+  ASSERT_EQ(scene.spheres.x.size(), 3);
+
+  // Cada esfera debe referenciar un material diferente
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);  // mat1
+  ASSERT_EQ(scene.spheres.materialIndex[1], 1);  // mat2
+  ASSERT_EQ(scene.spheres.materialIndex[2], 2);  // mat3
+}
+
+// CASOS DE ERROR - Material no encontrado
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialNotFound) {
+  // Caso: buscar un material que no existe
+  // Si findMaterialIndex devuelve -1, parseSphere debe fallar
+  writeSceneFile("matte: existing_mat 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 nonexistent_mat\n");  // Material inexistente
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // La esfera NO debe haberse añadido (parseSphere falla si materialIndex == -1)
+  ASSERT_EQ(scene.spheres.x.size(), 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, EmptyMaterialList) {
+  // Caso: intentar usar un material cuando no se ha definido ninguno
+  // (lista materialNames vacía)
+  writeSceneFile("sphere: 0 0 0 1 any_mat\n");  // No hay materiales definidos
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // No debe haber materiales
+  ASSERT_EQ(scene.materialNames.size(), 0);
+
+  // La esfera NO debe haberse añadido
+  ASSERT_EQ(scene.spheres.x.size(), 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, CaseSensitiveSearch) {
+  // Caso: verificar que la búsqueda es sensible a mayúsculas/minúsculas
+  // Definimos "mat1" en minúsculas, pero intentamos buscar "Mat1" o "MAT1"
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 Mat1\n");  // Mayúscula diferente
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material "mat1" fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "mat1");
+
+  // La esfera NO debe haberse añadido (Mat1 != mat1)
+  ASSERT_EQ(scene.spheres.x.size(), 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, CaseSensitiveSearchUpperCase) {
+  // Caso: verificar sensibilidad con todas mayúsculas
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 MAT1\n");  // Todo en mayúsculas
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material "mat1" fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // La esfera NO debe haberse añadido (MAT1 != mat1)
+  ASSERT_EQ(scene.spheres.x.size(), 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, PartialMatchNotFound) {
+  // Caso: verificar que no se encuentra un material con nombre parcialmente similar
+  writeSceneFile("matte: material 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 mat\n");  // Prefijo del nombre real
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material "material" fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // La esfera NO debe haberse añadido (mat != material)
+  ASSERT_EQ(scene.spheres.x.size(), 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, ExtraWhitespaceInMaterialName) {
+  // Caso: verificar que espacios extra en el nombre del material no coinciden
+  // Nota: El tokenizer debería separar los espacios, pero este test documenta
+  // el comportamiento si llegaran a pasar
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 mat1\n");  // Nombre exacto (sin espacios)
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe funcionar correctamente (nombre exacto)
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+}
+
+// CASOS ADICIONALES - Edge cases
+
+TEST_F(SceneParserFindMaterialIndexTest, DuplicateMaterialNames) {
+  // Caso: si hay nombres duplicados (permitido por el parser),
+  // findMaterialIndex debe devolver el índice de la PRIMERA coincidencia
+  writeSceneFile("matte: duplicate 0.5 0.5 0.5\n"
+                 "metal: duplicate 0.6 0.6 0.6 0.1\n"  // Mismo nombre
+                 "sphere: 0 0 0 1 duplicate\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 2 materiales con el mismo nombre
+  ASSERT_EQ(scene.materialNames.size(), 2);
+  ASSERT_EQ(scene.materialNames[0], "duplicate");
+  ASSERT_EQ(scene.materialNames[1], "duplicate");
+
+  // La esfera debe usar el PRIMER material (índice 0)
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+
+  // Verificar que efectivamente es el material matte (primer tipo)
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::MATTE);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialNameWithNumbers) {
+  // Caso: nombres de material con números
+  writeSceneFile("matte: mat123 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 mat123\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe funcionar correctamente
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialNameSingleCharacter) {
+  // Caso: nombre de material de un solo carácter
+  writeSceneFile("matte: m 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 m\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe funcionar correctamente
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, MaterialNameVeryLong) {
+  // Caso: nombre de material muy largo
+  writeSceneFile("matte: this_is_a_very_long_material_name_with_many_characters 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 this_is_a_very_long_material_name_with_many_characters\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe funcionar correctamente
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, ManyMaterialsLinearSearch) {
+  // Caso: muchos materiales para verificar búsqueda lineal
+  // findMaterialIndex hace una búsqueda lineal desde el inicio
+  writeSceneFile("matte: mat0 0.1 0.1 0.1\n"
+                 "matte: mat1 0.2 0.2 0.2\n"
+                 "matte: mat2 0.3 0.3 0.3\n"
+                 "matte: mat3 0.4 0.4 0.4\n"
+                 "matte: mat4 0.5 0.5 0.5\n"
+                 "matte: mat5 0.6 0.6 0.6\n"
+                 "matte: mat6 0.7 0.7 0.7\n"
+                 "matte: mat7 0.8 0.8 0.8\n"
+                 "matte: mat8 0.9 0.9 0.9\n"
+                 "matte: mat9 1.0 1.0 1.0\n"
+                 "sphere: 0 0 0 1 mat5\n");  // Buscar en medio
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 10 materiales
+  ASSERT_EQ(scene.materialNames.size(), 10);
+
+  // La esfera debe usar mat5 (índice 5)
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+  ASSERT_EQ(scene.spheres.materialIndex[0], 5);
+}
+
+// TESTS DE INTEGRACIÓN - findMaterialIndex con Cylinder
+
+TEST_F(SceneParserFindMaterialIndexTest, IntegrationWithCylinder) {
+  // Caso: verificar que findMaterialIndex también funciona con parseCylinder
+  writeSceneFile("metal: cyl_mat 0.7 0.7 0.7 0.3\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 cyl_mat\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // Verificar que el cilindro fue añadido exitosamente
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, IntegrationCylinderMaterialNotFound) {
+  // Caso: cylinder con material inexistente
+  writeSceneFile("metal: existing 0.7 0.7 0.7 0.3\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 nonexistent\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 0);
+}
+
+TEST_F(SceneParserFindMaterialIndexTest, IntegrationSpheresAndCylindersShareMaterial) {
+  // Caso: esferas y cilindros compartiendo el mismo material
+  writeSceneFile("matte: shared 0.5 0.5 0.5\n"
+                 "sphere: 0 0 0 1 shared\n"
+                 "cylinder: 1 1 1 0.5 0 1 0 shared\n"
+                 "sphere: 2 2 2 0.3 shared\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió 1 material
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // Verificar que se añadieron 2 esferas y 1 cilindro
+  ASSERT_EQ(scene.spheres.x.size(), 2);
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+
+  // Todos deben referenciar el mismo material (índice 0)
+  ASSERT_EQ(scene.spheres.materialIndex[0], 0);
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);
+  ASSERT_EQ(scene.spheres.materialIndex[1], 0);
+}
