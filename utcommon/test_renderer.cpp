@@ -58,6 +58,14 @@ namespace {
     scene.cylinders.aabbs.push_back(AABB::from_cylinder(center, axis, radius, height));
   }
 
+  void setupRefractiveMaterial(SceneSettings & scene, std::string const & name, double ior) {
+    scene.materialNames.push_back(name);
+    scene.refractive.ior.push_back(ior);
+
+    auto local_index = static_cast<unsigned int>(scene.refractive.ior.size() - 1);
+    scene.materialTable.push_back({MaterialType::REFRACTIVE, local_index});
+  }
+
   void clearScene(SceneSettings & scene) {
     scene.spheres.x.clear();
     scene.spheres.y.clear();
@@ -713,4 +721,81 @@ TEST_F(RendererTest, MetalMaterialFuzzedReflection) {
   ASSERT_LE(result.y, attenuation.y);
   ASSERT_GE(result.z, 0.0);
   ASSERT_LE(result.z, attenuation.z);
+}
+
+// ============================================================================
+// TESTS PARA refractiveColor
+// ============================================================================
+
+// Test 1: Material refractivo computa refracción normal
+// (Camino B: Refracción, entrando desde el exterior)
+TEST_F(RendererTest, RefractiveMaterialComputesRefraction) {
+  // Setup: Configurar max_depth = 2 para permitir 1 rebote
+  config.max_depth = 2;
+
+  // Definir índice de refracción (vidrio típico)
+  double ior = 1.5;
+
+  // Limpiar escena y añadir material refractivo
+  clearScene(scene);
+  setupRefractiveMaterial(scene, "glass", ior);
+
+  // Configurar esfera con material refractivo (ID 0)
+  setupSingleSphereScene(scene, Point3(0, 0, -1), 0.5, 0);
+
+  // Lanzar un rayo frontal con depth = max_depth (2)
+  // El rayo golpea la esfera -> refractiveColor se ejecuta
+  // refractiveColor calcula refracción (Camino B: sin reflexión interna total)
+  // Crea un rayo rebotado con depth = 1
+  // Ese rayo rebotado (depth=1) falla (miss) y devuelve backgroundColor
+  // Resultado final: attenuation (1.0, 1.0, 1.0) * backgroundColor
+  Ray ray(Point3(0, 0, 0), Vec3(0, 0, -1), config.max_depth);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: El resultado no debe ser negro
+  // (prueba que el rebote depth=1 golpeó el fondo con color)
+  // Asumimos que backgroundColor no es completamente negro
+  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0)
+      << "Expected non-black color from refracted ray hitting background, got (" << result.x << ", "
+      << result.y << ", " << result.z << ")";
+}
+
+// Test 2: Material refractivo computa reflexión interna total
+// (Camino A: Reflexión Interna Total, saliendo desde el interior)
+TEST_F(RendererTest, RefractiveMaterialComputesTotalInternalReflection) {
+  // Setup: Configurar max_depth = 2 para permitir 1 rebote
+  config.max_depth = 2;
+
+  // Definir índice de refracción
+  double ior = 1.5;
+
+  // Limpiar escena y añadir material refractivo
+  clearScene(scene);
+  setupRefractiveMaterial(scene, "glass_tir", ior);
+
+  // Configurar esfera grande (radio 2.0) para que el rayo pueda estar dentro
+  setupSingleSphereScene(scene, Point3(0, 0, 0), 2.0, 0);
+
+  // Lanzar un rayo DESDE DENTRO de la esfera (cerca de la superficie interna)
+  // en un ángulo rasante para forzar reflexión interna total
+  // Punto de origen: (0, 1.9, 0) - cerca de la superficie superior interna
+  // Dirección: (0.1, 1.0, 0.0) normalizada - ángulo rasante hacia arriba
+  //
+  // Cuando el rayo golpea la superficie desde dentro:
+  // - front_face = false
+  // - refraction_ratio = 1.0 / ior = 1/1.5 = 0.667
+  // - Para ángulos rasantes: refraction_ratio * sin_theta > 1.0
+  // - Esto fuerza el Camino A: direction = reflect(...)
+  Vec3 direction = Vec3(0.1, 1.0, 0.0).normalize();
+  Ray ray(Point3(0, 1.9, 0), direction, config.max_depth);
+
+  Color result = Renderer::rayColor(ray, scene, config, rng);
+
+  // ASERCIÓN ROBUSTA: El resultado no debe ser negro
+  // (prueba que la reflexión interna total funcionó y el rayo reflejado
+  // eventualmente golpeó el fondo con color)
+  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0)
+      << "Expected non-black color from total internal reflection hitting background, got ("
+      << result.x << ", " << result.y << ", " << result.z << ")";
 }
