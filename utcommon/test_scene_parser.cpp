@@ -3312,3 +3312,740 @@ TEST_F(SceneParserSphereTest, IntegrationMixedObjectTypes) {
   ASSERT_EQ(scene.spheres.materialIndex[1], 1);  // mat2
   ASSERT_EQ(scene.spheres.materialIndex[2], 2);  // mat3
 }
+
+// ============================================================================
+// TESTS PARA parseCylinder
+// ============================================================================
+
+class SceneParserCylinderTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_scene_cylinder_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+    }
+  }
+
+  void writeSceneFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS - Cilindro parseado correctamente
+
+TEST_F(SceneParserCylinderTest, ValidBasicCylinderAxisY) {
+  // Caso 1: Pre-cargar "mat1", parsear cilindro en origen con radio 0.5, eje Y unitario
+  // tokens = {"cylinder:", "0", "0", "0", "0.5", "0", "1", "0", "mat1"}
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "mat1");
+
+  // Verificar que el cilindro fue añadido correctamente
+  ASSERT_FALSE(scene.cylinders.r.empty());
+  ASSERT_EQ(scene.cylinders.x.size(), 1);
+
+  // Verificar centro
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.y[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.z[0], 0.0);
+
+  // Verificar radio
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 0.5);
+
+  // Verificar eje (debe almacenar el vector tal cual)
+  ASSERT_DOUBLE_EQ(scene.cylinders.vx[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vy[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], 0.0);
+
+  // Verificar invAxisLen (eje unitario -> length = 1.0 -> invAxisLen = 1.0)
+  ASSERT_DOUBLE_EQ(scene.cylinders.invAxisLen[0], 1.0);
+
+  // Verificar materialIndex
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderNonUnitaryAxis) {
+  // Caso 2: Pre-cargar "mat1", parsear cilindro con eje Z de longitud 10
+  // tokens = {"cylinder:", "1", "1", "1", "1.0", "0", "0", "10", "mat1"}
+  // invAxisLen debe ser 1/10 = 0.1
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 1 1 1 1.0 0 0 10 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el cilindro fue añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+
+  // Verificar centro
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.y[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.z[0], 1.0);
+
+  // Verificar radio
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 1.0);
+
+  // Verificar eje (debe almacenar el vector original, no normalizado)
+  ASSERT_DOUBLE_EQ(scene.cylinders.vx[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vy[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], 10.0);
+
+  // Verificar invAxisLen (longitud = 10 -> invAxisLen = 0.1)
+  ASSERT_DOUBLE_EQ(scene.cylinders.invAxisLen[0], 0.1);
+
+  // Verificar materialIndex
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderWithDifferentMaterial) {
+  // Caso adicional: Cilindro con segundo material
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "metal: mat2 0.6 0.6 0.6 0.1\n"
+                 "cylinder: 2 3 4 0.75 1 1 1 mat2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 2 materiales
+  ASSERT_EQ(scene.materialNames.size(), 2);
+
+  // Verificar que el cilindro fue añadido con mat2 (índice 1)
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 2.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.y[0], 3.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.z[0], 4.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 0.75);
+
+  // Eje (1, 1, 1) -> longitud = sqrt(3) ≈ 1.732
+  ASSERT_DOUBLE_EQ(scene.cylinders.vx[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vy[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], 1.0);
+  ASSERT_NEAR(scene.cylinders.invAxisLen[0], 1.0 / std::sqrt(3.0), 1e-10);
+
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 1);  // mat2
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderWithNegativeCoordinates) {
+  // Caso adicional: Cilindro con coordenadas negativas (válido)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: -10 -20.5 -30 2.5 -1 -2 -3 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el cilindro fue añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], -10.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.y[0], -20.5);
+  ASSERT_DOUBLE_EQ(scene.cylinders.z[0], -30.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 2.5);
+
+  // Eje (-1, -2, -3) -> longitud = sqrt(1 + 4 + 9) = sqrt(14)
+  ASSERT_DOUBLE_EQ(scene.cylinders.vx[0], -1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vy[0], -2.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], -3.0);
+  ASSERT_NEAR(scene.cylinders.invAxisLen[0], 1.0 / std::sqrt(14.0), 1e-10);
+
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderWithVeryLargeCoordinates) {
+  // Caso adicional: Coordenadas y eje muy grandes (pero válidos)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 1e10 -1e10 5e9 1e8 0 0 1e6 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el cilindro fue añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 1e10);
+  ASSERT_DOUBLE_EQ(scene.cylinders.y[0], -1e10);
+  ASSERT_DOUBLE_EQ(scene.cylinders.z[0], 5e9);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 1e8);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], 1e6);
+  ASSERT_DOUBLE_EQ(scene.cylinders.invAxisLen[0], 1.0 / 1e6);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderWithVerySmallRadius) {
+  // Caso adicional: Radio muy pequeño pero válido (> 0)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.000001 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el cilindro fue añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 0.000001);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderWithScientificNotation) {
+  // Caso adicional: Valores en notación científica
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 1.5e2 -3.2e-1 4.7e3 2.1e1 1e0 2e0 3e0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el cilindro fue añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 150.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.y[0], -0.32);
+  ASSERT_DOUBLE_EQ(scene.cylinders.z[0], 4700.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 21.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vx[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vy[0], 2.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], 3.0);
+}
+
+TEST_F(SceneParserCylinderTest, ValidMultipleCylindersAdded) {
+  // Caso adicional: Múltiples cilindros deben añadirse secuencialmente
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "metal: mat2 0.6 0.6 0.6 0.1\n"
+                 "cylinder: 0 0 0 1 0 1 0 mat1\n"
+                 "cylinder: 5 5 5 2 1 0 0 mat2\n"
+                 "cylinder: -3 -3 -3 0.5 0 0 1 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 cilindros
+  ASSERT_EQ(scene.cylinders.r.size(), 3);
+
+  // Primer cilindro
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 1.0);
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);
+
+  // Segundo cilindro
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[1], 5.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[1], 2.0);
+  ASSERT_EQ(scene.cylinders.materialIndex[1], 1);
+
+  // Tercer cilindro
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[2], -3.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[2], 0.5);
+  ASSERT_EQ(scene.cylinders.materialIndex[2], 0);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderWithAllMaterialTypes) {
+  // Caso adicional: Cilindros con cada tipo de material
+  writeSceneFile("matte: matte_mat 0.8 0.2 0.2\n"
+                 "metal: metal_mat 0.2 0.8 0.2 0.5\n"
+                 "refractive: refract_mat 1.5\n"
+                 "cylinder: 0 0 0 1 1 0 0 matte_mat\n"
+                 "cylinder: 2 0 0 1 0 1 0 metal_mat\n"
+                 "cylinder: 4 0 0 1 0 0 1 refract_mat\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 cilindros
+  ASSERT_EQ(scene.cylinders.r.size(), 3);
+
+  // Verificar índices de materiales
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);  // matte_mat
+  ASSERT_EQ(scene.cylinders.materialIndex[1], 1);  // metal_mat
+  ASSERT_EQ(scene.cylinders.materialIndex[2], 2);  // refract_mat
+
+  // Verificar tipos de materiales
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::MATTE);
+  ASSERT_EQ(scene.materialTable[1].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[2].type, MaterialType::REFRACTIVE);
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderAxisAlongX) {
+  // Caso adicional: Cilindro con eje a lo largo del eje X
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 1 5 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vx[0], 5.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vy[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.vz[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.invAxisLen[0], 0.2);  // 1/5
+}
+
+TEST_F(SceneParserCylinderTest, ValidCylinderVerySmallAxis) {
+  // Caso adicional: Eje muy pequeño pero no cero
+  // Verifica el cálculo de invAxisLen con vectores pequeños
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 1 0.001 0.001 0.001 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  // Longitud = sqrt(3 * 0.001^2) = sqrt(3e-6) ≈ 0.001732
+  double const expected_length = std::sqrt(3.0 * 0.001 * 0.001);
+  ASSERT_NEAR(scene.cylinders.invAxisLen[0], 1.0 / expected_length, 1e-8);
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(SceneParserCylinderTest, ErrorTooFewArguments) {
+  // Caso 3a: Menos de 9 tokens (requiere 8 parámetros + comando)
+  // Falta el material
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido (error de formato)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorTooFewArgumentsMissingMultiple) {
+  // Caso adicional: Faltan múltiples parámetros
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorOnlyCommand) {
+  // Caso adicional: Solo el comando, sin parámetros
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder:\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorTooManyArguments) {
+  // Caso 3b: Más de 9 tokens (argumentos extra)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 mat1 extra_arg\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido (error de formato)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorTooManyArgumentsMultiple) {
+  // Caso adicional: Múltiples argumentos extra
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 mat1 extra1 extra2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericCentreX) {
+  // Caso 3c: Valor no numérico en coordenada X del centro
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: abc 0 0 0.5 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericCentreY) {
+  // Caso 3c: Valor no numérico en coordenada Y del centro
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 xyz 0 0.5 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericCentreZ) {
+  // Caso 3c: Valor no numérico en coordenada Z del centro
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 invalid 0.5 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericRadius) {
+  // Caso 3c: Valor no numérico en radio
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 notanumber 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericAxisX) {
+  // Caso 3c: Valor no numérico en componente X del eje
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 bad 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericAxisY) {
+  // Caso 3c: Valor no numérico en componente Y del eje
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 bad 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNonNumericAxisZ) {
+  // Caso 3c: Valor no numérico en componente Z del eje
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 0 bad mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorPartialNumericValue) {
+  // Caso adicional: Valor parcialmente numérico
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 5abc 0 0 0.5 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+// ERRORES DE RANGO/VALIDEZ - Radio inválido
+
+TEST_F(SceneParserCylinderTest, ErrorRadiusZero) {
+  // Caso 4a: Radio igual a cero (inválido)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido (radio debe ser > 0)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorRadiusNegative) {
+  // Caso 4b: Radio negativo (inválido)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 -0.5 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido (radio debe ser > 0)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorRadiusVeryNegative) {
+  // Caso adicional: Radio muy negativo
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 -1000000 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorRadiusNegativeScientific) {
+  // Caso adicional: Radio negativo en notación científica
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 -1.5e-2 0 1 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+// ERRORES DE RANGO/VALIDEZ - Vector de eje cero
+
+TEST_F(SceneParserCylinderTest, ErrorZeroAxisVector) {
+  // Caso 4c: Vector de eje cero (0, 0, 0) - inválido
+  // Un cilindro sin dirección no tiene sentido geométrico
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido (eje no puede ser cero)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorZeroAxisVectorExplicit) {
+  // Caso adicional: Vector de eje cero con valores explícitos 0.0
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 5 5 5 2.0 0.0 0.0 0.0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+// ERRORES DE MATERIAL - Material no encontrado
+
+TEST_F(SceneParserCylinderTest, ErrorMaterialNotFound) {
+  // Caso 5a: Referencia a material inexistente
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 unknown_mat\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material mat1 fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "mat1");
+
+  // El cilindro NO debe haberse añadido (material no encontrado)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorNoMaterialsDefined) {
+  // Caso adicional: Intentar crear cilindro sin definir ningún material
+  writeSceneFile("cylinder: 0 0 0 0.5 0 1 0 any_material\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // No debe haber materiales
+  ASSERT_TRUE(scene.materialNames.empty());
+
+  // El cilindro NO debe haberse añadido
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorMaterialCaseSensitive) {
+  // Caso 5b: Referencia a material con mayúsculas/minúsculas incorrectas
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 Mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material mat1 fue añadido (en minúsculas)
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "mat1");
+
+  // El cilindro NO debe haberse añadido (Mat1 != mat1)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorMaterialAllUpperCase) {
+  // Caso adicional: Material todo en mayúsculas
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 MAT1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material mat1 fue añadido (en minúsculas)
+  ASSERT_EQ(scene.materialNames.size(), 1);
+
+  // El cilindro NO debe haberse añadido (MAT1 != mat1)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, ErrorMaterialPartialName) {
+  // Caso adicional: Usar solo parte del nombre del material
+  writeSceneFile("matte: material_name 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0.5 0 1 0 material\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que el material completo fue añadido
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "material_name");
+
+  // El cilindro NO debe haberse añadido (material != material_name)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+// CASOS ADICIONALES - Edge cases y valores especiales
+
+TEST_F(SceneParserCylinderTest, EdgeCaseInfinityRadius) {
+  // Caso adicional: Radio infinito (técnicamente válido > 0)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 inf 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar comportamiento con infinito
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_TRUE(std::isinf(scene.cylinders.r[0]));
+  ASSERT_GT(scene.cylinders.r[0], 0.0);
+}
+
+TEST_F(SceneParserCylinderTest, EdgeCaseNegativeInfinityRadius) {
+  // Caso adicional: Radio -infinito (inválido)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 -inf 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido (-inf < 0)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, EdgeCaseNaNRadius) {
+  // Caso adicional: Radio NaN (inválido)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 nan 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro NO debe haberse añadido (NaN no cumple > 0)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
+
+TEST_F(SceneParserCylinderTest, EdgeCaseInfinityCoordinates) {
+  // Caso adicional: Coordenadas infinitas (válidas matemáticamente)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: inf -inf inf 1.0 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debería añadirse (coordenadas pueden ser infinitas)
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_TRUE(std::isinf(scene.cylinders.x[0]));
+  ASSERT_TRUE(std::isinf(scene.cylinders.y[0]));
+  ASSERT_TRUE(std::isinf(scene.cylinders.z[0]));
+}
+
+TEST_F(SceneParserCylinderTest, EdgeCaseInfinityAxisComponents) {
+  // Caso adicional: Componentes del eje infinitos
+  // El eje puede tener componentes infinitas (longitud infinita -> invAxisLen = 0)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 1.0 inf 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debería añadirse (eje infinito es válido)
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_TRUE(std::isinf(scene.cylinders.vx[0]));
+  ASSERT_DOUBLE_EQ(scene.cylinders.invAxisLen[0], 0.0);  // 1/inf = 0
+}
+
+TEST_F(SceneParserCylinderTest, EdgeCaseNaNCoordinates) {
+  // Caso adicional: Coordenadas NaN (técnicamente válidas para parsedouble)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: nan nan nan 1.0 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debería añadirse (no hay validación de rango para coordenadas)
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_TRUE(std::isnan(scene.cylinders.x[0]));
+  ASSERT_TRUE(std::isnan(scene.cylinders.y[0]));
+  ASSERT_TRUE(std::isnan(scene.cylinders.z[0]));
+}
+
+TEST_F(SceneParserCylinderTest, EdgeCaseNaNAxisComponents) {
+  // Caso adicional: Componentes del eje NaN
+  // NaN en el eje resulta en longitud NaN, lo cual es problemático
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 1.0 nan 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debería añadirse (parsedouble acepta nan)
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_TRUE(std::isnan(scene.cylinders.vx[0]));
+  // invAxisLen será NaN (sqrt con NaN produce NaN)
+  ASSERT_TRUE(std::isnan(scene.cylinders.invAxisLen[0]));
+}
+
+TEST_F(SceneParserCylinderTest, IntegrationValidCylinderThenInvalidCylinder) {
+  // Caso adicional: Primer cilindro válido, segundo inválido
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 1.0 1 0 0 mat1\n"
+                 "cylinder: 1 1 1 -0.5 1 0 0 mat1\n");  // Radio negativo
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Solo el primer cilindro debe haberse añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 1.0);
+}
+
+TEST_F(SceneParserCylinderTest, IntegrationInvalidCylinderThenValidCylinder) {
+  // Caso adicional: Primer cilindro inválido, segundo válido
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 0 1 0 0 mat1\n"  // Radio cero (inválido)
+                 "cylinder: 1 1 1 0.5 1 0 0 mat1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Solo el segundo cilindro debe haberse añadido
+  ASSERT_EQ(scene.cylinders.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.cylinders.x[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.cylinders.r[0], 0.5);
+}
+
+TEST_F(SceneParserCylinderTest, IntegrationMixedObjectTypes) {
+  // Caso adicional: Mezcla de cilindros, esferas y materiales
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "metal: mat2 0.6 0.6 0.6 0.1\n"
+                 "cylinder: 0 0 0 1.0 1 0 0 mat1\n"
+                 "sphere: 2 2 2 0.5 mat2\n"
+                 "cylinder: 4 4 4 2.0 0 1 0 mat2\n"
+                 "refractive: mat3 1.5\n"
+                 "cylinder: -1 -1 -1 0.3 0 0 1 mat3\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 cilindros y 1 esfera
+  ASSERT_EQ(scene.cylinders.r.size(), 3);
+  ASSERT_EQ(scene.spheres.x.size(), 1);
+
+  // Verificar materiales de los cilindros
+  ASSERT_EQ(scene.cylinders.materialIndex[0], 0);  // mat1
+  ASSERT_EQ(scene.cylinders.materialIndex[1], 1);  // mat2
+  ASSERT_EQ(scene.cylinders.materialIndex[2], 2);  // mat3
+}
+
+TEST_F(SceneParserCylinderTest, IntegrationCylinderWithZeroAxisRejectedBeforeMaterial) {
+  // Caso adicional: Verifica que el error de eje cero se detecta antes de buscar el material
+  // (el orden de validación en el código: primero radio, luego eje, luego material)
+  writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
+                 "cylinder: 0 0 0 1.0 0 0 0 nonexistent\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // El cilindro no debe añadirse por el eje cero (detectado antes de buscar material)
+  ASSERT_TRUE(scene.cylinders.r.empty());
+}
