@@ -28,19 +28,20 @@ public:
 
 private:
   struct HitRecord {
-    Point3 p;
-    Vec3 normal;
-    double t = 0.0F;
+    Point3 p;         // Punto de colisión
+    Vec3 normal;      // Vector normal en el punto de colisión
+    double t = 0.0F;  // Parámetro 't' del rayo
     Ray prev_ray;
-    unsigned int material_global_id = 0;
-    bool front_face                 = false;
+    unsigned int material_global_id = 0;  // ID del material del objeto golpeado
+    bool front_face = false;              // Para saber si el rayo golpeó desde fuera o desde dentro
 
     HitRecord() = default;
 
+    // Función para establecer la normal siempre apuntando hacia fuera
     void set_face_normal(Ray const & r, Vec3 const & outward_normal) {
-      front_face = dot(r.direction, outward_normal) < 0;  // Actualizamos el miembro de la clase
-      normal     = front_face ? outward_normal : -outward_normal;
-    }
+      bool const front_face = dot(r.direction, outward_normal) < 0;
+      normal                = front_face ? outward_normal : -outward_normal;
+    }  // Índice del objeto golpeado en el array de la escena.
   };
 
   struct CylinderGeometry {

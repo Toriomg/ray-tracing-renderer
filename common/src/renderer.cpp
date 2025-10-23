@@ -55,7 +55,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const &
   double sphere_radius = scene.spheres.r[sphere_index];
 
   // ----- Matemática de la intersección Rayo-Esfera -----
-  Vec3 oc           = r.point - sphere_center;
+  Vec3 oc                   = r.point - sphere_center;
   auto a            = r.direction.length_squared();
   auto half_b       = dot(oc, r.direction);
   auto c            = oc.length_squared() - sphere_radius * sphere_radius;
@@ -110,7 +110,7 @@ std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Poin
   return Intersection{t, p, normal};
 }
 
-std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(  // NOLINT
+std::optional<Renderer::Intersection> Renderer::intersectLateralSurface( //NOLINT
     Ray const & r, CylinderGeometry const & cyl, double closest_t) {
   Vec3 const oc      = r.point - cyl.center;
   Vec3 const dr_perp = component_perpendicular(r.direction, cyl.unit_axis);
@@ -130,43 +130,43 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(  // NOL
   }
 
   // --- Lógica corregida para comprobar AMBAS raíces ---
-  double const sqrt_discr  = std::sqrt(discr);
+  double const sqrt_discr = std::sqrt(discr);
   double const half_height = cyl.height * 0.5;
   std::optional<Intersection> best_hit;
 
   // 1. Evaluar la primera raíz (la más cercana al origen del rayo)
   double t1 = (-b - sqrt_discr) / (2.0 * a);
   if (t1 > 0.001 and t1 < closest_t) {
-    Point3 const p1          = r.at(t1);
+    Point3 const p1 = r.at(t1);
     double const projection1 = dot(p1 - cyl.center, cyl.unit_axis);
-
+    
     // Comprobamos si esta intersección está dentro de las tapas del cilindro
     if (std::fabs(projection1) <= half_height) {
-      // Si es válida, la guardamos como nuestra mejor candidata hasta ahora.
-      Vec3 normal = component_perpendicular(p1 - cyl.center, cyl.unit_axis).normalize();
-      best_hit    = Intersection{t1, p1, normal};
+        // Si es válida, la guardamos como nuestra mejor candidata hasta ahora.
+        Vec3 normal = component_perpendicular(p1 - cyl.center, cyl.unit_axis).normalize();
+        best_hit = Intersection{t1, p1, normal};
     }
   }
 
   // 2. Evaluar la segunda raíz
   double t2 = (-b + sqrt_discr) / (2.0 * a);
-
+  
   // Determinamos la distancia más cercana actual para no evaluar innecesariamente
   double current_closest = best_hit ? best_hit->t : closest_t;
 
   if (t2 > 0.001 and t2 < current_closest) {
-    Point3 const p2          = r.at(t2);
+    Point3 const p2 = r.at(t2);
     double const projection2 = dot(p2 - cyl.center, cyl.unit_axis);
-
+    
     // Comprobamos si esta intersección está dentro de las tapas del cilindro
     if (std::fabs(projection2) <= half_height) {
-      // Si es válida Y más cercana que la anterior, la guardamos.
-      Vec3 normal = component_perpendicular(p2 - cyl.center, cyl.unit_axis).normalize();
-      best_hit    = Intersection{t2, p2, normal};
+        // Si es válida Y más cercana que la anterior, la guardamos.
+        Vec3 normal = component_perpendicular(p2 - cyl.center, cyl.unit_axis).normalize();
+        best_hit = Intersection{t2, p2, normal};
     }
   }
 
-  return best_hit;  // Devolvemos la mejor intersección encontrada (o nullopt si ninguna fue válida)
+  return best_hit; // Devolvemos la mejor intersección encontrada (o nullopt si ninguna fue válida)
   // --- FIN DE LA LÓGICA CORREGIDA ---
 }
 
@@ -178,7 +178,7 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,  // NOLINT
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene, //NOLINT
                                                              size_t idx, Ray r, double closest_t) {
   // --- 1. Setup - Using precomputed values from CylinderData ---
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
@@ -249,11 +249,11 @@ Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, 
                              ctx.scene->metal.b[metal_idx]};
   double diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
-  Vec3 reflected_dir       = reflect(hit_rec.prev_ray.direction, hit_rec.normal);
-  Vec3 fuzz                = diffusion_factor * ctx.materialRng->get_vector_minus1_to_1();
+  Vec3 reflected_dir = reflect(hit_rec.prev_ray.direction, hit_rec.normal);
+  Vec3 fuzz          = diffusion_factor * ctx.materialRng->get_vector_minus1_to_1();
   Vec3 scattered_direction = reflected_dir.normalize() + fuzz;
 
-  Ray bounced_ray = Ray(hit_rec.p, scattered_direction, hit_rec.prev_ray.depth - 1);
+  Ray bounced_ray    = Ray(hit_rec.p, scattered_direction, hit_rec.prev_ray.depth - 1);
 
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
@@ -264,20 +264,22 @@ Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & 
   double ior                  = ctx.scene->refractive.ior[refractive_idx];
   Vec3 unit_direction         = hit_rec.prev_ray.direction.normalize();
 
-  double refraction_ratio = hit_rec.front_face ? (1.0 / ior) : ior;
+  double refraction_ratio = ior;
+  if (!hit_rec.front_face) {
+    refraction_ratio = 1.0 / ior;
+  }
 
-  double cos_theta = std::min(-dot(unit_direction, hit_rec.normal), 1.0);
+  double cos_theta = std::min(dot(-unit_direction, hit_rec.normal), 1.0);
   double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
 
   Vec3 direction;
 
   if (refraction_ratio * sin_theta > 1.0) {
-    direction = reflect(unit_direction, hit_rec.normal);  // Reflexión interna total
-  } else {                                                // Refracción normal
-    Vec3 i              = refraction_ratio * (unit_direction + cos_theta * hit_rec.normal);
-    double discriminant = 1.0 - i.length_squared();
-    Vec3 j              = -std::sqrt(std::max(0.0, discriminant)) * hit_rec.normal;
-    direction           = i + j;
+    direction = reflect(unit_direction, hit_rec.normal);
+  } else {
+    Vec3 i    = refraction_ratio * (unit_direction + cos_theta * hit_rec.normal);
+    Vec3 j    = -std::sqrt(std::fabs(1.0 - i.length_squared())) * hit_rec.normal;
+    direction = i + j;
   }
 
   Ray refracted_ray(hit_rec.p, direction, hit_rec.prev_ray.depth - 1);
