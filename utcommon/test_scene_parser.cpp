@@ -802,3 +802,915 @@ TEST_F(SceneParserMatteMaterialTest, DuplicateMaterialNameAllowed) {
   ASSERT_EQ(scene.materialTable[0].localIndex, 0);
   ASSERT_EQ(scene.materialTable[1].localIndex, 1);
 }
+
+// ============================================================================
+// TESTS PARA parseMetalMaterial
+// ============================================================================
+
+class SceneParserMetalMaterialTest : public ::testing::Test {
+protected:
+  std::string temp_filename;
+
+  void SetUp() override { temp_filename = "test_scene_metal_material_temp.txt"; }
+
+  void TearDown() override {
+    // Remove temporary file
+    if (std::remove(temp_filename.c_str()) != 0) {
+      // File removal failed, but we don't want to fail the test for this
+      // Just continue silently as this is cleanup code
+    }
+  }
+
+  void writeSceneFile(std::string const & content) {
+    std::ofstream file(temp_filename);
+    file << content;
+    file.close();
+  }
+};
+
+// CASOS VÁLIDOS
+
+TEST_F(SceneParserMetalMaterialTest, ValidBasicCase) {
+  // Caso válido básico: metal: met1 0.8 0.8 0.1 0.2
+  // Verifica que se añade correctamente el material con nombre "met1"
+  // RGB = {0.8, 0.8, 0.1} y diffusion = 0.2
+  writeSceneFile("metal: met1 0.8 0.8 0.1 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió 1 material metal
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.metal.g.size(), 1);
+  ASSERT_EQ(scene.metal.b.size(), 1);
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+
+  // Verificar los valores RGB y diffusion
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.8);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.8);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+
+  // Verificar que se añadió el nombre del material
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+
+  // Verificar que se añadió la entrada en materialTable
+  ASSERT_EQ(scene.materialTable.size(), 1);
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidBoundaryValues) {
+  // Caso válido con valores en los límites: RGB en [0,1], diffusion = 0.0 (mínimo)
+  writeSceneFile("metal: met2 0.0 1.0 0.5 0.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió 1 material metal
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.metal.g.size(), 1);
+  ASSERT_EQ(scene.metal.b.size(), 1);
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+
+  // Verificar los valores en los límites
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.0);
+
+  // Verificar el nombre del material
+  ASSERT_EQ(scene.materialNames.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "met2");
+
+  // Verificar materialTable
+  ASSERT_EQ(scene.materialTable.size(), 1);
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidHighDiffusion) {
+  // Caso válido con difusión alta (sin límite superior)
+  // metal: met3 0.9 0.9 0.9 10.0
+  writeSceneFile("metal: met3 0.9 0.9 0.9 10.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadió el material
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+
+  // Verificar valores RGB y diffusion alta
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.9);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.9);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.9);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 10.0);
+
+  // Verificar nombre y tabla
+  ASSERT_EQ(scene.materialNames[0], "met3");
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidBlackColor) {
+  // Negro puro con difusión: RGB = (0, 0, 0), diffusion = 0.5
+  writeSceneFile("metal: black_metal 0 0 0 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.5);
+
+  ASSERT_EQ(scene.materialNames[0], "black_metal");
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidWhiteColor) {
+  // Blanco puro con difusión: RGB = (1, 1, 1), diffusion = 0.1
+  writeSceneFile("metal: white_metal 1 1 1 0.1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.1);
+
+  ASSERT_EQ(scene.materialNames[0], "white_metal");
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidDecimalPrecision) {
+  // Valores con múltiples decimales para verificar precisión
+  writeSceneFile("metal: precise_metal 0.123456 0.654321 0.999999 0.456789\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.123456);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.654321);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.999999);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.456789);
+
+  ASSERT_EQ(scene.materialNames[0], "precise_metal");
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidMultipleMaterials) {
+  // Múltiples materiales metal en el mismo archivo
+  // Verifica que los índices locales se incrementan correctamente
+  writeSceneFile("metal: gold 0.9 0.8 0.1 0.2\n"
+                 "metal: silver 0.8 0.8 0.8 0.1\n"
+                 "metal: copper 0.7 0.5 0.3 0.3\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 3 materiales
+  ASSERT_EQ(scene.metal.r.size(), 3);
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialTable.size(), 3);
+
+  // Verificar primer material (oro)
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.9);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.8);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+  ASSERT_EQ(scene.materialNames[0], "gold");
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+
+  // Verificar segundo material (plata)
+  ASSERT_DOUBLE_EQ(scene.metal.r[1], 0.8);
+  ASSERT_DOUBLE_EQ(scene.metal.g[1], 0.8);
+  ASSERT_DOUBLE_EQ(scene.metal.b[1], 0.8);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[1], 0.1);
+  ASSERT_EQ(scene.materialNames[1], "silver");
+  ASSERT_EQ(scene.materialTable[1].localIndex, 1);
+
+  // Verificar tercer material (cobre)
+  ASSERT_DOUBLE_EQ(scene.metal.r[2], 0.7);
+  ASSERT_DOUBLE_EQ(scene.metal.g[2], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.b[2], 0.3);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[2], 0.3);
+  ASSERT_EQ(scene.materialNames[2], "copper");
+  ASSERT_EQ(scene.materialTable[2].localIndex, 2);
+
+  // Verificar que todos son de tipo METAL
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[1].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[2].type, MaterialType::METAL);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidVeryHighDiffusion) {
+  // Difusión muy alta (sin límite superior explícito en el código)
+  writeSceneFile("metal: fuzzy_metal 0.5 0.5 0.5 1000.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 1000.0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidComplexMaterialName) {
+  // Nombres de material complejos: con guiones, guiones bajos, números
+  writeSceneFile("metal: brushed-aluminum_v2 0.7 0.7 0.7 0.4\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "brushed-aluminum_v2");
+}
+
+// ERRORES DE FORMATO - Número incorrecto de argumentos
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NoValues) {
+  // Menos de 6 tokens: falta todo (solo el comando)
+  writeSceneFile("metal:\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (error de parsing)
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.metal.g.empty());
+  ASSERT_TRUE(scene.metal.b.empty());
+  ASSERT_TRUE(scene.metal.diffusion.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_OnlyName) {
+  // Solo nombre, faltan los valores RGB y diffusion
+  writeSceneFile("metal: met1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NameAndRGB) {
+  // Solo nombre y RGB, falta diffusion
+  writeSceneFile("metal: met1 0.5 0.5 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NameRG) {
+  // Solo nombre, R y G, faltan B y diffusion
+  writeSceneFile("metal: met1 0.5 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NameR) {
+  // Solo nombre y R, faltan G, B y diffusion
+  writeSceneFile("metal: met1 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooManyArguments_OneExtra) {
+  // Más de 6 tokens: un argumento extra
+  writeSceneFile("metal: met1 0.5 0.5 0.5 0.2 extra\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (error de parsing)
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorTooManyArguments_Multiple) {
+  // Múltiples argumentos extra
+  writeSceneFile("metal: met1 0.5 0.5 0.5 0.2 extra1 extra2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// ERRORES DE FORMATO - Valores no numéricos
+
+TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericRComponent) {
+  // Componente R no numérico
+  writeSceneFile("metal: met1 abc 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericGComponent) {
+  // Componente G no numérico
+  writeSceneFile("metal: met1 0.5 abc 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericBComponent) {
+  // Componente B no numérico
+  writeSceneFile("metal: met1 0.5 0.5 abc 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericDiffusion) {
+  // Diffusion no numérico
+  writeSceneFile("metal: met1 0.5 0.5 0.5 abc\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorAllNonNumeric) {
+  // Todos los valores no numéricos
+  writeSceneFile("metal: met1 abc def ghi jkl\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorAlphanumericMixedInComponent) {
+  // Valor alfanumérico mixto (parsedouble debería rechazarlo)
+  writeSceneFile("metal: met1 0.5abc 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorEmptyValues) {
+  // Valores vacíos después del nombre
+  writeSceneFile("metal: met1   \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// ERRORES DE RANGO - Componentes RGB fuera del rango [0, 1]
+
+TEST_F(SceneParserMetalMaterialTest, ErrorRComponentBelowZero) {
+  // Componente R menor que 0
+  writeSceneFile("metal: met1 -0.1 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (fuera de rango)
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorGComponentAboveOne) {
+  // Componente G mayor que 1
+  writeSceneFile("metal: met1 0.5 1.1 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorBComponentBelowZero) {
+  // Componente B menor que 0
+  writeSceneFile("metal: met1 0.5 0.5 -0.1 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorBComponentAboveOne) {
+  // Componente B mayor que 1
+  writeSceneFile("metal: met1 0.5 0.5 1.1 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorAllRGBComponentsBelowZero) {
+  // Todos los componentes RGB menores que 0
+  writeSceneFile("metal: met1 -0.1 -0.2 -0.3 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorAllRGBComponentsAboveOne) {
+  // Todos los componentes RGB mayores que 1
+  writeSceneFile("metal: met1 1.1 1.2 1.3 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorRComponentFarBelowZero) {
+  // Componente R muy negativo
+  writeSceneFile("metal: met1 -100.0 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorGComponentFarAboveOne) {
+  // Componente G muy por encima de 1
+  writeSceneFile("metal: met1 0.5 100.0 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// ERRORES DE RANGO - Factor de difusión negativo
+
+TEST_F(SceneParserMetalMaterialTest, ErrorDiffusionBelowZero) {
+  // Factor de difusión menor que 0 (inválido según código)
+  writeSceneFile("metal: met1 0.5 0.5 0.5 -0.1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (diffusion < 0.0 es inválido)
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorDiffusionFarBelowZero) {
+  // Factor de difusión muy negativo
+  writeSceneFile("metal: met1 0.5 0.5 0.5 -100.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ErrorCombinedRGBAndDiffusionOutOfRange) {
+  // RGB fuera de rango Y diffusion negativo (múltiples errores)
+  writeSceneFile("metal: met1 -0.1 1.5 0.5 -0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+  ASSERT_TRUE(scene.materialNames.empty());
+  ASSERT_TRUE(scene.materialTable.empty());
+}
+
+// CASOS LÍMITE - Valores en los bordes del rango válido
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryRGBExactlyZero) {
+  // Todos los componentes RGB exactamente 0.0
+  writeSceneFile("metal: met_zero 0.0 0.0 0.0 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.5);
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryRGBExactlyOne) {
+  // Todos los componentes RGB exactamente 1.0
+  writeSceneFile("metal: met_one 1.0 1.0 1.0 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.5);
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryDiffusionExactlyZero) {
+  // Difusión exactamente 0.0 (válido, superficie perfectamente reflectante)
+  writeSceneFile("metal: mirror 0.9 0.9 0.9 0.0\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryRGBVeryCloseToZero) {
+  // Valores RGB muy cercanos a 0 pero válidos
+  writeSceneFile("metal: met_near_zero 0.0001 0.0001 0.0001 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.0001);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.0001);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.0001);
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryRGBVeryCloseToOne) {
+  // Valores RGB muy cercanos a 1 pero válidos
+  writeSceneFile("metal: met_near_one 0.9999 0.9999 0.9999 0.5\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.9999);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.9999);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.9999);
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryDiffusionVeryCloseToZero) {
+  // Difusión muy cercana a 0 pero válida
+  writeSceneFile("metal: almost_mirror 0.9 0.9 0.9 0.0001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.0001);
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryRGBJustBelowZeroInvalid) {
+  // Valor RGB justo por debajo de 0.0 (inválido)
+  writeSceneFile("metal: met1 -0.0001 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryRGBJustAboveOneInvalid) {
+  // Valor RGB justo por encima de 1.0 (inválido)
+  writeSceneFile("metal: met1 0.5 1.0001 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, BoundaryDiffusionJustBelowZeroInvalid) {
+  // Difusión justo por debajo de 0.0 (inválido)
+  writeSceneFile("metal: met1 0.5 0.5 0.5 -0.0001\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+// CASOS ADICIONALES - Edge cases y robustez
+
+TEST_F(SceneParserMetalMaterialTest, ExtraWhitespaceAroundValues) {
+  // Espacios extra alrededor de los valores
+  // Verifica que trimWhitespace funciona correctamente
+  writeSceneFile("metal:    met1   0.5   0.5   0.5   0.2   \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+}
+
+TEST_F(SceneParserMetalMaterialTest, ExtraWhitespaceAroundLine) {
+  // Espacios al inicio y final de la línea
+  writeSceneFile("  metal: met1 0.5 0.5 0.5 0.2  \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+}
+
+TEST_F(SceneParserMetalMaterialTest, TabsAsWhitespace) {
+  // Tabs como espacios en blanco
+  // Verifica que trimWhitespace maneja tabs correctamente
+  writeSceneFile("metal:\tmet1\t0.5\t0.5\t0.5\t0.2\t\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+}
+
+TEST_F(SceneParserMetalMaterialTest, MixedWhitespace) {
+  // Mezcla de espacios y tabs
+  writeSceneFile("  \tmetal:  \t met1 \t 0.5 \t 0.5 \t 0.5 \t 0.2 \t \n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+}
+
+TEST_F(SceneParserMetalMaterialTest, CommentLineShouldBeIgnored) {
+  // Línea de comentario debe ser ignorada
+  writeSceneFile("# metal: met_ignored 1.0 1.0 1.0 0.5\nmetal: met1 0.5 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Solo debe haber 1 material (no 2)
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+}
+
+TEST_F(SceneParserMetalMaterialTest, EmptyLinesAroundCommand) {
+  // Líneas vacías no deben afectar el parsing
+  writeSceneFile("\n\nmetal: met1 0.5 0.5 0.5 0.2\n\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+}
+
+TEST_F(SceneParserMetalMaterialTest, ScientificNotationValidRange) {
+  // Notación científica dentro del rango válido [0, 1] para RGB
+  // parsedouble acepta notación científica
+  // 5e-1 = 0.5, 1e-1 = 0.1, 9e-1 = 0.9, 2e-1 = 0.2
+  writeSceneFile("metal: met_sci 5e-1 1e-1 9e-1 2e-1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.1);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.9);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+}
+
+TEST_F(SceneParserMetalMaterialTest, ScientificNotationOutOfRange) {
+  // Notación científica fuera del rango válido para RGB
+  // 1e1 = 10.0, que está fuera de [0, 1]
+  writeSceneFile("metal: met1 1e1 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (fuera de rango)
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, ScientificNotationForDiffusion) {
+  // Notación científica válida para diffusion (puede ser > 1)
+  // 1e1 = 10.0 es válido para diffusion
+  writeSceneFile("metal: met_sci_diff 0.5 0.5 0.5 1e1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 10.0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, NegativeZeroRGBComponents) {
+  // -0.0 es equivalente a 0.0 en punto flotante (válido)
+  writeSceneFile("metal: met_neg_zero -0.0 -0.0 -0.0 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, IntegerValues) {
+  // Valores enteros (sin punto decimal) deben ser aceptados
+  writeSceneFile("metal: met_int 0 1 0 1\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 1.0);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.0);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 1.0);
+}
+
+TEST_F(SceneParserMetalMaterialTest, LeadingZeros) {
+  // Valores con ceros a la izquierda
+  writeSceneFile("metal: met_leading 00.5 00.5 00.5 00.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+}
+
+TEST_F(SceneParserMetalMaterialTest, PlusSignPrefix) {
+  // Signo + explícito (parsedouble lo acepta)
+  writeSceneFile("metal: met_plus +0.5 +0.5 +0.5 +0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.g[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.b[0], 0.5);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+}
+
+TEST_F(SceneParserMetalMaterialTest, InfinityValueInRGB) {
+  // Valor infinito en RGB (fuera de rango [0, 1])
+  // parsedouble acepta "inf", pero debe ser rechazado por validateColorComponents
+  writeSceneFile("metal: met1 inf 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (inf > 1.0)
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, InfinityValueInDiffusion) {
+  // Valor infinito en diffusion (técnicamente parsedouble lo acepta)
+  // Pero en la práctica no tiene sentido físico
+  writeSceneFile("metal: met1 0.5 0.5 0.5 inf\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Si parsedouble acepta inf y diffusion >= 0, se añadirá
+  // (el código no valida límite superior para diffusion)
+  ASSERT_EQ(scene.metal.diffusion.size(), 1);
+  ASSERT_TRUE(std::isinf(scene.metal.diffusion[0]));
+}
+
+TEST_F(SceneParserMetalMaterialTest, NaNValueInRGB) {
+  // Valor NaN en RGB (no válido)
+  // parsedouble acepta "nan", pero validateColorComponents debería rechazarlo
+  writeSceneFile("metal: met1 nan 0.5 0.5 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (nan falla la comparación)
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+TEST_F(SceneParserMetalMaterialTest, NaNValueInDiffusion) {
+  // Valor NaN en diffusion (no válido)
+  writeSceneFile("metal: met1 0.5 0.5 0.5 nan\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Debe permanecer vacío (nan falla la comparación >= 0)
+  ASSERT_TRUE(scene.metal.r.empty());
+}
+
+// TESTS DE INTEGRACIÓN
+
+TEST_F(SceneParserMetalMaterialTest, IntegrationWithMatteMaterial) {
+  // Test de integración: metal y matte en el mismo archivo
+  // Verifica que los índices en materialTable son correctos
+  writeSceneFile("matte: red_matte 0.8 0.1 0.1\n"
+                 "metal: gold 0.9 0.8 0.1 0.2\n"
+                 "matte: blue_matte 0.1 0.1 0.8\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Verificar que se añadieron 2 matte y 1 metal
+  ASSERT_EQ(scene.matte.r.size(), 2);
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.materialNames.size(), 3);
+  ASSERT_EQ(scene.materialTable.size(), 3);
+
+  // Verificar material matte #0
+  ASSERT_EQ(scene.materialTable[0].type, MaterialType::MATTE);
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+  ASSERT_EQ(scene.materialNames[0], "red_matte");
+
+  // Verificar material metal #1
+  ASSERT_EQ(scene.materialTable[1].type, MaterialType::METAL);
+  ASSERT_EQ(scene.materialTable[1].localIndex, 0);  // Primer metal, localIndex = 0
+  ASSERT_EQ(scene.materialNames[1], "gold");
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.9);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.2);
+
+  // Verificar material matte #2
+  ASSERT_EQ(scene.materialTable[2].type, MaterialType::MATTE);
+  ASSERT_EQ(scene.materialTable[2].localIndex, 1);  // Segundo matte, localIndex = 1
+  ASSERT_EQ(scene.materialNames[2], "blue_matte");
+}
+
+TEST_F(SceneParserMetalMaterialTest, ValidAfterErrorLine) {
+  // Verificar que un material válido después de una línea con error se procesa correctamente
+  writeSceneFile("metal: error_met 2.0 2.0 2.0 0.2\n"    // Línea con error (RGB fuera de rango)
+                 "metal: valid_met 0.5 0.5 0.5 0.2\n");  // Línea válida
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Solo debe haberse añadido el material válido
+  ASSERT_EQ(scene.metal.r.size(), 1);
+  ASSERT_EQ(scene.materialNames[0], "valid_met");
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.5);
+}
+
+TEST_F(SceneParserMetalMaterialTest, DuplicateMaterialNameAllowed) {
+  // Verificar que se permiten nombres duplicados
+  writeSceneFile("metal: met1 0.1 0.1 0.1 0.1\n"
+                 "metal: met1 0.2 0.2 0.2 0.2\n");
+
+  SceneSettings scene = loadSceneFromFile(temp_filename);
+
+  // Ambos materiales deben haberse añadido
+  ASSERT_EQ(scene.metal.r.size(), 2);
+  ASSERT_EQ(scene.materialNames.size(), 2);
+  ASSERT_EQ(scene.materialNames[0], "met1");
+  ASSERT_EQ(scene.materialNames[1], "met1");
+
+  // Verificar que tienen diferentes valores
+  ASSERT_DOUBLE_EQ(scene.metal.r[0], 0.1);
+  ASSERT_DOUBLE_EQ(scene.metal.r[1], 0.2);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[0], 0.1);
+  ASSERT_DOUBLE_EQ(scene.metal.diffusion[1], 0.2);
+
+  // Verificar índices locales diferentes
+  ASSERT_EQ(scene.materialTable[0].localIndex, 0);
+  ASSERT_EQ(scene.materialTable[1].localIndex, 1);
+}
