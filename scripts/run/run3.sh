@@ -3,12 +3,12 @@
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-echo "--- Iniciando ejecución en $(hostname) ---"
+echo "--- Iniciando ejecución 3 en $(hostname) ---"
 
 # Rutas a los archivos de entrada y salida
-CONFIG_FILE="res/config_simple.txt"  # Cambia por tu archivo de config
-SCENE_FILE="res/scene_simple.txt"    # Cambia por tu archivo de escena
-OUTPUT_FILE_SOA="outputImageSOA.ppm"
+CONFIG_FILE="res/config_scripts/config3example.txt"  
+SCENE_FILE="res/scene_scripts/scene3example.txt"   
+OUTPUT_FILE_SOA="img/out3_SOA.ppm"
 OUTPUT_FILE_AOS="outputImageAOS.ppm"
 
 # Ruta a los ejecutables compilados
@@ -18,7 +18,7 @@ echo ""
 echo "========================================="
 echo ">>> Midiendo 'render-soa' (5 ejecuciones)"
 echo "========================================="
-perf stat -r 5 ${RENDER_SOA_EXE} #${CONFIG_FILE} ${SCENE_FILE} ${OUTPUT_FILE_SOA}
+perf stat -r 5 ${RENDER_SOA_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE_SOA}
 
 # --- Medición de rendimiento para render-aos ---
 echo ""
