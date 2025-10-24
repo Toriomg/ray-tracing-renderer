@@ -239,12 +239,13 @@ namespace {
       std::cerr << "Error: material desconocido '" << tokens[8] << "' para cilindro\n";
       return false;
     }
-    // Use the existing CylinderData methods
+    double axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
     scene.cylinders.addCentre(x, y, z);
     scene.cylinders.addAxis(vx, vy, vz);  // This will compute invAxisLen internally
     scene.cylinders.r.push_back(radius);
     scene.cylinders.materialIndex.push_back(materialIndex);
-
+    scene.cylinders.addAABB(AABB::from_cylinder({x, y, z}, {vx, vy, vz}, radius,
+                                                axisLength));  // Generamos la caja AABB
     return true;
   }
 
