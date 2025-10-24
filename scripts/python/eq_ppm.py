@@ -53,36 +53,70 @@ def parse_ppm_p3(filepath):
     return width, height, pixel_data
 
 
+def write_ppm_p3(filename, width, height, pixel_data):
+    """
+    Escribe un archivo PPM P3.
+    pixel_data: lista plana de valores [r, g, b, r, g, b, ...] de longitud width*height*3
+    """
+    with open(filename, 'w') as f:
+        f.write("P3\n")
+        f.write(f"{width} {height}\n")
+        f.write("255\n")
+        for i in range(0, len(pixel_data), 3):
+            r, g, b = pixel_data[i:i+3]
+            f.write(f"{r} {g} {b}\n")
+
 def compare_images(width, height, data1, data2):
-    """
-    Compara dos conjuntos de datos de píxeles según las reglas especificadas.
-    """
     max_pixel_difference = 0.0
     sum_of_squares = 0.0
     num_pixels = width * height
+    diff_image_data = []  # Datos de la imagen de diferencias
+    invalid_pixels = []   # Lista de píxeles inválidos para el análisis
 
-    # Iteramos sobre cada píxel (avanzando de 3 en 3 en la lista: r, g, b)
+    # Primera pasada: encontrar la diferencia máxima real (no el umbral)
+    actual_max_diff = 0.0
+    differences = []
+    
     for i in range(0, len(data1), 3):
         r1, g1, b1 = data1[i:i+3]
         r2, g2, b2 = data2[i:i+3]
 
-        # 1. Cálculo de la diferencia para un píxel (Manhattan distance / 3)
-        # Nota: Corrijo el posible error tipográfico en el enunciado "abs(g1,g2)" por "abs(g1-g2)"
         pixel_diff = (abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2)) / 3.0
-
-        # Actualizamos el valor máximo de diferencia encontrado hasta ahora
+        differences.append(pixel_diff)
+        
+        if pixel_diff > actual_max_diff:
+            actual_max_diff = pixel_diff
         if pixel_diff > max_pixel_difference:
             max_pixel_difference = pixel_diff
 
-        # Acumulamos el cuadrado de la diferencia para el cálculo del error
         sum_of_squares += pixel_diff ** 2
     
-    # 2. Cálculo del "error cuadrático medio" según la descripción
-    # Ojo: La descripción no es el RMSE estándar, es la raíz de la suma de cuadrados.
-    # Lo implementamos tal como se describe.
     rmse_custom = math.sqrt(sum_of_squares / num_pixels)
 
-    return max_pixel_difference, rmse_custom
+    # Segunda pasada: generar la imagen de diferencias
+    for i, pixel_diff in enumerate(differences):
+        # Si supera el umbral, usar rojo chillón
+        if pixel_diff > MAX_DIFF_THRESHOLD:
+            diff_image_data.extend([255, 0, 0])  # Rojo chillón
+            pixel_index = i
+            x = pixel_index % width
+            y = pixel_index // width
+            invalid_pixels.append((x, y, pixel_diff))
+        else:
+            # Escala de grises proporcional a la diferencia
+            # 0 diferencia -> RGB(255,255,255) (blanco)
+            # diferencia máxima -> RGB(0,0,0) (negro)
+            if MAX_DIFF_THRESHOLD > 0:
+                # Normalizar la diferencia al rango [0, 1] y luego a [0, 255]
+                normalized_diff = pixel_diff / MAX_DIFF_THRESHOLD
+                gray_value = int(255 * (1 - normalized_diff))
+            else:
+                gray_value = 255  # Si no hay diferencias, todo blanco
+            
+            diff_image_data.extend([gray_value, gray_value, gray_value])
+
+    return max_pixel_difference, rmse_custom, invalid_pixels, diff_image_data, MAX_DIFF_THRESHOLD
+
 
 def main():
     """
@@ -90,7 +124,7 @@ def main():
     """
     # --- Verificación de argumentos de entrada ---
     if len(sys.argv) != 3:
-        print("Uso: python comparador_ppm.py <imagen1.ppm> <imagen2.ppm>")
+        print("Uso: python comparador_ppm.py <imagen de JD.ppm> <imagen propia.ppm>")
         sys.exit(1)
 
     file1 = sys.argv[1]
@@ -115,12 +149,24 @@ def main():
         sys.exit(1)
 
     # --- Comparación ---
-    max_diff, rmse = compare_images(width1, height1, data1, data2)
+    max_diff, rmse, invalid_pixels, diff_image_data, actual_max_diff = compare_images(width1, height1, data1, data2)
     
     # --- Evaluación de los resultados ---
     is_max_diff_ok = max_diff < MAX_DIFF_THRESHOLD
     is_rmse_ok = rmse < RMSE_CUSTOM_THRESHOLD
     is_valid = is_max_diff_ok and is_rmse_ok
+
+    print(f"\n--- Generando Imagen de Diferencias ---")
+    diff_filename = file2 + "diferencias.ppm"
+    write_ppm_p3(diff_filename, width1, height1, diff_image_data)
+    print(f"Imagen de diferencias guardada como: {diff_filename}")
+    print(f" - Píxeles en ROJO: {len(invalid_pixels)} píxeles que superan el umbral de {MAX_DIFF_THRESHOLD}")
+    print(f" - Píxeles en escala de grises: {width1 * height1 - len(invalid_pixels)} píxeles dentro del umbral")
+    print(f" - Rango de diferencias: 0.0 (blanco) a {actual_max_diff:.2f} (negro)")
+    
+    # Mostrar información sobre la escala de grises
+    if actual_max_diff > 0:
+        print(f" - Escala de grises: diferencia 0.0 = RGB(255,255,255), diferencia {actual_max_diff:.2f} = RGB(0,0,0)")
 
     # --- Cálculo del ratio de certeza ---
     # Lo calculamos como el margen porcentual restante hasta el umbral.
