@@ -143,8 +143,9 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(  // NOL
     // Comprobamos si esta intersección está dentro de las tapas del cilindro
     if (std::fabs(projection1) <= half_height) {
       // Si es válida, la guardamos como nuestra mejor candidata hasta ahora.
-      Vec3 normal = component_perpendicular(p1 - cyl.center, cyl.unit_axis).normalize();
-      best_hit    = Intersection{t1, p1, normal};
+      Vec3 unscaled_normal = component_perpendicular(p1 - cyl.center, cyl.unit_axis);
+      Vec3 normal          = unscaled_normal / cyl.radius;
+      best_hit             = Intersection{t1, p1, normal};
     }
   }
 
@@ -161,8 +162,9 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(  // NOL
     // Comprobamos si esta intersección está dentro de las tapas del cilindro
     if (std::fabs(projection2) <= half_height) {
       // Si es válida Y más cercana que la anterior, la guardamos.
-      Vec3 normal = component_perpendicular(p2 - cyl.center, cyl.unit_axis).normalize();
-      best_hit    = Intersection{t2, p2, normal};
+      Vec3 unscaled_normal = component_perpendicular(p2 - cyl.center, cyl.unit_axis);
+      Vec3 normal          = unscaled_normal / cyl.radius;
+      best_hit             = Intersection{t2, p2, normal};
     }
   }
 
@@ -178,12 +180,9 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,  // NOLINT
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
                                                              size_t idx, Ray r, double closest_t) {
-  // --- 1. Setup - Using precomputed values from CylinderData ---
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
-
-  // Use the precomputed inverse axis length to avoid sqrt operations
   double const inv_len = scene.cylinders.invAxisLen[idx];
 
   CylinderGeometry const cyl = {
@@ -219,6 +218,10 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
   rec.set_face_normal(r, best_hit->normal);
   return rec;
 }
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------*/
+/*-----------------------------------------------------COLORES----------------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {
   Vec3 unit_direction = r.direction.normalize();
