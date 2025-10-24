@@ -2,8 +2,7 @@
 image_width: 1800
 gamma: 2.2
 
-#camera_position: 13 2 3
-camera_position: -230 0 0
+camera_position: 13 2 3
 camera_target: 0 0 0
 camera_north: 0 1 0
 field_of_view: 20
