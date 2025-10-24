@@ -80,7 +80,7 @@ def compare_images(width, height, data1, data2):
     # 2. Cálculo del "error cuadrático medio" según la descripción
     # Ojo: La descripción no es el RMSE estándar, es la raíz de la suma de cuadrados.
     # Lo implementamos tal como se describe.
-    rmse_custom = math.sqrt(sum_of_squares)
+    rmse_custom = math.sqrt(sum_of_squares / num_pixels)
 
     return max_pixel_difference, rmse_custom
 
