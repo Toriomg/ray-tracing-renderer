@@ -3,15 +3,23 @@
 #include <iostream>
 #include <string>
 
-// File paths
+/*
 std::string const FilepathScene  = "/workspace/res/scene_scripts/scene3example.txt";
 std::string const FilepathConfig = "/workspace/res/config_scripts/config3example.txt";
 std::string const FilepathOut    = "/workspace/outputImageSOA.ppm";
+*/
 
-int main() {
+int main(int argc, char * argv[]) {
+  std::vector<std::string> const args(argv, argv + argc);
+  if (args.size() != 4) {
+    std::cerr << "Usage: " << args[0] << " <scene_file> <config_file> <output_file>\n";
+    std::cerr << "Example: " << args[0] << " res/scene.txt res/config.txt output.ppm\n";
+    return 1;
+  }
+
   // Load configuration and scene
-  ConfigSettings config = loadConfigFromFile(FilepathConfig);
-  SceneSettings scene   = loadSceneFromFile(FilepathScene);
+  SceneSettings scene   = loadSceneFromFile(args[1]);
+  ConfigSettings config = loadConfigFromFile(args[2]);
 
   // Create shared_ptr for Camera
   std::shared_ptr<ConfigSettings> config_ptr = std::make_shared<ConfigSettings>(config);
@@ -33,7 +41,7 @@ int main() {
     std::cout << "Rendering with ImageSOA..." << '\n';
     ImageSOA imageSoa(imageWidth, imageHeight);
     renderImage(imageSoa, camera, ctx);
-    if (!imageSoa.write_to_ppm(FilepathOut)) {
+    if (!imageSoa.write_to_ppm(args[3])) {
       std::cerr << "Error writing ImageSOA to .ppm file\n";
     }
   }
