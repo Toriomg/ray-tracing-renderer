@@ -1,7 +1,10 @@
 #include "../aos/include/image_aos.hpp"
 #include <cmath>
+#include <cstdio>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // ============================================================================
@@ -15,12 +18,14 @@ protected:
   }
 
   void TearDown() override {
-    // Limpieza común si es necesaria
+    // Limpieza de archivos temporales creados durante los tests
+    static_cast<void>(std::remove("test_aos.ppm"));
+    static_cast<void>(std::remove("test_error_aos.ppm"));
   }
 };
 
 // ============================================================================
-// TESTS PARA ImageAOS::ImageAOS (Constructor)
+// TESTS PARA ImageAOS (Constructor)
 // ============================================================================
 
 // Test 1: Constructor con dimensiones válidas
@@ -158,7 +163,7 @@ TEST_F(ImageAOSTest, ConstructorNonSquareDimensions) {
 }
 
 // ============================================================================
-// TESTS PARA ImageAOS Getters y Setters
+// TESTS PARA Getters y Setters
 // ============================================================================
 
 // Test 9: Set y Get píxel con índice válido
@@ -368,7 +373,7 @@ TEST_F(ImageAOSTest, MultipleSetPixelOperations) {
 }
 
 // ============================================================================
-// TESTS PARA ImageAOS::fill_from_double
+// TESTS PARA fill_from_double
 // ============================================================================
 
 // Test 17: fill_from_double con datos válidos
@@ -571,4 +576,234 @@ TEST_F(ImageAOSTest, FillFromDoubleLargeImage) {
     ASSERT_EQ(p.g, expected) << "Píxel " << i << " componente G incorrecto";
     ASSERT_EQ(p.b, expected) << "Píxel " << i << " componente B incorrecto";
   }
+}
+
+// ============================================================================
+// TESTS PARA write_to_ppm
+// ============================================================================
+
+// Test 24: write_to_ppm con imagen válida
+TEST_F(ImageAOSTest, WriteToPPMValidImage) {
+  // Configuración: imagen de 2x1 (2 píxeles)
+  ImageAOS image(2, 1);
+
+  // Establecer píxeles con valores conocidos
+  // Píxel 0: Rojo (255, 0, 0)
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));
+  // Píxel 1: Azul (0, 0, 255)
+  image.set_pixel(1, Color(0.0, 0.0, 1.0));
+
+  // Definir nombre de archivo temporal
+  std::string filename = "test_aos.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+
+  // Verificar que la función devolvió true
+  ASSERT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
+
+  // Verificar el contenido del archivo
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open()) << "El archivo " << filename << " debe existir y ser legible";
+
+  // Leer y verificar la cabecera PPM
+  std::string line;
+
+  // Línea 1: "P3"
+  std::getline(file, line);
+  ASSERT_EQ(line, "P3") << "Primera línea debe ser 'P3' (formato PPM ASCII)";
+
+  // Línea 2: Dimensiones "2 1"
+  std::getline(file, line);
+  ASSERT_EQ(line, "2 1") << "Segunda línea debe contener dimensiones '2 1'";
+
+  // Línea 3: Valor máximo "255"
+  std::getline(file, line);
+  ASSERT_EQ(line, "255") << "Tercera línea debe ser '255' (valor máximo de color)";
+
+  // Leer píxeles
+  // Píxel 0: Rojo (255, 0, 0)
+  int r0 = 0;
+  int g0 = 0;
+  int b0 = 0;
+  file >> r0 >> g0 >> b0;
+  ASSERT_EQ(r0, 255) << "Píxel 0: componente R debe ser 255 (rojo)";
+  ASSERT_EQ(g0, 0) << "Píxel 0: componente G debe ser 0";
+  ASSERT_EQ(b0, 0) << "Píxel 0: componente B debe ser 0";
+
+  // Píxel 1: Azul (0, 0, 255)
+  int r1 = 0;
+  int g1 = 0;
+  int b1 = 0;
+  file >> r1 >> g1 >> b1;
+  ASSERT_EQ(r1, 0) << "Píxel 1: componente R debe ser 0";
+  ASSERT_EQ(g1, 0) << "Píxel 1: componente G debe ser 0";
+  ASSERT_EQ(b1, 255) << "Píxel 1: componente B debe ser 255 (azul)";
+
+  // Cerrar el archivo
+  file.close();
+
+  // Nota: La limpieza del archivo se hace en TearDown()
+}
+
+// Test 25: write_to_ppm con ruta inválida
+TEST_F(ImageAOSTest, WriteToPPMInvalidPath) {
+  // Configuración: imagen de 1x1
+  ImageAOS image(1, 1);
+
+  // Establecer píxel con valor conocido
+  image.set_pixel(0, Color(0.0039215, 0.0078431, 0.0117647));  // (1, 2, 3) en uint8_t
+
+  // Intentar escribir a un directorio que no existe
+  std::string filename = "invalid_dir/test_error_aos.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+
+  // Verificar que la función devolvió false (propagando el error de PPMWriter)
+  ASSERT_FALSE(result) << "write_to_ppm debe devolver false cuando la ruta es inválida";
+}
+
+// Test 26: write_to_ppm con imagen compleja (varios píxeles)
+TEST_F(ImageAOSTest, WriteToPPMComplexImage) {
+  // Configuración: imagen de 3x2 (6 píxeles)
+  ImageAOS image(3, 2);
+
+  // Establecer píxeles con diferentes colores
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
+  image.set_pixel(2, Color(0.0, 0.0, 1.0));  // Azul
+  image.set_pixel(3, Color(1.0, 1.0, 0.0));  // Amarillo
+  image.set_pixel(4, Color(1.0, 0.0, 1.0));  // Magenta
+  image.set_pixel(5, Color(0.0, 1.0, 1.0));  // Cian
+
+  // Definir nombre de archivo temporal
+  std::string filename = "test_aos.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+
+  // Verificar que la función devolvió true
+  ASSERT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
+
+  // Verificar el contenido del archivo
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open()) << "El archivo debe existir y ser legible";
+
+  // Leer y verificar la cabecera PPM
+  std::string line;
+
+  // Línea 1: "P3"
+  std::getline(file, line);
+  ASSERT_EQ(line, "P3");
+
+  // Línea 2: Dimensiones "3 2"
+  std::getline(file, line);
+  ASSERT_EQ(line, "3 2") << "Dimensiones deben ser '3 2'";
+
+  // Línea 3: Valor máximo "255"
+  std::getline(file, line);
+  ASSERT_EQ(line, "255");
+
+  // Leer y verificar los 6 píxeles
+  std::vector<std::tuple<int, int, int>> expected_pixels = {
+    {255,   0,   0}, // Rojo
+    {  0, 255,   0}, // Verde
+    {  0,   0, 255}, // Azul
+    {255, 255,   0}, // Amarillo
+    {255,   0, 255}, // Magenta
+    {  0, 255, 255}  // Cian
+  };
+
+  for (size_t i = 0; i < expected_pixels.size(); ++i) {
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    file >> r >> g >> b;
+
+    auto [exp_r, exp_g, exp_b] = expected_pixels[i];
+    ASSERT_EQ(r, exp_r) << "Píxel " << i << ": componente R incorrecto";
+    ASSERT_EQ(g, exp_g) << "Píxel " << i << ": componente G incorrecto";
+    ASSERT_EQ(b, exp_b) << "Píxel " << i << ": componente B incorrecto";
+  }
+
+  // Cerrar el archivo
+  file.close();
+}
+
+// Test 27: write_to_ppm preserva el estado interno de la imagen
+TEST_F(ImageAOSTest, WriteToPPMPreservesImageState) {
+  // Configuración: imagen de 2x1
+  ImageAOS image(2, 1);
+
+  // Establecer píxeles
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
+
+  // Guardar valores antes de write_to_ppm
+  ImageAOS::Pixel p0_before = image.get_pixel(0);
+  ImageAOS::Pixel p1_before = image.get_pixel(1);
+
+  // Definir nombre de archivo temporal
+  std::string filename = "test_aos.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+  ASSERT_TRUE(result);
+
+  // Verificar que los píxeles NO cambiaron después de write_to_ppm
+  ImageAOS::Pixel p0_after = image.get_pixel(0);
+  ImageAOS::Pixel p1_after = image.get_pixel(1);
+
+  ASSERT_EQ(p0_after.r, p0_before.r) << "Píxel 0 R no debe cambiar después de write_to_ppm";
+  ASSERT_EQ(p0_after.g, p0_before.g) << "Píxel 0 G no debe cambiar después de write_to_ppm";
+  ASSERT_EQ(p0_after.b, p0_before.b) << "Píxel 0 B no debe cambiar después de write_to_ppm";
+
+  ASSERT_EQ(p1_after.r, p1_before.r) << "Píxel 1 R no debe cambiar después de write_to_ppm";
+  ASSERT_EQ(p1_after.g, p1_before.g) << "Píxel 1 G no debe cambiar después de write_to_ppm";
+  ASSERT_EQ(p1_after.b, p1_before.b) << "Píxel 1 B no debe cambiar después de write_to_ppm";
+}
+
+// Test 28: write_to_ppm múltiples veces al mismo archivo
+TEST_F(ImageAOSTest, WriteToPPMMultipleTimes) {
+  // Configuración: imagen de 1x1
+  ImageAOS image(1, 1);
+
+  // Primera escritura: píxel rojo
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));
+
+  std::string filename = "test_aos.ppm";
+
+  // Primera llamada a write_to_ppm
+  bool result1 = image.write_to_ppm(filename);
+  ASSERT_TRUE(result1);
+
+  // Modificar la imagen: píxel verde
+  image.set_pixel(0, Color(0.0, 1.0, 0.0));
+
+  // Segunda llamada a write_to_ppm (sobrescribe el archivo)
+  bool result2 = image.write_to_ppm(filename);
+  ASSERT_TRUE(result2);
+
+  // Verificar que el archivo contiene el píxel VERDE (segunda escritura)
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open());
+
+  std::string line;
+  // Saltar cabecera
+  std::getline(file, line);  // P3
+  std::getline(file, line);  // 1 1
+  std::getline(file, line);  // 255
+
+  // Leer píxel
+  int r = 0;
+  int g = 0;
+  int b = 0;
+  file >> r >> g >> b;
+
+  ASSERT_EQ(r, 0) << "Píxel R debe ser 0 (verde)";
+  ASSERT_EQ(g, 255) << "Píxel G debe ser 255 (verde)";
+  ASSERT_EQ(b, 0) << "Píxel B debe ser 0 (verde)";
+
+  file.close();
 }
