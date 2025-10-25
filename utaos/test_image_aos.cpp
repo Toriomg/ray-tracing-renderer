@@ -1,6 +1,8 @@
 #include "../aos/include/image_aos.hpp"
+#include <cmath>
 #include <gtest/gtest.h>
 #include <stdexcept>
+#include <vector>
 
 // ============================================================================
 // FIXTURE DE GOOGLETEST PARA ImageAOS
@@ -363,4 +365,210 @@ TEST_F(ImageAOSTest, MultipleSetPixelOperations) {
   ASSERT_EQ(image.get_red(5), 0);
   ASSERT_EQ(image.get_green(5), 255);
   ASSERT_EQ(image.get_blue(5), 255);
+}
+
+// ============================================================================
+// TESTS PARA ImageAOS::fill_from_double
+// ============================================================================
+
+// Test 17: fill_from_double con datos válidos
+TEST_F(ImageAOSTest, FillFromDoubleValidData) {
+  // Configuración: imagen de 1x2 (2 píxeles)
+  ImageAOS image(1, 2);
+
+  // Gamma personalizado
+  double gamma = 2.0;
+
+  // Datos de entrada (tamaño = 2)
+  std::vector<double> r_data = {0.25, 0.5};
+  std::vector<double> g_data = {0.5, 0.75};
+  std::vector<double> b_data = {1.0, 0.0};
+
+  // Llamar a fill_from_double
+  image.fill_from_double(r_data, g_data, b_data, gamma);
+
+  // Calcular valores esperados usando la misma fórmula: uint8_t = 255.999 * pow(value, 1/gamma)
+  // Píxel 0: r=0.25, g=0.5, b=1.0
+  auto expected_r0 = static_cast<uint8_t>(255.999 * std::pow(0.25, 1.0 / gamma));
+  auto expected_g0 = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / gamma));
+  auto expected_b0 = static_cast<uint8_t>(255.999 * std::pow(1.0, 1.0 / gamma));
+
+  // Píxel 1: r=0.5, g=0.75, b=0.0
+  auto expected_r1 = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / gamma));
+  auto expected_g1 = static_cast<uint8_t>(255.999 * std::pow(0.75, 1.0 / gamma));
+  auto expected_b1 = static_cast<uint8_t>(255.999 * std::pow(0.0, 1.0 / gamma));
+
+  // Verificar Píxel 0
+  ImageAOS::Pixel p0 = image.get_pixel(0);
+  ASSERT_EQ(p0.r, expected_r0) << "Píxel 0: componente R incorrecto";
+  ASSERT_EQ(p0.g, expected_g0) << "Píxel 0: componente G incorrecto";
+  ASSERT_EQ(p0.b, expected_b0) << "Píxel 0: componente B incorrecto (debería ser 255)";
+
+  // Verificar Píxel 1
+  ImageAOS::Pixel p1 = image.get_pixel(1);
+  ASSERT_EQ(p1.r, expected_r1) << "Píxel 1: componente R incorrecto";
+  ASSERT_EQ(p1.g, expected_g1) << "Píxel 1: componente G incorrecto";
+  ASSERT_EQ(p1.b, expected_b1) << "Píxel 1: componente B incorrecto (debería ser 0)";
+
+  // Verificación adicional: b0 debe ser 255 (valor máximo) y b1 debe ser 0
+  ASSERT_EQ(p0.b, 255) << "Valor 1.0 con gamma debería resultar en 255";
+  ASSERT_EQ(p1.b, 0) << "Valor 0.0 con gamma debería resultar en 0";
+}
+
+// Test 18: fill_from_double con gamma por defecto
+TEST_F(ImageAOSTest, FillFromDoubleDefaultGamma) {
+  // Configuración: imagen de 1x1
+  ImageAOS image(1, 1);
+
+  // Datos de entrada
+  std::vector<double> r_data = {0.5};
+  std::vector<double> g_data = {0.5};
+  std::vector<double> b_data = {0.5};
+
+  // Llamar a fill_from_double SIN especificar gamma (usa el default)
+  image.fill_from_double(r_data, g_data, b_data);
+
+  // Calcular valor esperado con gamma por defecto (Constants::Gamma)
+  // Asumiendo que el default es 2.2 según constants.hpp
+  double default_gamma = 2.2;  // Constants::Gamma
+  auto expected        = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / default_gamma));
+
+  // Verificar píxel
+  ImageAOS::Pixel p = image.get_pixel(0);
+  ASSERT_EQ(p.r, expected) << "Componente R con gamma default incorrecto";
+  ASSERT_EQ(p.g, expected) << "Componente G con gamma default incorrecto";
+  ASSERT_EQ(p.b, expected) << "Componente B con gamma default incorrecto";
+}
+
+// Test 19: fill_from_double lanza excepción con tamaño inválido
+TEST_F(ImageAOSTest, FillFromDoubleThrowsOnInvalidSize) {
+  // Configuración: imagen de 3x3 (9 píxeles)
+  ImageAOS image(3, 3);
+
+  // Datos de entrada con tamaño INCORRECTO (solo 1 elemento en lugar de 9)
+  std::vector<double> r_data = {0.5};
+  std::vector<double> g_data = {0.5};
+  std::vector<double> b_data = {0.5};
+
+  // Verificar que se lanza std::invalid_argument
+  ASSERT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument)
+      << "fill_from_double debe lanzar std::invalid_argument cuando el tamaño de los datos no "
+         "coincide";
+}
+
+// Test 20: fill_from_double con un canal de tamaño incorrecto
+TEST_F(ImageAOSTest, FillFromDoubleThrowsOnOneChannelWrongSize) {
+  // Configuración: imagen de 2x2 (4 píxeles)
+  ImageAOS image(2, 2);
+
+  // Canal R correcto (4 elementos)
+  std::vector<double> r_data = {0.1, 0.2, 0.3, 0.4};
+  // Canal G correcto (4 elementos)
+  std::vector<double> g_data = {0.5, 0.6, 0.7, 0.8};
+  // Canal B INCORRECTO (solo 3 elementos)
+  std::vector<double> b_data = {0.9, 1.0, 0.5};
+
+  // Verificar que se lanza std::invalid_argument
+  ASSERT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument)
+      << "fill_from_double debe lanzar std::invalid_argument cuando un canal tiene tamaño "
+         "incorrecto";
+}
+
+// Test 21: fill_from_double con valores extremos
+TEST_F(ImageAOSTest, FillFromDoubleExtremeValues) {
+  // Configuración: imagen de 3x1
+  ImageAOS image(3, 1);
+
+  double gamma = 2.0;
+
+  // Datos con valores extremos: 0.0, 1.0, y un valor intermedio
+  std::vector<double> r_data = {0.0, 1.0, 0.5};
+  std::vector<double> g_data = {1.0, 0.0, 0.5};
+  std::vector<double> b_data = {0.5, 0.5, 1.0};
+
+  // Llamar a fill_from_double
+  image.fill_from_double(r_data, g_data, b_data, gamma);
+
+  // Verificar píxel 0: r=0.0 (negro), g=1.0 (blanco), b=0.5
+  ImageAOS::Pixel p0 = image.get_pixel(0);
+  ASSERT_EQ(p0.r, 0) << "Valor 0.0 debe resultar en 0";
+  ASSERT_EQ(p0.g, 255) << "Valor 1.0 debe resultar en 255";
+
+  // Verificar píxel 1: r=1.0 (blanco), g=0.0 (negro), b=0.5
+  ImageAOS::Pixel p1 = image.get_pixel(1);
+  ASSERT_EQ(p1.r, 255) << "Valor 1.0 debe resultar en 255";
+  ASSERT_EQ(p1.g, 0) << "Valor 0.0 debe resultar en 0";
+
+  // Verificar píxel 2: todos los valores 0.5 o 1.0
+  ImageAOS::Pixel p2 = image.get_pixel(2);
+  auto expected_05   = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / gamma));
+  ASSERT_EQ(p2.r, expected_05) << "Píxel 2: componente R incorrecto";
+  ASSERT_EQ(p2.g, expected_05) << "Píxel 2: componente G incorrecto";
+  ASSERT_EQ(p2.b, 255) << "Píxel 2: componente B debe ser 255";
+}
+
+// Test 22: fill_from_double sobrescribe píxeles anteriores
+TEST_F(ImageAOSTest, FillFromDoubleOverwritesPreviousData) {
+  // Configuración
+  ImageAOS image(2, 1);
+
+  // Primero, establecer píxeles manualmente
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
+
+  // Verificar que se establecieron
+  ASSERT_EQ(image.get_red(0), 255);
+  ASSERT_EQ(image.get_green(1), 255);
+
+  // Ahora llamar a fill_from_double con datos diferentes
+  std::vector<double> r_data = {0.0, 0.0};
+  std::vector<double> g_data = {0.0, 0.0};
+  std::vector<double> b_data = {1.0, 1.0};  // Azul
+
+  image.fill_from_double(r_data, g_data, b_data);
+
+  // Verificar que los píxeles fueron sobrescritos
+  ImageAOS::Pixel p0 = image.get_pixel(0);
+  ImageAOS::Pixel p1 = image.get_pixel(1);
+
+  ASSERT_EQ(p0.r, 0) << "Píxel 0 R debe haber sido sobrescrito a 0";
+  ASSERT_EQ(p0.g, 0) << "Píxel 0 G debe haber sido sobrescrito a 0";
+  ASSERT_EQ(p0.b, 255) << "Píxel 0 B debe haber sido sobrescrito a 255";
+
+  ASSERT_EQ(p1.r, 0) << "Píxel 1 R debe haber sido sobrescrito a 0";
+  ASSERT_EQ(p1.g, 0) << "Píxel 1 G debe haber sido sobrescrito a 0";
+  ASSERT_EQ(p1.b, 255) << "Píxel 1 B debe haber sido sobrescrito a 255";
+}
+
+// Test 23: fill_from_double con imagen grande
+TEST_F(ImageAOSTest, FillFromDoubleLargeImage) {
+  // Configuración: imagen más grande (10x10 = 100 píxeles)
+  size_t size = 100;
+  ImageAOS image(10, 10);
+
+  // Crear datos de entrada (todos con valor 0.5)
+  std::vector<double> r_data(size, 0.5);
+  std::vector<double> g_data(size, 0.5);
+  std::vector<double> b_data(size, 0.5);
+
+  double gamma = 2.0;
+
+  // Llamar a fill_from_double
+  image.fill_from_double(r_data, g_data, b_data, gamma);
+
+  // Calcular valor esperado
+  auto expected = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / gamma));
+
+  // Verificar algunos píxeles aleatorios
+  ASSERT_EQ(image.get_pixel(0).r, expected);
+  ASSERT_EQ(image.get_pixel(50).g, expected);
+  ASSERT_EQ(image.get_pixel(99).b, expected);
+
+  // Verificar que todos los píxeles tienen el mismo valor
+  for (size_t i = 0; i < size; ++i) {
+    ImageAOS::Pixel p = image.get_pixel(i);
+    ASSERT_EQ(p.r, expected) << "Píxel " << i << " componente R incorrecto";
+    ASSERT_EQ(p.g, expected) << "Píxel " << i << " componente G incorrecto";
+    ASSERT_EQ(p.b, expected) << "Píxel " << i << " componente B incorrecto";
+  }
 }
