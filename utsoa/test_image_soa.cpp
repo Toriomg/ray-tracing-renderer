@@ -1,7 +1,10 @@
 #include "../soa/include/image_soa.hpp"
 #include <cmath>
+#include <cstdio>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // Tests para verificar que los arrays se generan del tamaño correcto
@@ -225,4 +228,279 @@ TEST(test_image_soa, fill_from_double_large_image) {
     EXPECT_EQ(image.get_green(i), expected) << "Píxel " << i << " componente G incorrecto";
     EXPECT_EQ(image.get_blue(i), expected) << "Píxel " << i << " componente B incorrecto";
   }
+}
+
+// ============================================================================
+// FIXTURE PARA write_to_ppm
+// ============================================================================
+
+class ImageSOAIOTest : public ::testing::Test {
+protected:
+  void SetUp() override {
+    // Inicialización si es necesaria
+  }
+
+  void TearDown() override {
+    // Limpieza de archivos temporales creados durante los tests
+    static_cast<void>(std::remove("test_soa.ppm"));
+    static_cast<void>(std::remove("test_error_soa.ppm"));
+  }
+};
+
+// ============================================================================
+// TESTS PARA write_to_ppm
+// ============================================================================
+
+// Test: write_to_ppm con imagen válida
+TEST_F(ImageSOAIOTest, WriteToPPMValidImage) {
+  // Configuración: imagen de 2x1 (2 píxeles)
+  ImageSOA image(2, 1);
+
+  // Establecer píxeles con valores conocidos usando setters individuales
+  // Píxel 0: Rojo (255, 0, 0)
+  image.set_red(0, 1.0);
+  image.set_green(0, 0.0);
+  image.set_blue(0, 0.0);
+
+  // Píxel 1: Verde medio (0, 128, 0)
+  // Para obtener 128, necesitamos un valor que con gamma 2.2 dé ~128
+  // Aproximadamente: 128/255 = 0.502, entonces pow(x, 1/2.2) = 0.502 => x ≈ 0.216
+  // Usamos un valor directo para simplificar: establecemos aproximadamente 0.5 que dará ~186
+  // Mejor usar un valor calculado inverso o establecer directamente
+  image.set_red(1, 0.0);
+  image.set_green(1, 0.216);  // Este valor con gamma 2.2 debería dar ~128
+  image.set_blue(1, 0.0);
+
+  // Definir nombre de archivo temporal
+  std::string filename = "test_soa.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+
+  // Verificar que la función devolvió true
+  EXPECT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
+
+  // Verificar el contenido del archivo
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open()) << "El archivo " << filename << " debe existir y ser legible";
+
+  // Leer y verificar la cabecera PPM
+  std::string line;
+
+  // Línea 1: "P3"
+  std::getline(file, line);
+  EXPECT_EQ(line, "P3") << "Primera línea debe ser 'P3' (formato PPM ASCII)";
+
+  // Línea 2: Dimensiones "2 1"
+  std::getline(file, line);
+  EXPECT_EQ(line, "2 1") << "Segunda línea debe contener dimensiones '2 1'";
+
+  // Línea 3: Valor máximo "255"
+  std::getline(file, line);
+  EXPECT_EQ(line, "255") << "Tercera línea debe ser '255' (valor máximo de color)";
+
+  // Leer píxeles
+  // Píxel 0: Rojo (255, 0, 0)
+  int r0 = 0;
+  int g0 = 0;
+  int b0 = 0;
+  file >> r0 >> g0 >> b0;
+  EXPECT_EQ(r0, 255) << "Píxel 0: componente R debe ser 255 (rojo)";
+  EXPECT_EQ(g0, 0) << "Píxel 0: componente G debe ser 0";
+  EXPECT_EQ(b0, 0) << "Píxel 0: componente B debe ser 0";
+
+  // Píxel 1: Verde (valor depende del gamma, verificamos que G > 0 y R,B = 0)
+  int r1 = 0;
+  int g1 = 0;
+  int b1 = 0;
+  file >> r1 >> g1 >> b1;
+  EXPECT_EQ(r1, 0) << "Píxel 1: componente R debe ser 0";
+  EXPECT_GT(g1, 0) << "Píxel 1: componente G debe ser mayor que 0";
+  EXPECT_LT(g1, 256) << "Píxel 1: componente G debe ser menor que 256";
+  EXPECT_EQ(b1, 0) << "Píxel 1: componente B debe ser 0";
+
+  // Cerrar el archivo
+  file.close();
+}
+
+// Test: write_to_ppm con ruta inválida
+TEST_F(ImageSOAIOTest, WriteToPPMInvalidPath) {
+  // Configuración: imagen de 1x1
+  ImageSOA image(1, 1);
+
+  // Establecer píxel con valores conocidos
+  image.set_red(0, 0.0039215);    // ~1 en uint8_t
+  image.set_green(0, 0.0078431);  // ~2 en uint8_t
+  image.set_blue(0, 0.0117647);   // ~3 en uint8_t
+
+  // Intentar escribir a un directorio que no existe
+  std::string filename = "invalid_dir/test_error_soa.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+
+  // Verificar que la función devolvió false (propagando el error de PPMWriter)
+  EXPECT_FALSE(result) << "write_to_ppm debe devolver false cuando la ruta es inválida";
+}
+
+// Test: write_to_ppm con imagen compleja (varios píxeles)
+TEST_F(ImageSOAIOTest, WriteToPPMComplexImage) {
+  // Configuración: imagen de 3x2 (6 píxeles)
+  ImageSOA image(3, 2);
+
+  // Establecer píxeles con diferentes colores (usando valores 0.0 y 1.0 para simplicidad)
+  // Fila 0: Rojo, Verde, Azul
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
+  image.set_pixel(2, Color(0.0, 0.0, 1.0));  // Azul
+
+  // Fila 1: Amarillo, Magenta, Cian
+  image.set_pixel(3, Color(1.0, 1.0, 0.0));  // Amarillo
+  image.set_pixel(4, Color(1.0, 0.0, 1.0));  // Magenta
+  image.set_pixel(5, Color(0.0, 1.0, 1.0));  // Cian
+
+  // Definir nombre de archivo temporal
+  std::string filename = "test_soa.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+
+  // Verificar que la función devolvió true
+  EXPECT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
+
+  // Verificar el contenido del archivo
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open()) << "El archivo debe existir y ser legible";
+
+  // Leer y verificar la cabecera PPM
+  std::string line;
+
+  // Línea 1: "P3"
+  std::getline(file, line);
+  EXPECT_EQ(line, "P3");
+
+  // Línea 2: Dimensiones "3 2"
+  std::getline(file, line);
+  EXPECT_EQ(line, "3 2") << "Dimensiones deben ser '3 2'";
+
+  // Línea 3: Valor máximo "255"
+  std::getline(file, line);
+  EXPECT_EQ(line, "255");
+
+  // Leer y verificar los 6 píxeles (solo verificamos valores extremos 0 y 255)
+  std::vector<std::tuple<bool, bool, bool>> expected_channels = {
+    { true, false, false}, // Rojo: R=255, G=0, B=0
+    {false,  true, false}, // Verde: R=0, G=255, B=0
+    {false, false,  true}, // Azul: R=0, G=0, B=255
+    { true,  true, false}, // Amarillo: R=255, G=255, B=0
+    { true, false,  true}, // Magenta: R=255, G=0, B=255
+    {false,  true,  true}  // Cian: R=0, G=255, B=255
+  };
+
+  for (size_t i = 0; i < expected_channels.size(); ++i) {
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    file >> r >> g >> b;
+
+    auto [expect_r_max, expect_g_max, expect_b_max] = expected_channels[i];
+
+    if (expect_r_max) {
+      EXPECT_EQ(r, 255) << "Píxel " << i << ": componente R debe ser 255";
+    } else {
+      EXPECT_EQ(r, 0) << "Píxel " << i << ": componente R debe ser 0";
+    }
+
+    if (expect_g_max) {
+      EXPECT_EQ(g, 255) << "Píxel " << i << ": componente G debe ser 255";
+    } else {
+      EXPECT_EQ(g, 0) << "Píxel " << i << ": componente G debe ser 0";
+    }
+
+    if (expect_b_max) {
+      EXPECT_EQ(b, 255) << "Píxel " << i << ": componente B debe ser 255";
+    } else {
+      EXPECT_EQ(b, 0) << "Píxel " << i << ": componente B debe ser 0";
+    }
+  }
+
+  // Cerrar el archivo
+  file.close();
+}
+
+// Test: write_to_ppm preserva el estado interno de la imagen
+TEST_F(ImageSOAIOTest, WriteToPPMPreservesImageState) {
+  // Configuración: imagen de 2x1
+  ImageSOA image(2, 1);
+
+  // Establecer píxeles
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
+
+  // Guardar valores antes de write_to_ppm
+  uint8_t r0_before = image.get_red(0);
+  uint8_t g0_before = image.get_green(0);
+  uint8_t b0_before = image.get_blue(0);
+  uint8_t r1_before = image.get_red(1);
+  uint8_t g1_before = image.get_green(1);
+  uint8_t b1_before = image.get_blue(1);
+
+  // Definir nombre de archivo temporal
+  std::string filename = "test_soa.ppm";
+
+  // Llamar a write_to_ppm
+  bool result = image.write_to_ppm(filename);
+  EXPECT_TRUE(result);
+
+  // Verificar que los píxeles NO cambiaron después de write_to_ppm
+  EXPECT_EQ(image.get_red(0), r0_before) << "Píxel 0 R no debe cambiar";
+  EXPECT_EQ(image.get_green(0), g0_before) << "Píxel 0 G no debe cambiar";
+  EXPECT_EQ(image.get_blue(0), b0_before) << "Píxel 0 B no debe cambiar";
+  EXPECT_EQ(image.get_red(1), r1_before) << "Píxel 1 R no debe cambiar";
+  EXPECT_EQ(image.get_green(1), g1_before) << "Píxel 1 G no debe cambiar";
+  EXPECT_EQ(image.get_blue(1), b1_before) << "Píxel 1 B no debe cambiar";
+}
+
+// Test: write_to_ppm múltiples veces al mismo archivo
+TEST_F(ImageSOAIOTest, WriteToPPMMultipleTimes) {
+  // Configuración: imagen de 1x1
+  ImageSOA image(1, 1);
+
+  // Primera escritura: píxel rojo
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));
+
+  std::string filename = "test_soa.ppm";
+
+  // Primera llamada a write_to_ppm
+  bool result1 = image.write_to_ppm(filename);
+  EXPECT_TRUE(result1);
+
+  // Modificar la imagen: píxel verde
+  image.set_pixel(0, Color(0.0, 1.0, 0.0));
+
+  // Segunda llamada a write_to_ppm (sobrescribe el archivo)
+  bool result2 = image.write_to_ppm(filename);
+  EXPECT_TRUE(result2);
+
+  // Verificar que el archivo contiene el píxel VERDE (segunda escritura)
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open());
+
+  std::string line;
+  // Saltar cabecera
+  std::getline(file, line);  // P3
+  std::getline(file, line);  // 1 1
+  std::getline(file, line);  // 255
+
+  // Leer píxel
+  int r = 0;
+  int g = 0;
+  int b = 0;
+  file >> r >> g >> b;
+
+  EXPECT_EQ(r, 0) << "Píxel R debe ser 0 (verde)";
+  EXPECT_EQ(g, 255) << "Píxel G debe ser 255 (verde)";
+  EXPECT_EQ(b, 0) << "Píxel B debe ser 0 (verde)";
+
+  file.close();
 }
