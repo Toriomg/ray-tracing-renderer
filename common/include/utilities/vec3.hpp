@@ -16,6 +16,28 @@ struct Vec3 {
 
   constexpr Vec3() noexcept = default;
 
+  [[nodiscard]] double & operator[](size_t i) noexcept {
+    assert(i < 3);  // Solo necesitamos comprobar el límite superior
+    if (i == 0) {
+      return x;
+    };
+    if (i == 1) {
+      return y;
+    };
+    return z;
+  }
+
+  [[nodiscard]] double const & operator[](size_t i) const noexcept {
+    assert(i < 3);
+    if (i == 0) {
+      return x;
+    };
+    if (i == 1) {
+      return y;
+    };
+    return z;
+  }
+
   constexpr Vec3 & operator+=(Vec3 const & other) noexcept {
     x += other.x;
     y += other.y;

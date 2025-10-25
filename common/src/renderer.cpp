@@ -47,7 +47,7 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
 }
 
 std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const & scene,
-                                                           size_t sphere_index, Ray r,
+                                                           size_t sphere_index, Ray const & r,
                                                            double closest_t) {
   // Extraemos los datos de la esfera 'i' de la estructura SoA
   Point3 sphere_center(scene.spheres.x[sphere_index], scene.spheres.y[sphere_index],
@@ -180,43 +180,91 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
-                                                             size_t idx, Ray r, double closest_t) {
-  Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
-  double const inv_len = scene.cylinders.invAxisLen[idx];
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene, //NOLINT
+                                                             size_t idx, Ray const & r, double closest_t) { // Ray debe ser const&
+    // --- 1. Obtener datos directamente de la estructura SoA ---
+    Point3 const center    = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]};
+    Vec3 const   raw_axis  = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
+    double const radius    = scene.cylinders.r[idx];
+    double const inv_len   = scene.cylinders.invAxisLen[idx];
+    double const height    = 1.0 / inv_len;
 
-  CylinderGeometry const cyl = {
-    .center    = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]},
-    .unit_axis = raw_axis * inv_len, // Multiply by inverse length instead of normalize()
-    .radius    = scene.cylinders.r[idx],
-    .height    = 1.0 / inv_len  // Height = 1 / invAxisLen (since invAxisLen = 1/length)
-  };
-  // --- 2. Lateral surface intersection ---
-  double local_closest = closest_t;
-  std::optional<Intersection> best_hit;
-  updateBestHit(best_hit, local_closest, intersectLateralSurface(r, cyl, closest_t));
+    Vec3 const unit_axis = raw_axis * inv_len;
+    double const half_height = height * 0.5;
+    double const radius_sq = radius * radius;
+    
+    std::optional<Intersection> best_hit;
+    double t_max = closest_t;
 
-  // --- 3. Cap intersections ---
-  double const radius_sq   = cyl.radius * cyl.radius;
-  double const half_height = cyl.height * 0.5;
-  updateBestHit(
-      best_hit, local_closest,
-      intersectCap(r, cyl.center + cyl.unit_axis * half_height, cyl.unit_axis, radius_sq));
-  updateBestHit(
-      best_hit, local_closest,
-      intersectCap(r, cyl.center - cyl.unit_axis * half_height, -cyl.unit_axis, radius_sq));
+    // --- 2. Intersección Lateral (más eficiente) ---
+    Vec3 const oc      = r.point - center;
+    Vec3 const dr_perp = component_perpendicular(r.direction, unit_axis);
+    Vec3 const oc_perp = component_perpendicular(oc, unit_axis);
+    
+    double const a = dr_perp.length_squared();
+    if (std::fabs(a) > 1e-8) {
+        double const b     = 2.0 * dot(oc_perp, dr_perp);
+        double const c     = oc_perp.length_squared() - radius_sq;
+        double const discr = b * b - 4 * a * c;
 
-  if (!best_hit) {
-    return std::nullopt;
-  }
+        if (discr >= 0) {
+            double const sqrt_discr = std::sqrt(discr);
+            double const inv_2a     = 1.0 / (2.0 * a);
+            double t = (-b - sqrt_discr) * inv_2a; // Raíz más cercana
 
-  HitRecord rec;
-  rec.t                  = best_hit->t;
-  rec.p                  = best_hit->p;
-  rec.prev_ray           = r;
-  rec.material_global_id = static_cast<unsigned int>(scene.cylinders.materialIndex[idx]);
-  rec.set_face_normal(r, best_hit->normal);
-  return rec;
+            if (t > 0.001 and t < t_max) {
+                Point3 p = r.at(t);
+                if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
+                    Vec3 normal = component_perpendicular(p - center, unit_axis) / radius; // *** OPTIMIZACIÓN CLAVE ***
+                    best_hit = Intersection{t, p, normal};
+                    t_max = t;
+                }
+            }
+             // Solo comprobamos la segunda raíz si la primera no fue válida Y está dentro del rango
+            if (!best_hit) {
+                t = (-b + sqrt_discr) * inv_2a;
+                if (t > 0.001 and t < t_max) {
+                     Point3 p = r.at(t);
+                     if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
+                        Vec3 normal = component_perpendicular(p - center, unit_axis) / radius;
+                        best_hit = Intersection{t, p, normal};
+                        t_max = t;
+                     }
+                }
+            }
+        }
+    }
+
+    // --- 3. Intersección con Tapas (usando el t_max actualizado) ---
+    // Tapa superior
+    Point3 top_center = center + unit_axis * half_height;
+    if (auto cap_hit = intersectCap(r, top_center, unit_axis, radius_sq)) {
+        if (cap_hit->t < t_max) {
+            best_hit = cap_hit;
+            t_max = cap_hit->t;
+        }
+    }
+    
+    // Tapa inferior
+    Point3 bottom_center = center - unit_axis * half_height;
+    if (auto cap_hit = intersectCap(r, bottom_center, -unit_axis, radius_sq)) {
+        if (cap_hit->t < t_max) {
+            best_hit = cap_hit;
+        }
+    }
+
+    // --- 4. Construir el HitRecord final ---
+    if (!best_hit) {
+        return std::nullopt;
+    }
+
+    HitRecord rec;
+    rec.t = best_hit->t;
+    rec.p = best_hit->p;
+    rec.prev_ray = r;
+    rec.material_global_id = static_cast<unsigned int>(scene.cylinders.materialIndex[idx]);
+    rec.set_face_normal(r, best_hit->normal);
+    return rec;
 }
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------*/

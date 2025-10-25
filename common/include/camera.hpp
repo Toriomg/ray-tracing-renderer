@@ -2,7 +2,6 @@
 #define CAMERA_HPP
 
 #include "utilities/vec3.hpp"
-#include <memory>
 
 struct ConfigSettings;
 
@@ -28,7 +27,7 @@ public:
   Vec3 cameraUp;
   Vec3 focalVector;
 
-  Camera(std::shared_ptr<ConfigSettings> & config);
+  Camera(ConfigSettings const & config);
 };
 
 #endif

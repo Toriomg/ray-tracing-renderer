@@ -59,8 +59,8 @@ private:
                             std::optional<Intersection> const & new_hit);
 
   static std::optional<HitRecord> RenderSpheres(SceneSettings const & scene, size_t sphere_index,
-                                                Ray r, double closest_t);
-  static std::optional<HitRecord> RenderCylinders(SceneSettings const & scene, size_t idx, Ray r,
+                                                Ray const& r, double closest_t);
+  static std::optional<HitRecord> RenderCylinders(SceneSettings const & scene, size_t idx, Ray const& r,
                                                   double closest_t);
 
   static Color backgroundColor(Ray const & r, ConfigSettings const & config);

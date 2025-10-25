@@ -21,15 +21,12 @@ int main(int argc, char * argv[]) {
   SceneSettings scene   = loadSceneFromFile(args[1]);
   ConfigSettings config = loadConfigFromFile(args[2]);
 
-  // Create shared_ptr for Camera
-  std::shared_ptr<ConfigSettings> config_ptr = std::make_shared<ConfigSettings>(config);
-
   // Create random generators
   auto rngRay      = RandomGenerator(config.ray_rng_seed);
   auto rngMaterial = RandomGenerator(config.material_rng_seed);
 
   // Create camera
-  auto camera      = Camera(config_ptr);
+  auto camera      = Camera(config);
   auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
