@@ -154,3 +154,213 @@ TEST_F(ImageAOSTest, ConstructorNonSquareDimensions) {
   // Verificar que get_pixels() devuelve el tamaño correcto
   ASSERT_EQ(image.get_pixels().size(), 144UL);
 }
+
+// ============================================================================
+// TESTS PARA ImageAOS Getters y Setters
+// ============================================================================
+
+// Test 9: Set y Get píxel con índice válido
+TEST_F(ImageAOSTest, SetAndGetPixelValidIndex) {
+  // Configuración: imagen de 3x2 (6 píxeles, índices 0-5)
+  ImageAOS image(3, 2);
+
+  // Crear un píxel de prueba
+  Color test_color(0.1, 0.2, 0.3);  // Valores double que serán convertidos
+
+  // Establecer el píxel en el índice 3
+  image.set_pixel(3, test_color);
+
+  // Obtener los valores usando los getters individuales
+  uint8_t red   = image.get_red(3);
+  uint8_t green = image.get_green(3);
+  uint8_t blue  = image.get_blue(3);
+
+  // Verificar que los valores se establecieron correctamente
+  // Nota: Los valores exactos dependen de la corrección gamma y conversión a uint8_t
+  ASSERT_GT(red, 0) << "El componente rojo debe ser mayor que 0";
+  ASSERT_GT(green, 0) << "El componente verde debe ser mayor que 0";
+  ASSERT_GT(blue, 0) << "El componente azul debe ser mayor que 0";
+
+  // Obtener el píxel completo
+  ImageAOS::Pixel retrieved_pixel = image.get_pixel(3);
+
+  // Verificar que get_pixel devuelve los mismos valores que los getters individuales
+  ASSERT_EQ(retrieved_pixel.r, red) << "get_pixel().r debe coincidir con get_red()";
+  ASSERT_EQ(retrieved_pixel.g, green) << "get_pixel().g debe coincidir con get_green()";
+  ASSERT_EQ(retrieved_pixel.b, blue) << "get_pixel().b debe coincidir con get_blue()";
+}
+
+// Test 10: Set y Get píxel en el primer índice
+TEST_F(ImageAOSTest, SetAndGetPixelFirstIndex) {
+  // Configuración
+  ImageAOS image(3, 2);
+
+  // Definir color de prueba
+  Color test_color(1.0, 1.0, 1.0);  // Blanco (después de gamma debería ser 255, 255, 255)
+
+  // Establecer el píxel en el índice 0
+  image.set_pixel(0, test_color);
+
+  // Obtener el píxel
+  ImageAOS::Pixel pixel = image.get_pixel(0);
+
+  // Verificar que los valores son correctos (blanco con gamma debería ser 255)
+  ASSERT_EQ(pixel.r, 255) << "Primer píxel componente R debe ser 255 (blanco)";
+  ASSERT_EQ(pixel.g, 255) << "Primer píxel componente G debe ser 255 (blanco)";
+  ASSERT_EQ(pixel.b, 255) << "Primer píxel componente B debe ser 255 (blanco)";
+
+  // Verificar también con los getters individuales
+  ASSERT_EQ(image.get_red(0), 255);
+  ASSERT_EQ(image.get_green(0), 255);
+  ASSERT_EQ(image.get_blue(0), 255);
+}
+
+// Test 11: Set y Get píxel en el último índice
+TEST_F(ImageAOSTest, SetAndGetPixelLastIndex) {
+  // Configuración: imagen de 3x2 (6 píxeles, índice máximo = 5)
+  ImageAOS image(3, 2);
+
+  // Definir color de prueba (valores intermedios)
+  Color test_color(0.5, 0.5, 0.5);  // Gris medio
+
+  // Establecer el píxel en el último índice (width*height - 1 = 5)
+  size_t last_index = image.total_pixels() - 1;
+  image.set_pixel(last_index, test_color);
+
+  // Obtener el píxel
+  ImageAOS::Pixel pixel = image.get_pixel(last_index);
+
+  // Verificar que los valores están en el rango esperado (no negro)
+  ASSERT_GT(pixel.r, 0) << "Último píxel componente R debe ser > 0";
+  ASSERT_GT(pixel.g, 0) << "Último píxel componente G debe ser > 0";
+  ASSERT_GT(pixel.b, 0) << "Último píxel componente B debe ser > 0";
+
+  // Verificar que no es blanco completo (255)
+  ASSERT_LT(pixel.r, 255) << "Último píxel componente R debe ser < 255";
+  ASSERT_LT(pixel.g, 255) << "Último píxel componente G debe ser < 255";
+  ASSERT_LT(pixel.b, 255) << "Último píxel componente B debe ser < 255";
+}
+
+// Test 12: Getters lanzan excepción con índice fuera de rango
+TEST_F(ImageAOSTest, GettersThrowOutOfRange) {
+  // Configuración: imagen de 3x2 (6 píxeles, índices válidos: 0-5)
+  ImageAOS image(3, 2);
+
+  // Índice inválido (igual a width*height)
+  size_t invalid_index = image.total_pixels();
+
+  // Verificar que todos los getters lanzan std::out_of_range
+  ASSERT_THROW((void) image.get_red(invalid_index), std::out_of_range)
+      << "get_red() debe lanzar std::out_of_range con índice fuera de rango";
+
+  ASSERT_THROW((void) image.get_green(invalid_index), std::out_of_range)
+      << "get_green() debe lanzar std::out_of_range con índice fuera de rango";
+
+  ASSERT_THROW((void) image.get_blue(invalid_index), std::out_of_range)
+      << "get_blue() debe lanzar std::out_of_range con índice fuera de rango";
+
+  ASSERT_THROW((void) image.get_pixel(invalid_index), std::out_of_range)
+      << "get_pixel() debe lanzar std::out_of_range con índice fuera de rango";
+}
+
+// Test 13: set_pixel lanza excepción con índice fuera de rango
+TEST_F(ImageAOSTest, SetPixelThrowsOutOfRange) {
+  // Configuración: imagen de 3x2 (6 píxeles, índices válidos: 0-5)
+  ImageAOS image(3, 2);
+
+  // Índice inválido
+  size_t invalid_index = image.total_pixels();
+
+  // Color de prueba
+  Color test_color(0.5, 0.5, 0.5);
+
+  // Verificar que set_pixel lanza std::out_of_range
+  ASSERT_THROW(image.set_pixel(invalid_index, test_color), std::out_of_range)
+      << "set_pixel() debe lanzar std::out_of_range con índice fuera de rango";
+}
+
+// Test 14: Verificar que set_pixel no afecta otros píxeles
+TEST_F(ImageAOSTest, SetPixelDoesNotAffectOtherPixels) {
+  // Configuración
+  ImageAOS image(3, 2);
+
+  // Establecer un píxel específico
+  Color test_color(1.0, 0.0, 0.0);  // Rojo
+  image.set_pixel(2, test_color);
+
+  // Verificar que otros píxeles siguen siendo negros (0, 0, 0)
+  for (size_t i = 0; i < image.total_pixels(); ++i) {
+    if (i == 2) {
+      // El píxel 2 debe ser rojo
+      ASSERT_EQ(image.get_red(i), 255) << "Píxel 2 debe tener R=255";
+      ASSERT_EQ(image.get_green(i), 0) << "Píxel 2 debe tener G=0";
+      ASSERT_EQ(image.get_blue(i), 0) << "Píxel 2 debe tener B=0";
+    } else {
+      // Todos los demás píxeles deben seguir siendo negros
+      ImageAOS::Pixel pixel = image.get_pixel(i);
+      ASSERT_EQ(pixel.r, 0) << "Píxel " << i << " componente R debe ser 0";
+      ASSERT_EQ(pixel.g, 0) << "Píxel " << i << " componente G debe ser 0";
+      ASSERT_EQ(pixel.b, 0) << "Píxel " << i << " componente B debe ser 0";
+    }
+  }
+}
+
+// Test 15: Getters con índice extremo muy grande
+TEST_F(ImageAOSTest, GettersThrowWithLargeIndex) {
+  // Configuración
+  ImageAOS image(3, 2);
+
+  // Índice extremadamente grande
+  size_t huge_index = 1'000'000;
+
+  // Verificar que lanzan excepción
+  ASSERT_THROW((void) image.get_red(huge_index), std::out_of_range);
+  ASSERT_THROW((void) image.get_green(huge_index), std::out_of_range);
+  ASSERT_THROW((void) image.get_blue(huge_index), std::out_of_range);
+  ASSERT_THROW((void) image.get_pixel(huge_index), std::out_of_range);
+}
+
+// Test 16: Múltiples operaciones set_pixel
+TEST_F(ImageAOSTest, MultipleSetPixelOperations) {
+  // Configuración
+  ImageAOS image(3, 2);
+
+  // Establecer varios píxeles con diferentes colores
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
+  image.set_pixel(2, Color(0.0, 0.0, 1.0));  // Azul
+  image.set_pixel(3, Color(1.0, 1.0, 0.0));  // Amarillo
+  image.set_pixel(4, Color(1.0, 0.0, 1.0));  // Magenta
+  image.set_pixel(5, Color(0.0, 1.0, 1.0));  // Cian
+
+  // Verificar cada píxel
+  // Píxel 0: Rojo
+  ASSERT_EQ(image.get_red(0), 255);
+  ASSERT_EQ(image.get_green(0), 0);
+  ASSERT_EQ(image.get_blue(0), 0);
+
+  // Píxel 1: Verde
+  ASSERT_EQ(image.get_red(1), 0);
+  ASSERT_EQ(image.get_green(1), 255);
+  ASSERT_EQ(image.get_blue(1), 0);
+
+  // Píxel 2: Azul
+  ASSERT_EQ(image.get_red(2), 0);
+  ASSERT_EQ(image.get_green(2), 0);
+  ASSERT_EQ(image.get_blue(2), 255);
+
+  // Píxel 3: Amarillo
+  ASSERT_EQ(image.get_red(3), 255);
+  ASSERT_EQ(image.get_green(3), 255);
+  ASSERT_EQ(image.get_blue(3), 0);
+
+  // Píxel 4: Magenta
+  ASSERT_EQ(image.get_red(4), 255);
+  ASSERT_EQ(image.get_green(4), 0);
+  ASSERT_EQ(image.get_blue(4), 255);
+
+  // Píxel 5: Cian
+  ASSERT_EQ(image.get_red(5), 0);
+  ASSERT_EQ(image.get_green(5), 255);
+  ASSERT_EQ(image.get_blue(5), 255);
+}
