@@ -39,42 +39,31 @@ public:
 
   [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min,
                                       double t_max) {  // intersección de caja AABB con rayos
-    for (int axis = 0; axis < 3; ++axis) {
-      double invD = 0.0;
-      double t0   = 0.0;
-      double t1   = 0.0;
+    // El inicializador {x:..., y:...} no es válido. Usa el constructor normal.
+    Vec3 invDir = {1.0 / r.direction.x, 1.0 / r.direction.y, 1.0 / r.direction.z};
 
-      switch (axis) {  // stablecemos la intersección del rayo con cada eje de a caja AABB
-        case 0:        // eje X
-          invD = 1.0 / r.direction.x;
-          t0   = (box.min_point.x - r.point.x) * invD;
-          t1   = (box.max_point.x - r.point.x) * invD;
-          break;
-        case 1:  // eje Y
-          invD = 1.0 / r.direction.y;
-          t0   = (box.min_point.y - r.point.y) * invD;
-          t1   = (box.max_point.y - r.point.y) * invD;
-          break;
-        case 2:  // eje Z
-          invD = 1.0 / r.direction.z;
-          t0   = (box.min_point.z - r.point.z) * invD;
-          t1   = (box.max_point.z - r.point.z) * invD;
-          break;
-        default: continue;
-      }
+    // Usamos std::array en lugar de arrays de estilo C.
+    // También usamos 'bool' para 'sign', es más claro y la conversión a 0/1 es segura.
+    std::array<bool, 3> sign = {invDir.x < 0, invDir.y < 0, invDir.z < 0};
 
-      if (invD < 0.0) {  // gestionamos el caso en el que la dirección del rayo es hacia atrás
-        std::swap(t0, t1);
-      }
+    // Usamos std::array para los límites de la caja.
+    std::array<Point3, 2> bounds = {box.min_point, box.max_point};
 
-      t_min = t0 > t_min ? t0 : t_min;  // entrada del rayo en toda la caja
-      t_max = t1 < t_max ? t1 : t_max;  // primera salida del rayo de cualquiera de los ejes
+    for (size_t axis = 0; axis < 3; ++axis) {
+        
+        // Esta lógica es óptima (sin saltos) y ahora no genera advertencias
+        // porque 'axis' ya es del tipo correcto.
+        double const t_near = ((sign.at(axis) ? bounds.at(1) : bounds.at(0))[axis] - r.point[axis]) * invDir[axis];
+        double const t_far  = ((sign.at(axis) ? bounds.at(0) : bounds.at(1))[axis] - r.point[axis]) * invDir[axis];
 
-      if (t_max <= t_min) {  // para que haya intersección el rayo debe haber entrado a la caja (no
-                             // sale de ningún eje antes de haber entrado en todos)
-        return false;
-      }
+        t_min = std::max(t_near, t_min);
+        t_max = std::min(t_far, t_max);
+
+        if (t_min > t_max) {
+            return false;
+        }
     }
+
     return true;
   }
 };
