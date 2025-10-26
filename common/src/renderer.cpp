@@ -215,7 +215,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
             if (t > 0.001 and t < t_max) {
                 Point3 p = r.at(t);
                 if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
-                    Vec3 normal = component_perpendicular(p - center, unit_axis) / radius; // *** OPTIMIZACIÓN CLAVE ***
+                    Vec3 normal = component_perpendicular(p - center, unit_axis); // *** OPTIMIZACIÓN CLAVE ***
                     best_hit = Intersection{t, p, normal};
                     t_max = t;
                 }
@@ -226,7 +226,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
                 if (t > 0.001 and t < t_max) {
                      Point3 p = r.at(t);
                      if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
-                        Vec3 normal = component_perpendicular(p - center, unit_axis) / radius;
+                        Vec3 normal = component_perpendicular(p - center, unit_axis);
                         best_hit = Intersection{t, p, normal};
                         t_max = t;
                      }
