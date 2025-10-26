@@ -1,5 +1,5 @@
 echo "Iniciando runs"
-for i in $(seq 3 4);
+for i in $(seq 2 4);
 do
     echo "--- Iniciando ejecución ${i} en $(hostname) ---"
     time /workspace/out/build/default/soa/Release/render-soa /workspace/res/scene_scripts/scene${i}example.txt /workspace/res/config_scripts/config${i}example.txt /workspace/outImagSOA${i}.ppm
