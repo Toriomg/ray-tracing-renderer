@@ -32,27 +32,23 @@ void ImageSOA::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
-// Llenado desde datos double del renderizador
 void ImageSOA::fill_from_double(std::vector<double> const & r_data,
                                 std::vector<double> const & g_data,
                                 std::vector<double> const & b_data, double gamma) {
-  void ImageSOA::fill_from_double(std::vector<double> const & r_data,
-                                  std::vector<double> const & g_data,
-                                  std::vector<double> const & b_data, double gamma) {
-    // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
-    size_t expected_size = width_ * height_;
+  // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
+  size_t expected_size = width_ * height_;
 
-    // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
-    for (size_t i = 0; i < expected_size; ++i) {
-      r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-      g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-      b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
-    }
+  // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
+  for (size_t i = 0; i < expected_size; ++i) {
+    r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
+    g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
+    b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
   }
+}
 
-  // Escritura a archivo PPM usando la clase PPMWriter
-  bool ImageSOA::write_to_ppm(std::string const & filename) const {
-    auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
+// Escritura a archivo PPM usando la clase PPMWriter
+bool ImageSOA::write_to_ppm(std::string const & filename) const {
+  auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
 
-    return PPMWriter::write_ppm(filename, pixels, width_, height_);
-  }
+  return PPMWriter::write_ppm(filename, pixels, width_, height_);
+}

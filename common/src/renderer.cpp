@@ -180,9 +180,9 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
-    SceneSettings const & scene,                    // NOLINT
-    size_t idx, Ray const & r, double closest_t) {  // Ray debe ser const&
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(  // NOLINT
+    SceneSettings const & scene, size_t idx, Ray const & r,
+    double closest_t) {  // Ray debe ser const&
   // --- 1. Obtener datos directamente de la estructura SoA ---
   Point3 const center = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]};
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
