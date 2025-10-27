@@ -1,5 +1,8 @@
 #include "../../common/include/config_parser.hpp"
 #include "./../include/rendering_engine.hpp"
+#include "./../include/scene_parser.hpp"
+#include "./../include/config_parser.hpp"
+#include "image_soa.hpp"
 #include <iostream>
 #include <string>
 
