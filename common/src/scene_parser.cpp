@@ -229,8 +229,7 @@ namespace {
       std::cerr << "Error: radio del cilindro debe ser positivo\n";
       return false;
     }
-    // Check for zero axis vector
-    if (vx == 0.0 and vy == 0.0 and vz == 0.0) {
+    if (vx == 0.0 and vy == 0.0 and vz == 0.0) {  // Check for zero axis vector
       std::cerr << "Error: vector de axis del cilindro no puede ser cero\n";
       return false;
     }
