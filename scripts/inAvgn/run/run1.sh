@@ -25,7 +25,7 @@ echo ""
 echo "========================================="
 echo ">>> Midiendo 'render-aos' (5 ejecuciones)"
 echo "========================================="
-#perf stat -r 5 ${RENDER_AOS_EXE} #${CONFIG_FILE} ${SCENE_FILE} ${OUTPUT_FILE_AOS}
+perf stat -r 5 ${RENDER_AOS_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE_AOS}
 echo "main aos por hacer bien aun"
 
 echo "--- Mediciones finalizadas. ---"

@@ -17,8 +17,8 @@ public:
 
   // Contructor que permite meter una esfera en una caja AABB para simplificar las intersecciones
   static AABB from_sphere(Point3 const & center, double radius) {
-    Point3 min(center.x - radius, center.y - radius, center.z - radius);
-    Point3 max(center.x + radius, center.y + radius, center.z + radius);
+    Point3 min(center.e[0] - radius, center.e[1] - radius, center.e[2] - radius);
+    Point3 max(center.e[0] + radius, center.e[1] + radius, center.e[2] + radius);
     return AABB{min, max};
   }
 
@@ -30,41 +30,50 @@ public:
     Point3 p1      = center - half_axis;
     Point3 p2      = center + half_axis;
 
-    Point3 min(std::min(p1.x, p2.x) - radius, std::min(p1.y, p2.y) - radius,
-               std::min(p1.z, p2.z) - radius);
-    Point3 max(std::max(p1.x, p2.x) + radius, std::max(p1.y, p2.y) + radius,
-               std::max(p1.z, p2.z) + radius);
+    Point3 min(std::min(p1.e[0], p2.e[0]) - radius, std::min(p1.e[1], p2.e[1]) - radius,
+               std::min(p1.e[2], p2.e[2]) - radius);
+    Point3 max(std::max(p1.e[0], p2.e[0]) + radius, std::max(p1.e[1], p2.e[1]) + radius,
+               std::max(p1.e[2], p2.e[2]) + radius);
     return AABB{min, max};
   }
 
-  [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min,
-                                      double t_max) {  // intersección de caja AABB con rayos
-    // El inicializador {x:..., y:...} no es válido. Usa el constructor normal.
-    Vec3 invDir = {1.0 / r.direction.x, 1.0 / r.direction.y, 1.0 / r.direction.z};
+  [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min, double t_max) {
+    // Usando la implementación interna de Vec3 con el array e[3]
+    Vec3 invDir = {1.0 / r.direction.e[0], 1.0 / r.direction.e[1], 1.0 / r.direction.e[2]};
 
-    // Usamos std::array en lugar de arrays de estilo C.
-    // También usamos 'bool' para 'sign', es más claro y la conversión a 0/1 es segura.
-    std::array<bool, 3> sign = {invDir.x < 0, invDir.y < 0, invDir.z < 0};
-
-    // Usamos std::array para los límites de la caja.
-    std::array<Point3, 2> bounds = {box.min_point, box.max_point};
-
-    for (size_t axis = 0; axis < 3; ++axis) {
-        
-        // Esta lógica es óptima (sin saltos) y ahora no genera advertencias
-        // porque 'axis' ya es del tipo correcto.
-        double const t_near = ((sign.at(axis) ? bounds.at(1) : bounds.at(0))[axis] - r.point[axis]) * invDir[axis];
-        double const t_far  = ((sign.at(axis) ? bounds.at(0) : bounds.at(1))[axis] - r.point[axis]) * invDir[axis];
-
-        t_min = std::max(t_near, t_min);
-        t_max = std::min(t_far, t_max);
-
-        if (t_min > t_max) {
-            return false;
-        }
+    // Eje X
+    double t0 = (box.min_point.e[0] - r.point.e[0]) * invDir.e[0];
+    double t1 = (box.max_point.e[0] - r.point.e[0]) * invDir.e[0];
+    if (invDir.e[0] < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    if (t_max <= t_min) {
+      return false;
     }
 
-    return true;
+    // Eje Y
+    t0 = (box.min_point.e[1] - r.point.e[1]) * invDir.e[1];
+    t1 = (box.max_point.e[1] - r.point.e[1]) * invDir.e[1];
+    if (invDir.e[1] < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    if (t_max <= t_min) {
+      return false;
+    }
+
+    // Eje Z
+    t0 = (box.min_point.e[2] - r.point.e[2]) * invDir.e[2];
+    t1 = (box.max_point.e[2] - r.point.e[2]) * invDir.e[2];
+    if (invDir.e[2] < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    return t_max > t_min;
   }
 };
 

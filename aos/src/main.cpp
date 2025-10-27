@@ -1,20 +1,21 @@
 #include "../../common/include/config_parser.hpp"
-#include "./../include/rendering_engine.hpp"
-#include "./../include/scene_parser.hpp"
-#include "./../include/config_parser.hpp"
+#include "../../common/include/rendering_engine.hpp"
+#include "../../common/include/scene_parser.hpp"
 #include "image_aos.hpp"
 #include <iostream>
 #include <string>
 
-// File paths
-std::string const FilepathScene  = "/workspace/res/scene_scripts/scene2.txt";
-std::string const FilepathConfig = "/workspace/res/configs/config2.txt";
-std::string const FilepathOutAOS = "/workspace/outputImageAOS.ppm";
+int main(int argc, char * argv[]) {
+  std::vector<std::string> const args(argv, argv + argc);
+  if (args.size() != 4) {
+    std::cerr << "Usage: " << args[0] << " <scene_file> <config_file> <output_file>\n";
+    std::cerr << "Example: " << args[0] << " res/scene.txt res/config.txt output.ppm\n";
+    return 1;
+  }
 
-int main() {
   // Load configuration and scene
-  ConfigSettings config = loadConfigFromFile(FilepathConfig);
-  SceneSettings scene   = loadSceneFromFile(FilepathScene);
+  ConfigSettings config = loadConfigFromFile(args[2]);
+  SceneSettings scene   = loadSceneFromFile(args[1]);
 
   // Create random generators
   auto rngRay      = RandomGenerator(config.ray_rng_seed);
@@ -33,7 +34,7 @@ int main() {
     std::cout << "Rendering with ImageAOS..." << '\n';
     ImageAOS imageAos(imageWidth, imageHeight);
     renderImage(imageAos, camera, ctx);
-    if (!imageAos.write_to_ppm(FilepathOutAOS)) {
+    if (!imageAos.write_to_ppm(args[3])) {
       std::cerr << "Error writing ImageAOS to .ppm file\n";
     }
   }
