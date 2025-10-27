@@ -23,7 +23,7 @@ public:
   ImageSOA(size_t width, size_t height);
 
   // Función para calcular el índice de un pixel en los arrays de colores
-  [[nodiscard]] size_t indice(size_t row, size_t col) const { return row * width_ + col; }
+  [[nodiscard]] size_t indice(size_t row, size_t col) const;
 
   // Métodos para modificar valores de color a un pixel concreto en cada array
   void set_red(size_t index, double value, double gamma = Constants::Gamma);

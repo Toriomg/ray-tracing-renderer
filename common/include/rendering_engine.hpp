@@ -23,14 +23,18 @@ struct RenderContext {
       : scene(scn), config(cfg), rngRay(rngR), rngMaterial(rngM) { }
 };
 
-// Template function implementation IN THE HEADER
+// EN rendering_engine.hpp
+
 template <typename ImageType>
 void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
-  auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
-  auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
+  auto imageWidth    = static_cast<size_t>(camera.ProjWindow.imageWidth);
+  auto imageHeight   = static_cast<size_t>(camera.ProjWindow.imageHeight);
+  auto pixel_delta_u = camera.ProjWindow.viewportHorizontal / static_cast<double>(imageWidth);
+  auto pixel_delta_v = camera.ProjWindow.viewportVertical / static_cast<double>(imageHeight);
 
-  auto pixel_width = camera.ProjWindow.viewportHorizontal * (1.0 / static_cast<double>(imageWidth));
-  auto pixel_height = camera.ProjWindow.viewportVertical * (1.0 / static_cast<double>(imageHeight));
+  // Origen de la ventana de proyección (esquina superior izquierda del píxel 0,0)
+  auto pixel00_loc = camera.ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v);
+
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
   for (size_t row = 0; row < imageHeight; row++) {
@@ -39,18 +43,19 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
               << std::flush;
     for (size_t col = 0; col < imageWidth; col++) {
       Color accumulated_color(0.0, 0.0, 0.0);
+
+      Point3 pixel_corner = pixel00_loc +  // LOC pixel actual
+                            (static_cast<double>(col) * pixel_delta_u) +
+                            (static_cast<double>(row) * pixel_delta_v);
       for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {
-        double delta_x = ctx.rngRay->get_double(-0.5F, 0.5F);
-        double delta_y = ctx.rngRay->get_double(-0.5F, 0.5F);
+        // Genera un punto aleatorio DENTRO del cuadrado del píxel
+        double px = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
+        double py = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
 
-        Point3 pixel_sample_point = camera.ProjWindow.viewportOrigin +
-                                    pixel_width * (static_cast<double>(col) + delta_x) +
-                                    pixel_height * (static_cast<double>(row) + delta_y);
-
+        Point3 pixel_sample_point = pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
         Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos, ctx.config->max_depth);
         accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, *ctx.rngMaterial);
       }
-
       Color final_pixel_color = accumulated_color * static_cast<double>(scale);
 
       size_t index = image.indice(row, col);

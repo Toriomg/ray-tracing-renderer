@@ -27,6 +27,7 @@ int main(int argc, char * argv[]) {
 
   // Create camera
   auto camera      = Camera(config);
+  auto camera      = Camera(config);
   auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
