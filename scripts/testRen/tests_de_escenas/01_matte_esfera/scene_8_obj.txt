@@ -1,0 +1,17 @@
+matte: mat_0 0.68 0.12 0.35
+matte: mat_1 0.30 0.76 0.71
+matte: mat_2 0.90 0.18 0.48
+matte: mat_3 0.13 0.30 0.55
+matte: mat_4 0.12 0.28 0.68
+matte: mat_5 0.59 0.30 0.63
+matte: mat_6 0.83 0.11 0.83
+matte: mat_7 0.73 0.41 0.24
+
+sphere: -9.23 3.75 -2.12 0.48 mat_0
+sphere: 3.43 5.10 4.06 0.50 mat_1
+sphere: -9.62 0.05 2.45 0.71 mat_2
+sphere: 0.94 4.57 3.68 0.31 mat_3
+sphere: 7.02 5.48 2.52 0.26 mat_4
+sphere: 0.25 0.94 10.45 0.56 mat_5
+sphere: 0.13 2.05 2.54 0.23 mat_6
+sphere: -8.78 7.19 11.78 0.38 mat_7

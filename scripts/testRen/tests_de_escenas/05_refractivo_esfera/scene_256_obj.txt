@@ -1,0 +1,513 @@
+refractive: mat_0 1.46
+refractive: mat_1 1.36
+refractive: mat_2 1.65
+refractive: mat_3 1.68
+refractive: mat_4 1.30
+refractive: mat_5 1.41
+refractive: mat_6 1.37
+refractive: mat_7 1.81
+refractive: mat_8 1.69
+refractive: mat_9 1.70
+refractive: mat_10 1.50
+refractive: mat_11 1.49
+refractive: mat_12 1.45
+refractive: mat_13 1.73
+refractive: mat_14 1.57
+refractive: mat_15 1.78
+refractive: mat_16 1.32
+refractive: mat_17 1.96
+refractive: mat_18 1.58
+refractive: mat_19 1.47
+refractive: mat_20 1.93
+refractive: mat_21 1.66
+refractive: mat_22 1.74
+refractive: mat_23 1.57
+refractive: mat_24 1.90
+refractive: mat_25 1.68
+refractive: mat_26 1.60
+refractive: mat_27 1.48
+refractive: mat_28 1.91
+refractive: mat_29 1.41
+refractive: mat_30 1.67
+refractive: mat_31 1.95
+refractive: mat_32 1.34
+refractive: mat_33 1.64
+refractive: mat_34 1.39
+refractive: mat_35 1.91
+refractive: mat_36 1.81
+refractive: mat_37 1.75
+refractive: mat_38 1.46
+refractive: mat_39 1.45
+refractive: mat_40 1.93
+refractive: mat_41 1.77
+refractive: mat_42 1.70
+refractive: mat_43 1.43
+refractive: mat_44 1.63
+refractive: mat_45 1.37
+refractive: mat_46 1.47
+refractive: mat_47 1.49
+refractive: mat_48 1.90
+refractive: mat_49 1.89
+refractive: mat_50 1.42
+refractive: mat_51 1.34
+refractive: mat_52 1.85
+refractive: mat_53 2.00
+refractive: mat_54 1.51
+refractive: mat_55 1.82
+refractive: mat_56 1.90
+refractive: mat_57 1.43
+refractive: mat_58 1.38
+refractive: mat_59 1.73
+refractive: mat_60 1.95
+refractive: mat_61 1.58
+refractive: mat_62 1.83
+refractive: mat_63 2.00
+refractive: mat_64 1.95
+refractive: mat_65 1.41
+refractive: mat_66 1.99
+refractive: mat_67 1.51
+refractive: mat_68 1.38
+refractive: mat_69 1.72
+refractive: mat_70 1.48
+refractive: mat_71 1.36
+refractive: mat_72 1.84
+refractive: mat_73 1.69
+refractive: mat_74 1.92
+refractive: mat_75 1.71
+refractive: mat_76 1.93
+refractive: mat_77 1.45
+refractive: mat_78 1.92
+refractive: mat_79 1.95
+refractive: mat_80 1.92
+refractive: mat_81 1.95
+refractive: mat_82 1.49
+refractive: mat_83 1.90
+refractive: mat_84 1.51
+refractive: mat_85 1.44
+refractive: mat_86 1.50
+refractive: mat_87 1.68
+refractive: mat_88 1.42
+refractive: mat_89 1.60
+refractive: mat_90 1.66
+refractive: mat_91 1.80
+refractive: mat_92 1.80
+refractive: mat_93 1.35
+refractive: mat_94 1.89
+refractive: mat_95 1.59
+refractive: mat_96 1.59
+refractive: mat_97 1.73
+refractive: mat_98 1.50
+refractive: mat_99 1.63
+refractive: mat_100 1.93
+refractive: mat_101 1.66
+refractive: mat_102 1.83
+refractive: mat_103 1.32
+refractive: mat_104 1.35
+refractive: mat_105 1.79
+refractive: mat_106 1.30
+refractive: mat_107 1.60
+refractive: mat_108 1.34
+refractive: mat_109 1.86
+refractive: mat_110 1.97
+refractive: mat_111 1.65
+refractive: mat_112 1.82
+refractive: mat_113 1.75
+refractive: mat_114 1.49
+refractive: mat_115 1.52
+refractive: mat_116 1.79
+refractive: mat_117 1.68
+refractive: mat_118 1.93
+refractive: mat_119 1.84
+refractive: mat_120 1.83
+refractive: mat_121 1.82
+refractive: mat_122 1.45
+refractive: mat_123 1.78
+refractive: mat_124 1.39
+refractive: mat_125 1.70
+refractive: mat_126 1.62
+refractive: mat_127 1.53
+refractive: mat_128 1.88
+refractive: mat_129 1.68
+refractive: mat_130 1.85
+refractive: mat_131 1.44
+refractive: mat_132 1.77
+refractive: mat_133 1.84
+refractive: mat_134 1.38
+refractive: mat_135 1.32
+refractive: mat_136 1.58
+refractive: mat_137 1.74
+refractive: mat_138 1.72
+refractive: mat_139 1.54
+refractive: mat_140 1.54
+refractive: mat_141 1.97
+refractive: mat_142 1.60
+refractive: mat_143 1.87
+refractive: mat_144 1.81
+refractive: mat_145 1.36
+refractive: mat_146 1.73
+refractive: mat_147 1.43
+refractive: mat_148 1.92
+refractive: mat_149 1.96
+refractive: mat_150 1.83
+refractive: mat_151 1.86
+refractive: mat_152 1.51
+refractive: mat_153 1.60
+refractive: mat_154 1.49
+refractive: mat_155 1.38
+refractive: mat_156 1.45
+refractive: mat_157 1.67
+refractive: mat_158 1.46
+refractive: mat_159 1.49
+refractive: mat_160 1.39
+refractive: mat_161 1.70
+refractive: mat_162 1.34
+refractive: mat_163 1.58
+refractive: mat_164 1.40
+refractive: mat_165 1.38
+refractive: mat_166 1.46
+refractive: mat_167 1.90
+refractive: mat_168 1.73
+refractive: mat_169 1.45
+refractive: mat_170 1.35
+refractive: mat_171 1.50
+refractive: mat_172 1.62
+refractive: mat_173 1.74
+refractive: mat_174 1.68
+refractive: mat_175 1.35
+refractive: mat_176 1.70
+refractive: mat_177 1.79
+refractive: mat_178 1.36
+refractive: mat_179 1.48
+refractive: mat_180 1.70
+refractive: mat_181 1.49
+refractive: mat_182 1.76
+refractive: mat_183 1.74
+refractive: mat_184 1.53
+refractive: mat_185 1.79
+refractive: mat_186 1.69
+refractive: mat_187 1.98
+refractive: mat_188 1.76
+refractive: mat_189 1.55
+refractive: mat_190 1.44
+refractive: mat_191 1.79
+refractive: mat_192 1.47
+refractive: mat_193 1.37
+refractive: mat_194 1.38
+refractive: mat_195 1.66
+refractive: mat_196 1.47
+refractive: mat_197 1.66
+refractive: mat_198 1.85
+refractive: mat_199 1.87
+refractive: mat_200 2.00
+refractive: mat_201 1.54
+refractive: mat_202 1.53
+refractive: mat_203 1.46
+refractive: mat_204 1.79
+refractive: mat_205 1.87
+refractive: mat_206 1.65
+refractive: mat_207 1.61
+refractive: mat_208 1.59
+refractive: mat_209 1.98
+refractive: mat_210 1.90
+refractive: mat_211 1.52
+refractive: mat_212 1.33
+refractive: mat_213 2.00
+refractive: mat_214 1.74
+refractive: mat_215 1.93
+refractive: mat_216 1.56
+refractive: mat_217 1.85
+refractive: mat_218 1.73
+refractive: mat_219 1.62
+refractive: mat_220 1.86
+refractive: mat_221 1.61
+refractive: mat_222 1.60
+refractive: mat_223 1.57
+refractive: mat_224 1.70
+refractive: mat_225 1.76
+refractive: mat_226 1.82
+refractive: mat_227 1.93
+refractive: mat_228 1.55
+refractive: mat_229 1.80
+refractive: mat_230 1.93
+refractive: mat_231 1.71
+refractive: mat_232 1.82
+refractive: mat_233 1.98
+refractive: mat_234 1.48
+refractive: mat_235 1.82
+refractive: mat_236 1.40
+refractive: mat_237 1.99
+refractive: mat_238 1.85
+refractive: mat_239 1.77
+refractive: mat_240 1.96
+refractive: mat_241 1.92
+refractive: mat_242 1.34
+refractive: mat_243 1.59
+refractive: mat_244 1.64
+refractive: mat_245 1.62
+refractive: mat_246 1.59
+refractive: mat_247 1.37
+refractive: mat_248 1.32
+refractive: mat_249 1.90
+refractive: mat_250 1.98
+refractive: mat_251 1.39
+refractive: mat_252 1.75
+refractive: mat_253 1.47
+refractive: mat_254 1.84
+refractive: mat_255 1.53
+
+sphere: -9.23 3.75 -2.12 0.48 mat_0
+sphere: 3.43 5.10 4.06 0.50 mat_1
+sphere: -9.62 0.05 2.45 0.71 mat_2
+sphere: 0.94 4.57 3.68 0.31 mat_3
+sphere: 7.02 5.48 2.52 0.26 mat_4
+sphere: 0.25 0.94 10.45 0.56 mat_5
+sphere: 0.13 2.05 2.54 0.23 mat_6
+sphere: -8.78 7.19 11.78 0.38 mat_7
+sphere: 7.78 1.31 -2.94 0.71 mat_8
+sphere: 1.69 7.06 8.59 0.26 mat_9
+sphere: 2.45 5.02 12.98 0.40 mat_10
+sphere: 0.58 3.82 -1.66 0.71 mat_11
+sphere: 5.62 -5.30 6.83 0.42 mat_12
+sphere: -6.28 2.46 14.38 0.53 mat_13
+sphere: -7.73 0.93 10.58 0.77 mat_14
+sphere: 4.30 -5.42 14.33 0.56 mat_15
+sphere: -8.33 -4.22 -3.28 0.60 mat_16
+sphere: -6.92 5.30 -2.82 0.52 mat_17
+sphere: -1.14 -5.47 -4.95 0.74 mat_18
+sphere: 9.53 -4.26 9.69 0.79 mat_19
+sphere: 8.08 6.39 1.75 0.63 mat_20
+sphere: -0.04 7.12 9.06 0.71 mat_21
+sphere: 7.14 -0.60 9.25 0.26 mat_22
+sphere: -5.88 7.11 3.09 0.61 mat_23
+sphere: 1.51 -2.36 6.73 0.75 mat_24
+sphere: -3.45 -1.14 -1.28 0.31 mat_25
+sphere: 6.55 3.89 14.30 0.60 mat_26
+sphere: 9.18 -2.89 -1.24 0.33 mat_27
+sphere: -2.32 7.85 -0.50 0.47 mat_28
+sphere: -8.78 -5.62 5.92 0.57 mat_29
+sphere: 0.22 6.81 12.22 0.77 mat_30
+sphere: 1.58 -2.31 -2.40 0.66 mat_31
+sphere: -6.91 -5.91 8.98 0.27 mat_32
+sphere: 2.45 -3.19 3.50 0.21 mat_33
+sphere: -2.48 -1.40 0.22 0.28 mat_34
+sphere: 1.51 3.70 -1.01 0.23 mat_35
+sphere: -4.64 3.79 0.47 0.59 mat_36
+sphere: -8.53 3.85 -2.16 0.33 mat_37
+sphere: 4.59 0.65 7.81 0.37 mat_38
+sphere: 3.37 -1.81 4.62 0.47 mat_39
+sphere: 8.24 4.53 5.97 0.71 mat_40
+sphere: 2.20 4.13 5.36 0.55 mat_41
+sphere: -5.73 7.03 7.78 0.69 mat_42
+sphere: 2.13 -5.65 -2.84 0.73 mat_43
+sphere: 3.99 6.66 12.87 0.34 mat_44
+sphere: 9.70 2.55 9.60 0.51 mat_45
+sphere: -4.88 0.80 4.24 0.38 mat_46
+sphere: -3.16 0.20 0.33 0.28 mat_47
+sphere: 6.09 -0.99 2.30 0.67 mat_48
+sphere: 3.97 0.26 1.19 0.68 mat_49
+sphere: -5.27 0.48 2.49 0.80 mat_50
+sphere: -5.20 2.31 5.54 0.23 mat_51
+sphere: -6.37 6.40 10.77 0.33 mat_52
+sphere: -6.43 7.14 6.77 0.63 mat_53
+sphere: 8.14 -2.35 5.00 0.75 mat_54
+sphere: -6.28 -2.43 12.63 0.70 mat_55
+sphere: 0.31 -4.13 11.67 0.39 mat_56
+sphere: 5.15 -2.43 -1.92 0.62 mat_57
+sphere: -2.14 -0.74 3.79 0.48 mat_58
+sphere: -0.58 3.08 -2.87 0.61 mat_59
+sphere: -0.27 5.46 0.74 0.60 mat_60
+sphere: -5.89 3.79 8.62 0.53 mat_61
+sphere: -0.41 7.31 2.17 0.25 mat_62
+sphere: -3.38 -5.40 12.82 0.70 mat_63
+sphere: -6.30 2.80 -0.90 0.71 mat_64
+sphere: -1.71 -5.17 7.69 0.25 mat_65
+sphere: 7.89 7.00 7.28 0.35 mat_66
+sphere: 5.49 -5.45 -2.78 0.38 mat_67
+sphere: -8.56 6.23 8.37 0.68 mat_68
+sphere: 3.14 -2.86 0.56 0.56 mat_69
+sphere: 5.83 2.75 1.42 0.68 mat_70
+sphere: -1.79 2.79 11.99 0.60 mat_71
+sphere: -0.81 2.27 -0.92 0.46 mat_72
+sphere: 6.66 0.79 -4.66 0.69 mat_73
+sphere: -6.91 -5.54 6.57 0.66 mat_74
+sphere: -7.75 0.21 4.23 0.27 mat_75
+sphere: 2.58 -2.48 8.83 0.50 mat_76
+sphere: 0.49 -2.76 10.27 0.21 mat_77
+sphere: -3.74 -4.57 -3.28 0.21 mat_78
+sphere: 0.46 -4.99 -2.72 0.46 mat_79
+sphere: 3.60 -3.17 8.14 0.53 mat_80
+sphere: 8.49 5.34 14.83 0.41 mat_81
+sphere: 7.71 -1.51 0.66 0.46 mat_82
+sphere: -9.54 4.13 -3.23 0.57 mat_83
+sphere: -8.82 -0.02 0.05 0.77 mat_84
+sphere: -4.03 -1.01 1.14 0.27 mat_85
+sphere: 2.88 -1.76 0.42 0.39 mat_86
+sphere: -2.94 5.11 -0.67 0.27 mat_87
+sphere: -3.39 1.98 0.65 0.27 mat_88
+sphere: -2.85 7.45 12.92 0.47 mat_89
+sphere: -1.34 -3.57 8.42 0.63 mat_90
+sphere: -4.83 2.76 -2.96 0.39 mat_91
+sphere: -4.23 5.15 7.37 0.51 mat_92
+sphere: -1.25 1.73 4.64 0.35 mat_93
+sphere: 6.62 5.16 2.73 0.44 mat_94
+sphere: 8.53 -5.71 10.32 0.30 mat_95
+sphere: -6.20 -1.10 7.48 0.39 mat_96
+sphere: 0.35 1.18 13.40 0.55 mat_97
+sphere: -4.59 2.86 6.12 0.38 mat_98
+sphere: 4.49 -5.87 14.73 0.72 mat_99
+sphere: -8.79 3.96 -2.39 0.79 mat_100
+sphere: -0.95 4.44 0.12 0.59 mat_101
+sphere: -9.42 5.19 0.32 0.30 mat_102
+sphere: -1.18 1.02 -4.08 0.30 mat_103
+sphere: -2.37 1.62 9.00 0.28 mat_104
+sphere: 6.45 -0.97 14.82 0.42 mat_105
+sphere: -1.05 -0.97 -3.39 0.76 mat_106
+sphere: 1.83 4.60 -1.92 0.49 mat_107
+sphere: -4.30 -2.20 2.90 0.58 mat_108
+sphere: -0.85 3.78 14.77 0.55 mat_109
+sphere: 5.99 7.32 14.42 0.41 mat_110
+sphere: 6.75 3.76 -4.61 0.69 mat_111
+sphere: 7.95 6.55 1.74 0.64 mat_112
+sphere: 6.55 0.22 7.75 0.43 mat_113
+sphere: 8.42 1.34 -0.16 0.46 mat_114
+sphere: 1.74 -0.73 1.57 0.58 mat_115
+sphere: -3.62 0.83 -3.32 0.39 mat_116
+sphere: -7.73 0.75 1.56 0.43 mat_117
+sphere: -9.39 7.86 -0.78 0.21 mat_118
+sphere: 1.69 -5.46 6.43 0.75 mat_119
+sphere: -8.84 0.64 11.70 0.34 mat_120
+sphere: -7.36 -5.19 8.92 0.66 mat_121
+sphere: -1.46 -1.12 14.67 0.35 mat_122
+sphere: 6.00 5.31 4.06 0.67 mat_123
+sphere: -3.47 6.63 9.92 0.57 mat_124
+sphere: 6.79 3.44 12.32 0.41 mat_125
+sphere: -2.50 7.23 3.71 0.39 mat_126
+sphere: 6.15 -1.07 3.36 0.54 mat_127
+sphere: -8.24 5.78 7.22 0.23 mat_128
+sphere: -8.12 -1.89 3.60 0.68 mat_129
+sphere: 6.01 4.36 9.61 0.51 mat_130
+sphere: -8.25 -1.09 9.90 0.22 mat_131
+sphere: -5.17 -5.77 1.53 0.39 mat_132
+sphere: -0.42 -3.53 5.92 0.27 mat_133
+sphere: 5.78 5.69 3.27 0.73 mat_134
+sphere: 3.29 1.83 7.74 0.47 mat_135
+sphere: -7.23 6.58 -0.46 0.72 mat_136
+sphere: -2.34 1.71 7.34 0.42 mat_137
+sphere: 9.82 5.87 2.69 0.40 mat_138
+sphere: 7.74 7.16 2.18 0.28 mat_139
+sphere: 0.71 0.48 3.84 0.56 mat_140
+sphere: -9.72 1.92 8.63 0.53 mat_141
+sphere: -9.97 1.96 13.35 0.61 mat_142
+sphere: 0.31 -0.73 -0.68 0.47 mat_143
+sphere: 9.17 -3.89 7.40 0.51 mat_144
+sphere: -8.18 -2.59 0.18 0.25 mat_145
+sphere: -8.13 5.59 1.18 0.60 mat_146
+sphere: -0.23 1.22 4.08 0.22 mat_147
+sphere: -8.56 -4.25 11.28 0.62 mat_148
+sphere: 9.22 3.68 -0.48 0.55 mat_149
+sphere: 3.27 -2.10 3.25 0.68 mat_150
+sphere: -5.87 -5.57 12.88 0.40 mat_151
+sphere: 2.14 7.61 -1.09 0.36 mat_152
+sphere: -3.28 -2.09 4.92 0.21 mat_153
+sphere: 6.14 7.97 -0.74 0.44 mat_154
+sphere: -2.50 3.87 3.31 0.72 mat_155
+sphere: 8.96 -2.31 -2.65 0.56 mat_156
+sphere: -8.76 -0.20 -1.09 0.70 mat_157
+sphere: -1.91 5.67 6.85 0.65 mat_158
+sphere: 3.32 4.99 9.70 0.68 mat_159
+sphere: -2.21 -3.55 -0.35 0.69 mat_160
+sphere: -7.67 4.68 -4.05 0.21 mat_161
+sphere: 4.68 4.19 10.72 0.42 mat_162
+sphere: 3.69 4.31 -0.39 0.27 mat_163
+sphere: -8.79 -1.73 10.51 0.34 mat_164
+sphere: 6.69 3.11 14.07 0.36 mat_165
+sphere: 9.43 4.89 -4.07 0.36 mat_166
+sphere: -7.69 -1.35 6.68 0.78 mat_167
+sphere: 7.16 -1.59 6.67 0.50 mat_168
+sphere: -9.62 -2.05 5.06 0.51 mat_169
+sphere: 4.35 -1.77 14.64 0.75 mat_170
+sphere: -4.04 -4.14 -0.54 0.41 mat_171
+sphere: -0.39 0.09 7.13 0.63 mat_172
+sphere: -9.79 -4.19 3.77 0.50 mat_173
+sphere: 4.92 4.52 2.67 0.58 mat_174
+sphere: -4.11 1.14 11.78 0.64 mat_175
+sphere: -9.60 4.14 6.52 0.74 mat_176
+sphere: -8.88 -5.99 1.03 0.79 mat_177
+sphere: -3.09 1.76 -0.70 0.50 mat_178
+sphere: 5.26 -1.56 -3.38 0.56 mat_179
+sphere: -8.54 -5.56 -1.87 0.41 mat_180
+sphere: -6.72 7.49 8.70 0.66 mat_181
+sphere: 3.65 -1.54 -4.54 0.21 mat_182
+sphere: -7.15 -0.87 5.53 0.65 mat_183
+sphere: 8.60 5.74 7.04 0.63 mat_184
+sphere: 9.16 7.17 7.52 0.62 mat_185
+sphere: 6.76 6.13 5.69 0.54 mat_186
+sphere: 9.29 -1.93 1.80 0.80 mat_187
+sphere: 0.26 2.35 2.59 0.20 mat_188
+sphere: 1.56 5.16 3.78 0.27 mat_189
+sphere: -8.33 -5.30 12.22 0.57 mat_190
+sphere: 5.98 5.55 -4.46 0.53 mat_191
+sphere: -6.78 -1.97 -1.37 0.51 mat_192
+sphere: -3.50 -4.80 11.09 0.71 mat_193
+sphere: 0.94 6.41 5.71 0.30 mat_194
+sphere: 6.15 1.63 2.65 0.26 mat_195
+sphere: 6.73 -2.13 14.51 0.34 mat_196
+sphere: -4.48 2.83 9.00 0.76 mat_197
+sphere: -4.04 -4.48 11.41 0.41 mat_198
+sphere: -7.81 -1.79 1.89 0.22 mat_199
+sphere: 9.77 5.79 6.22 0.47 mat_200
+sphere: -9.32 1.62 1.82 0.69 mat_201
+sphere: -6.86 -1.97 10.12 0.79 mat_202
+sphere: 0.70 -1.42 8.73 0.78 mat_203
+sphere: -9.41 -3.23 -2.40 0.54 mat_204
+sphere: 6.79 -1.30 11.40 0.21 mat_205
+sphere: -8.22 -3.00 11.77 0.56 mat_206
+sphere: -8.77 3.81 12.51 0.47 mat_207
+sphere: -0.32 6.37 -1.16 0.37 mat_208
+sphere: 6.67 -2.44 10.23 0.25 mat_209
+sphere: -5.92 0.16 5.39 0.37 mat_210
+sphere: -8.37 -4.81 11.80 0.38 mat_211
+sphere: -3.07 4.72 8.72 0.47 mat_212
+sphere: -4.99 0.42 11.88 0.57 mat_213
+sphere: -4.65 -1.36 9.59 0.74 mat_214
+sphere: -3.80 0.02 -0.27 0.54 mat_215
+sphere: 0.77 4.69 12.69 0.70 mat_216
+sphere: 8.53 1.18 -3.03 0.68 mat_217
+sphere: -9.00 -4.53 8.28 0.62 mat_218
+sphere: 6.03 -2.33 9.77 0.47 mat_219
+sphere: -9.63 4.23 8.21 0.42 mat_220
+sphere: -1.64 -4.11 11.15 0.35 mat_221
+sphere: -5.69 5.03 2.61 0.57 mat_222
+sphere: 0.43 0.93 7.29 0.49 mat_223
+sphere: -8.46 1.04 5.71 0.21 mat_224
+sphere: -9.95 7.67 1.60 0.27 mat_225
+sphere: -8.05 0.19 12.55 0.70 mat_226
+sphere: -0.09 4.43 8.61 0.64 mat_227
+sphere: 7.81 -0.91 4.92 0.64 mat_228
+sphere: 4.93 5.58 -3.39 0.61 mat_229
+sphere: 5.41 2.75 6.94 0.38 mat_230
+sphere: -2.89 -2.81 -4.85 0.24 mat_231
+sphere: -8.59 7.96 5.64 0.76 mat_232
+sphere: -0.71 3.35 9.69 0.23 mat_233
+sphere: 2.09 -4.73 -3.36 0.36 mat_234
+sphere: 7.66 4.70 -2.19 0.37 mat_235
+sphere: -2.75 -2.85 1.63 0.43 mat_236
+sphere: 5.60 7.39 -0.99 0.61 mat_237
+sphere: -6.02 7.62 11.96 0.60 mat_238
+sphere: 4.89 -1.39 -3.98 0.59 mat_239
+sphere: -9.60 6.70 14.60 0.68 mat_240
+sphere: -6.02 -4.71 9.25 0.74 mat_241
+sphere: 4.00 0.76 1.18 0.57 mat_242
+sphere: -2.98 -3.83 4.41 0.54 mat_243
+sphere: 3.61 3.71 1.38 0.49 mat_244
+sphere: 4.98 6.91 9.40 0.50 mat_245
+sphere: -9.61 0.37 4.87 0.53 mat_246
+sphere: 0.88 0.43 3.42 0.52 mat_247
+sphere: -3.63 5.09 1.94 0.73 mat_248
+sphere: 8.96 4.14 -2.93 0.69 mat_249
+sphere: 7.12 -5.40 9.73 0.65 mat_250
+sphere: -2.87 -2.13 -4.77 0.74 mat_251
+sphere: -2.76 4.69 -1.38 0.66 mat_252
+sphere: -4.34 1.91 0.11 0.43 mat_253
+sphere: 2.70 -3.68 1.15 0.43 mat_254
+sphere: -2.22 -0.55 -0.10 0.27 mat_255

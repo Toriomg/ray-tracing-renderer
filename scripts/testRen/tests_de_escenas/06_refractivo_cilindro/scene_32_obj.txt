@@ -1,0 +1,65 @@
+refractive: mat_0 1.46
+refractive: mat_1 1.36
+refractive: mat_2 1.65
+refractive: mat_3 1.68
+refractive: mat_4 1.30
+refractive: mat_5 1.41
+refractive: mat_6 1.37
+refractive: mat_7 1.81
+refractive: mat_8 1.69
+refractive: mat_9 1.70
+refractive: mat_10 1.50
+refractive: mat_11 1.49
+refractive: mat_12 1.45
+refractive: mat_13 1.73
+refractive: mat_14 1.57
+refractive: mat_15 1.78
+refractive: mat_16 1.32
+refractive: mat_17 1.96
+refractive: mat_18 1.58
+refractive: mat_19 1.47
+refractive: mat_20 1.93
+refractive: mat_21 1.66
+refractive: mat_22 1.74
+refractive: mat_23 1.57
+refractive: mat_24 1.90
+refractive: mat_25 1.68
+refractive: mat_26 1.60
+refractive: mat_27 1.48
+refractive: mat_28 1.91
+refractive: mat_29 1.41
+refractive: mat_30 1.67
+refractive: mat_31 1.95
+
+cylinder: -9.23 3.75 -2.12 0.48 1.03 1.76 -0.28 mat_0
+cylinder: -0.03 -5.73 3.65 0.42 2.11 0.28 1.53 mat_1
+cylinder: -1.32 -3.53 12.02 0.69 -0.74 -2.43 0.07 mat_2
+cylinder: -0.08 4.81 6.94 0.50 0.45 -0.74 -2.71 mat_3
+cylinder: -8.78 7.19 11.78 0.38 2.33 0.13 -2.38 mat_4
+cylinder: 7.11 2.18 13.66 0.61 -2.44 0.74 1.72 mat_5
+cylinder: 7.98 -1.36 5.58 0.62 -2.00 2.09 1.69 mat_6
+cylinder: -9.00 2.28 2.36 0.31 0.63 2.82 0.31 mat_7
+cylinder: -7.73 0.93 10.58 0.77 1.29 -2.75 2.80 mat_8
+cylinder: 2.04 -4.83 -2.46 0.25 0.99 -2.08 1.84 mat_9
+cylinder: -7.82 1.49 3.86 0.22 -2.98 2.42 2.86 mat_10
+cylinder: -7.51 4.28 14.78 0.74 2.31 -0.97 1.30 mat_11
+cylinder: -0.04 7.12 9.06 0.71 2.14 -0.69 1.27 mat_12
+cylinder: -8.14 -3.11 13.73 0.44 1.11 0.45 -1.44 mat_13
+cylinder: 1.73 6.77 1.55 0.41 -1.89 -1.93 1.96 mat_14
+cylinder: 4.12 7.51 8.39 0.78 -1.67 -1.87 -1.70 mat_15
+cylinder: -2.32 7.85 -0.50 0.47 -2.63 -2.84 0.27 mat_16
+cylinder: 2.26 1.15 13.29 0.72 2.71 0.47 -1.42 mat_17
+cylinder: -7.40 4.70 -1.91 0.20 1.20 -2.25 0.73 mat_18
+cylinder: -5.98 -0.05 -4.71 0.43 -1.03 -1.43 -2.20 mat_19
+cylinder: 1.51 3.70 -1.01 0.23 -1.39 1.20 -1.36 mat_20
+cylinder: 2.95 -4.97 9.07 0.29 -1.66 1.38 -0.15 mat_21
+cylinder: 2.81 -2.00 8.37 0.38 -0.11 -0.34 2.47 mat_22
+cylinder: 5.04 1.68 11.91 0.57 1.34 0.11 0.45 mat_23
+cylinder: -5.73 7.03 7.78 0.69 0.64 -2.85 -2.35 mat_24
+cylinder: 7.64 3.80 13.09 0.74 -1.61 2.91 0.66 mat_25
+cylinder: 4.60 1.23 0.12 0.49 -0.23 -1.22 -0.95 mat_26
+cylinder: -1.14 -2.27 -2.21 0.68 -0.85 -0.81 1.70 mat_27
+cylinder: 3.97 0.26 1.19 0.68 -1.58 -0.22 -0.75 mat_28
+cylinder: 9.90 -2.64 6.87 0.52 -2.71 -1.91 2.32 mat_29
+cylinder: 5.77 -3.01 -1.43 0.76 0.53 1.30 2.44 mat_30
+cylinder: -4.78 1.00 13.27 0.31 -1.47 2.29 2.05 mat_31

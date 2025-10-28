@@ -1,0 +1,65 @@
+refractive: mat_0 1.46
+refractive: mat_1 1.36
+refractive: mat_2 1.65
+refractive: mat_3 1.68
+refractive: mat_4 1.30
+refractive: mat_5 1.41
+refractive: mat_6 1.37
+refractive: mat_7 1.81
+refractive: mat_8 1.69
+refractive: mat_9 1.70
+refractive: mat_10 1.50
+refractive: mat_11 1.49
+refractive: mat_12 1.45
+refractive: mat_13 1.73
+refractive: mat_14 1.57
+refractive: mat_15 1.78
+refractive: mat_16 1.32
+refractive: mat_17 1.96
+refractive: mat_18 1.58
+refractive: mat_19 1.47
+refractive: mat_20 1.93
+refractive: mat_21 1.66
+refractive: mat_22 1.74
+refractive: mat_23 1.57
+refractive: mat_24 1.90
+refractive: mat_25 1.68
+refractive: mat_26 1.60
+refractive: mat_27 1.48
+refractive: mat_28 1.91
+refractive: mat_29 1.41
+refractive: mat_30 1.67
+refractive: mat_31 1.95
+
+sphere: -9.23 3.75 -2.12 0.48 mat_0
+sphere: 3.43 5.10 4.06 0.50 mat_1
+sphere: -9.62 0.05 2.45 0.71 mat_2
+sphere: 0.94 4.57 3.68 0.31 mat_3
+sphere: 7.02 5.48 2.52 0.26 mat_4
+sphere: 0.25 0.94 10.45 0.56 mat_5
+sphere: 0.13 2.05 2.54 0.23 mat_6
+sphere: -8.78 7.19 11.78 0.38 mat_7
+sphere: 7.78 1.31 -2.94 0.71 mat_8
+sphere: 1.69 7.06 8.59 0.26 mat_9
+sphere: 2.45 5.02 12.98 0.40 mat_10
+sphere: 0.58 3.82 -1.66 0.71 mat_11
+sphere: 5.62 -5.30 6.83 0.42 mat_12
+sphere: -6.28 2.46 14.38 0.53 mat_13
+sphere: -7.73 0.93 10.58 0.77 mat_14
+sphere: 4.30 -5.42 14.33 0.56 mat_15
+sphere: -8.33 -4.22 -3.28 0.60 mat_16
+sphere: -6.92 5.30 -2.82 0.52 mat_17
+sphere: -1.14 -5.47 -4.95 0.74 mat_18
+sphere: 9.53 -4.26 9.69 0.79 mat_19
+sphere: 8.08 6.39 1.75 0.63 mat_20
+sphere: -0.04 7.12 9.06 0.71 mat_21
+sphere: 7.14 -0.60 9.25 0.26 mat_22
+sphere: -5.88 7.11 3.09 0.61 mat_23
+sphere: 1.51 -2.36 6.73 0.75 mat_24
+sphere: -3.45 -1.14 -1.28 0.31 mat_25
+sphere: 6.55 3.89 14.30 0.60 mat_26
+sphere: 9.18 -2.89 -1.24 0.33 mat_27
+sphere: -2.32 7.85 -0.50 0.47 mat_28
+sphere: -8.78 -5.62 5.92 0.57 mat_29
+sphere: 0.22 6.81 12.22 0.77 mat_30
+sphere: 1.58 -2.31 -2.40 0.66 mat_31
