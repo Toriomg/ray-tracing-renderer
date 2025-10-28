@@ -1,10 +1,13 @@
 #include "../aos/include/image_aos.hpp"
+#include "utilities/vec3.hpp"
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 // ============================================================================
@@ -31,11 +34,11 @@ protected:
 // Test 1: Constructor con dimensiones válidas
 TEST_F(ImageAOSTest, ConstructorValidDimensions) {
   // Configuración
-  size_t width  = 10;
-  size_t height = 5;
+  size_t const width  = 10;
+  size_t const height = 5;
 
   // Llamar al constructor
-  ImageAOS image(width, height);
+  ImageAOS const image(width, height);
 
   // Verificar dimensiones
   ASSERT_EQ(image.width(), width) << "El ancho de la imagen debe ser " << width;
@@ -44,7 +47,7 @@ TEST_F(ImageAOSTest, ConstructorValidDimensions) {
       << "El número total de píxeles debe ser width * height";
 
   // Verificar que los píxeles se inicializan a negro (0, 0, 0)
-  ImageAOS::Pixel pixel = image.get_pixel(0);
+  ImageAOS::Pixel const pixel = image.get_pixel(0);
   ASSERT_EQ(pixel.r, 0) << "El componente rojo inicial debe ser 0";
   ASSERT_EQ(pixel.g, 0) << "El componente verde inicial debe ser 0";
   ASSERT_EQ(pixel.b, 0) << "El componente azul inicial debe ser 0";
@@ -57,8 +60,8 @@ TEST_F(ImageAOSTest, ConstructorValidDimensions) {
 // Test 2: Constructor lanza excepción con ancho cero
 TEST_F(ImageAOSTest, ConstructorThrowsOnZeroWidth) {
   // Configuración
-  size_t width  = 0;
-  size_t height = 5;
+  size_t const width  = 0;
+  size_t const height = 5;
 
   // Verificar que se lanza std::invalid_argument
   ASSERT_THROW(ImageAOS(width, height), std::invalid_argument)
@@ -68,8 +71,8 @@ TEST_F(ImageAOSTest, ConstructorThrowsOnZeroWidth) {
 // Test 3: Constructor lanza excepción con alto cero
 TEST_F(ImageAOSTest, ConstructorThrowsOnZeroHeight) {
   // Configuración
-  size_t width  = 10;
-  size_t height = 0;
+  size_t const width  = 10;
+  size_t const height = 0;
 
   // Verificar que se lanza std::invalid_argument
   ASSERT_THROW(ImageAOS(width, height), std::invalid_argument)
@@ -79,11 +82,11 @@ TEST_F(ImageAOSTest, ConstructorThrowsOnZeroHeight) {
 // Test 4: Constructor con dimensiones 1x1 (caso mínimo válido)
 TEST_F(ImageAOSTest, ConstructorMinimalDimensions) {
   // Configuración: imagen de 1x1 píxel
-  size_t width  = 1;
-  size_t height = 1;
+  size_t const width  = 1;
+  size_t const height = 1;
 
   // Llamar al constructor
-  ImageAOS image(width, height);
+  ImageAOS const image(width, height);
 
   // Verificar dimensiones
   ASSERT_EQ(image.width(), 1);
@@ -91,7 +94,7 @@ TEST_F(ImageAOSTest, ConstructorMinimalDimensions) {
   ASSERT_EQ(image.total_pixels(), 1);
 
   // Verificar que el único píxel existe y está inicializado a negro
-  ImageAOS::Pixel pixel = image.get_pixel(0);
+  ImageAOS::Pixel const pixel = image.get_pixel(0);
   ASSERT_EQ(pixel.r, 0);
   ASSERT_EQ(pixel.g, 0);
   ASSERT_EQ(pixel.b, 0);
@@ -100,11 +103,11 @@ TEST_F(ImageAOSTest, ConstructorMinimalDimensions) {
 // Test 5: Constructor con dimensiones grandes
 TEST_F(ImageAOSTest, ConstructorLargeDimensions) {
   // Configuración: imagen grande (ej. Full HD)
-  size_t width  = 1'920;
-  size_t height = 1'080;
+  size_t const width  = 1'920;
+  size_t const height = 1'080;
 
   // Llamar al constructor
-  ImageAOS image(width, height);
+  ImageAOS const image(width, height);
 
   // Verificar dimensiones
   ASSERT_EQ(image.width(), width);
@@ -118,8 +121,8 @@ TEST_F(ImageAOSTest, ConstructorLargeDimensions) {
 // Test 6: Constructor con ambas dimensiones cero
 TEST_F(ImageAOSTest, ConstructorThrowsOnBothZero) {
   // Configuración
-  size_t width  = 0;
-  size_t height = 0;
+  size_t const width  = 0;
+  size_t const height = 0;
 
   // Verificar que se lanza std::invalid_argument
   ASSERT_THROW(ImageAOS(width, height), std::invalid_argument)
@@ -129,15 +132,15 @@ TEST_F(ImageAOSTest, ConstructorThrowsOnBothZero) {
 // Test 7: Verificar que todos los píxeles están inicializados a negro
 TEST_F(ImageAOSTest, ConstructorInitializesAllPixelsToBlack) {
   // Configuración
-  size_t width  = 5;
-  size_t height = 5;
+  size_t const width  = 5;
+  size_t const height = 5;
 
   // Llamar al constructor
-  ImageAOS image(width, height);
+  ImageAOS const image(width, height);
 
   // Verificar que todos los píxeles están en negro (0, 0, 0)
   for (size_t i = 0; i < image.total_pixels(); ++i) {
-    ImageAOS::Pixel pixel = image.get_pixel(i);
+    ImageAOS::Pixel const pixel = image.get_pixel(i);
     ASSERT_EQ(pixel.r, 0) << "Píxel " << i << " componente R debe ser 0";
     ASSERT_EQ(pixel.g, 0) << "Píxel " << i << " componente G debe ser 0";
     ASSERT_EQ(pixel.b, 0) << "Píxel " << i << " componente B debe ser 0";
@@ -147,11 +150,11 @@ TEST_F(ImageAOSTest, ConstructorInitializesAllPixelsToBlack) {
 // Test 8: Verificar dimensiones no cuadradas
 TEST_F(ImageAOSTest, ConstructorNonSquareDimensions) {
   // Configuración: imagen rectangular (no cuadrada)
-  size_t width  = 16;
-  size_t height = 9;
+  size_t const width  = 16;
+  size_t const height = 9;
 
   // Llamar al constructor
-  ImageAOS image(width, height);
+  ImageAOS const image(width, height);
 
   // Verificar dimensiones
   ASSERT_EQ(image.width(), 16);
@@ -172,15 +175,15 @@ TEST_F(ImageAOSTest, SetAndGetPixelValidIndex) {
   ImageAOS image(3, 2);
 
   // Crear un píxel de prueba
-  Color test_color(0.1, 0.2, 0.3);  // Valores double que serán convertidos
+  Color const test_color(0.1, 0.2, 0.3);  // Valores double que serán convertidos
 
   // Establecer el píxel en el índice 3
   image.set_pixel(3, test_color);
 
   // Obtener los valores usando los getters individuales
-  uint8_t red   = image.get_red(3);
-  uint8_t green = image.get_green(3);
-  uint8_t blue  = image.get_blue(3);
+  uint8_t const red   = image.get_red(3);
+  uint8_t const green = image.get_green(3);
+  uint8_t const blue  = image.get_blue(3);
 
   // Verificar que los valores se establecieron correctamente
   // Nota: Los valores exactos dependen de la corrección gamma y conversión a uint8_t
@@ -189,7 +192,7 @@ TEST_F(ImageAOSTest, SetAndGetPixelValidIndex) {
   ASSERT_GT(blue, 0) << "El componente azul debe ser mayor que 0";
 
   // Obtener el píxel completo
-  ImageAOS::Pixel retrieved_pixel = image.get_pixel(3);
+  ImageAOS::Pixel const retrieved_pixel = image.get_pixel(3);
 
   // Verificar que get_pixel devuelve los mismos valores que los getters individuales
   ASSERT_EQ(retrieved_pixel.r, red) << "get_pixel().r debe coincidir con get_red()";
@@ -203,13 +206,13 @@ TEST_F(ImageAOSTest, SetAndGetPixelFirstIndex) {
   ImageAOS image(3, 2);
 
   // Definir color de prueba
-  Color test_color(1.0, 1.0, 1.0);  // Blanco (después de gamma debería ser 255, 255, 255)
+  Color const test_color(1.0, 1.0, 1.0);  // Blanco (después de gamma debería ser 255, 255, 255)
 
   // Establecer el píxel en el índice 0
   image.set_pixel(0, test_color);
 
   // Obtener el píxel
-  ImageAOS::Pixel pixel = image.get_pixel(0);
+  ImageAOS::Pixel const pixel = image.get_pixel(0);
 
   // Verificar que los valores son correctos (blanco con gamma debería ser 255)
   ASSERT_EQ(pixel.r, 255) << "Primer píxel componente R debe ser 255 (blanco)";
@@ -228,14 +231,14 @@ TEST_F(ImageAOSTest, SetAndGetPixelLastIndex) {
   ImageAOS image(3, 2);
 
   // Definir color de prueba (valores intermedios)
-  Color test_color(0.5, 0.5, 0.5);  // Gris medio
+  Color const test_color(0.5, 0.5, 0.5);  // Gris medio
 
   // Establecer el píxel en el último índice (width*height - 1 = 5)
-  size_t last_index = image.total_pixels() - 1;
+  size_t const last_index = image.total_pixels() - 1;
   image.set_pixel(last_index, test_color);
 
   // Obtener el píxel
-  ImageAOS::Pixel pixel = image.get_pixel(last_index);
+  ImageAOS::Pixel const pixel = image.get_pixel(last_index);
 
   // Verificar que los valores están en el rango esperado (no negro)
   ASSERT_GT(pixel.r, 0) << "Último píxel componente R debe ser > 0";
@@ -251,10 +254,10 @@ TEST_F(ImageAOSTest, SetAndGetPixelLastIndex) {
 // Test 12: Getters lanzan excepción con índice fuera de rango
 TEST_F(ImageAOSTest, GettersThrowOutOfRange) {
   // Configuración: imagen de 3x2 (6 píxeles, índices válidos: 0-5)
-  ImageAOS image(3, 2);
+  ImageAOS const image(3, 2);
 
   // Índice inválido (igual a width*height)
-  size_t invalid_index = image.total_pixels();
+  size_t const invalid_index = image.total_pixels();
 
   // Verificar que todos los getters lanzan std::out_of_range
   ASSERT_THROW((void) image.get_red(invalid_index), std::out_of_range)
@@ -276,10 +279,10 @@ TEST_F(ImageAOSTest, SetPixelThrowsOutOfRange) {
   ImageAOS image(3, 2);
 
   // Índice inválido
-  size_t invalid_index = image.total_pixels();
+  size_t const invalid_index = image.total_pixels();
 
   // Color de prueba
-  Color test_color(0.5, 0.5, 0.5);
+  Color const test_color(0.5, 0.5, 0.5);
 
   // Verificar que set_pixel lanza std::out_of_range
   ASSERT_THROW(image.set_pixel(invalid_index, test_color), std::out_of_range)
@@ -292,7 +295,7 @@ TEST_F(ImageAOSTest, SetPixelDoesNotAffectOtherPixels) {
   ImageAOS image(3, 2);
 
   // Establecer un píxel específico
-  Color test_color(1.0, 0.0, 0.0);  // Rojo
+  Color const test_color(1.0, 0.0, 0.0);  // Rojo
   image.set_pixel(2, test_color);
 
   // Verificar que otros píxeles siguen siendo negros (0, 0, 0)
@@ -304,7 +307,7 @@ TEST_F(ImageAOSTest, SetPixelDoesNotAffectOtherPixels) {
       ASSERT_EQ(image.get_blue(i), 0) << "Píxel 2 debe tener B=0";
     } else {
       // Todos los demás píxeles deben seguir siendo negros
-      ImageAOS::Pixel pixel = image.get_pixel(i);
+      ImageAOS::Pixel const pixel = image.get_pixel(i);
       ASSERT_EQ(pixel.r, 0) << "Píxel " << i << " componente R debe ser 0";
       ASSERT_EQ(pixel.g, 0) << "Píxel " << i << " componente G debe ser 0";
       ASSERT_EQ(pixel.b, 0) << "Píxel " << i << " componente B debe ser 0";
@@ -315,10 +318,10 @@ TEST_F(ImageAOSTest, SetPixelDoesNotAffectOtherPixels) {
 // Test 15: Getters con índice extremo muy grande
 TEST_F(ImageAOSTest, GettersThrowWithLargeIndex) {
   // Configuración
-  ImageAOS image(3, 2);
+  ImageAOS const image(3, 2);
 
   // Índice extremadamente grande
-  size_t huge_index = 1'000'000;
+  size_t const huge_index = 1'000'000;
 
   // Verificar que lanzan excepción
   ASSERT_THROW((void) image.get_red(huge_index), std::out_of_range);
@@ -382,12 +385,12 @@ TEST_F(ImageAOSTest, FillFromDoubleValidData) {
   ImageAOS image(1, 2);
 
   // Gamma personalizado
-  double gamma = 2.0;
+  double const gamma = 2.0;
 
   // Datos de entrada (tamaño = 2)
-  std::vector<double> r_data = {0.25, 0.5};
-  std::vector<double> g_data = {0.5, 0.75};
-  std::vector<double> b_data = {1.0, 0.0};
+  std::vector<double> const r_data = {0.25, 0.5};
+  std::vector<double> const g_data = {0.5, 0.75};
+  std::vector<double> const b_data = {1.0, 0.0};
 
   // Llamar a fill_from_double
   image.fill_from_double(r_data, g_data, b_data, gamma);
@@ -404,13 +407,13 @@ TEST_F(ImageAOSTest, FillFromDoubleValidData) {
   auto expected_b1 = static_cast<uint8_t>(255.999 * std::pow(0.0, 1.0 / gamma));
 
   // Verificar Píxel 0
-  ImageAOS::Pixel p0 = image.get_pixel(0);
+  ImageAOS::Pixel const p0 = image.get_pixel(0);
   ASSERT_EQ(p0.r, expected_r0) << "Píxel 0: componente R incorrecto";
   ASSERT_EQ(p0.g, expected_g0) << "Píxel 0: componente G incorrecto";
   ASSERT_EQ(p0.b, expected_b0) << "Píxel 0: componente B incorrecto (debería ser 255)";
 
   // Verificar Píxel 1
-  ImageAOS::Pixel p1 = image.get_pixel(1);
+  ImageAOS::Pixel const p1 = image.get_pixel(1);
   ASSERT_EQ(p1.r, expected_r1) << "Píxel 1: componente R incorrecto";
   ASSERT_EQ(p1.g, expected_g1) << "Píxel 1: componente G incorrecto";
   ASSERT_EQ(p1.b, expected_b1) << "Píxel 1: componente B incorrecto (debería ser 0)";
@@ -426,20 +429,20 @@ TEST_F(ImageAOSTest, FillFromDoubleDefaultGamma) {
   ImageAOS image(1, 1);
 
   // Datos de entrada
-  std::vector<double> r_data = {0.5};
-  std::vector<double> g_data = {0.5};
-  std::vector<double> b_data = {0.5};
+  std::vector<double> const r_data = {0.5};
+  std::vector<double> const g_data = {0.5};
+  std::vector<double> const b_data = {0.5};
 
   // Llamar a fill_from_double SIN especificar gamma (usa el default)
   image.fill_from_double(r_data, g_data, b_data);
 
   // Calcular valor esperado con gamma por defecto (Constants::Gamma)
   // Asumiendo que el default es 2.2 según constants.hpp
-  double default_gamma = 2.2;  // Constants::Gamma
+  double const default_gamma = 2.2;  // Constants::Gamma
   auto expected        = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / default_gamma));
 
   // Verificar píxel
-  ImageAOS::Pixel p = image.get_pixel(0);
+  ImageAOS::Pixel const p = image.get_pixel(0);
   ASSERT_EQ(p.r, expected) << "Componente R con gamma default incorrecto";
   ASSERT_EQ(p.g, expected) << "Componente G con gamma default incorrecto";
   ASSERT_EQ(p.b, expected) << "Componente B con gamma default incorrecto";
@@ -451,9 +454,9 @@ TEST_F(ImageAOSTest, FillFromDoubleThrowsOnInvalidSize) {
   ImageAOS image(3, 3);
 
   // Datos de entrada con tamaño INCORRECTO (solo 1 elemento en lugar de 9)
-  std::vector<double> r_data = {0.5};
-  std::vector<double> g_data = {0.5};
-  std::vector<double> b_data = {0.5};
+  std::vector<double> const r_data = {0.5};
+  std::vector<double> const g_data = {0.5};
+  std::vector<double> const b_data = {0.5};
 
   // Verificar que se lanza std::invalid_argument
   ASSERT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument)
@@ -467,11 +470,11 @@ TEST_F(ImageAOSTest, FillFromDoubleThrowsOnOneChannelWrongSize) {
   ImageAOS image(2, 2);
 
   // Canal R correcto (4 elementos)
-  std::vector<double> r_data = {0.1, 0.2, 0.3, 0.4};
+  std::vector<double> const r_data = {0.1, 0.2, 0.3, 0.4};
   // Canal G correcto (4 elementos)
-  std::vector<double> g_data = {0.5, 0.6, 0.7, 0.8};
+  std::vector<double> const g_data = {0.5, 0.6, 0.7, 0.8};
   // Canal B INCORRECTO (solo 3 elementos)
-  std::vector<double> b_data = {0.9, 1.0, 0.5};
+  std::vector<double> const b_data = {0.9, 1.0, 0.5};
 
   // Verificar que se lanza std::invalid_argument
   ASSERT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument)
@@ -484,28 +487,28 @@ TEST_F(ImageAOSTest, FillFromDoubleExtremeValues) {
   // Configuración: imagen de 3x1
   ImageAOS image(3, 1);
 
-  double gamma = 2.0;
+  double const gamma = 2.0;
 
   // Datos con valores extremos: 0.0, 1.0, y un valor intermedio
-  std::vector<double> r_data = {0.0, 1.0, 0.5};
-  std::vector<double> g_data = {1.0, 0.0, 0.5};
-  std::vector<double> b_data = {0.5, 0.5, 1.0};
+  std::vector<double> const r_data = {0.0, 1.0, 0.5};
+  std::vector<double> const g_data = {1.0, 0.0, 0.5};
+  std::vector<double> const b_data = {0.5, 0.5, 1.0};
 
   // Llamar a fill_from_double
   image.fill_from_double(r_data, g_data, b_data, gamma);
 
   // Verificar píxel 0: r=0.0 (negro), g=1.0 (blanco), b=0.5
-  ImageAOS::Pixel p0 = image.get_pixel(0);
+  ImageAOS::Pixel const p0 = image.get_pixel(0);
   ASSERT_EQ(p0.r, 0) << "Valor 0.0 debe resultar en 0";
   ASSERT_EQ(p0.g, 255) << "Valor 1.0 debe resultar en 255";
 
   // Verificar píxel 1: r=1.0 (blanco), g=0.0 (negro), b=0.5
-  ImageAOS::Pixel p1 = image.get_pixel(1);
+  ImageAOS::Pixel const p1 = image.get_pixel(1);
   ASSERT_EQ(p1.r, 255) << "Valor 1.0 debe resultar en 255";
   ASSERT_EQ(p1.g, 0) << "Valor 0.0 debe resultar en 0";
 
   // Verificar píxel 2: todos los valores 0.5 o 1.0
-  ImageAOS::Pixel p2 = image.get_pixel(2);
+  ImageAOS::Pixel const p2 = image.get_pixel(2);
   auto expected_05   = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / gamma));
   ASSERT_EQ(p2.r, expected_05) << "Píxel 2: componente R incorrecto";
   ASSERT_EQ(p2.g, expected_05) << "Píxel 2: componente G incorrecto";
@@ -526,15 +529,15 @@ TEST_F(ImageAOSTest, FillFromDoubleOverwritesPreviousData) {
   ASSERT_EQ(image.get_green(1), 255);
 
   // Ahora llamar a fill_from_double con datos diferentes
-  std::vector<double> r_data = {0.0, 0.0};
-  std::vector<double> g_data = {0.0, 0.0};
-  std::vector<double> b_data = {1.0, 1.0};  // Azul
+  std::vector<double> const r_data = {0.0, 0.0};
+  std::vector<double> const g_data = {0.0, 0.0};
+  std::vector<double> const b_data = {1.0, 1.0};  // Azul
 
   image.fill_from_double(r_data, g_data, b_data);
 
   // Verificar que los píxeles fueron sobrescritos
-  ImageAOS::Pixel p0 = image.get_pixel(0);
-  ImageAOS::Pixel p1 = image.get_pixel(1);
+  ImageAOS::Pixel const p0 = image.get_pixel(0);
+  ImageAOS::Pixel const p1 = image.get_pixel(1);
 
   ASSERT_EQ(p0.r, 0) << "Píxel 0 R debe haber sido sobrescrito a 0";
   ASSERT_EQ(p0.g, 0) << "Píxel 0 G debe haber sido sobrescrito a 0";
@@ -548,15 +551,15 @@ TEST_F(ImageAOSTest, FillFromDoubleOverwritesPreviousData) {
 // Test 23: fill_from_double con imagen grande
 TEST_F(ImageAOSTest, FillFromDoubleLargeImage) {
   // Configuración: imagen más grande (10x10 = 100 píxeles)
-  size_t size = 100;
+  size_t const size = 100;
   ImageAOS image(10, 10);
 
   // Crear datos de entrada (todos con valor 0.5)
-  std::vector<double> r_data(size, 0.5);
-  std::vector<double> g_data(size, 0.5);
-  std::vector<double> b_data(size, 0.5);
+  std::vector<double> const r_data(size, 0.5);
+  std::vector<double> const g_data(size, 0.5);
+  std::vector<double> const b_data(size, 0.5);
 
-  double gamma = 2.0;
+  double const gamma = 2.0;
 
   // Llamar a fill_from_double
   image.fill_from_double(r_data, g_data, b_data, gamma);
@@ -571,7 +574,7 @@ TEST_F(ImageAOSTest, FillFromDoubleLargeImage) {
 
   // Verificar que todos los píxeles tienen el mismo valor
   for (size_t i = 0; i < size; ++i) {
-    ImageAOS::Pixel p = image.get_pixel(i);
+    ImageAOS::Pixel const p = image.get_pixel(i);
     ASSERT_EQ(p.r, expected) << "Píxel " << i << " componente R incorrecto";
     ASSERT_EQ(p.g, expected) << "Píxel " << i << " componente G incorrecto";
     ASSERT_EQ(p.b, expected) << "Píxel " << i << " componente B incorrecto";
@@ -594,10 +597,10 @@ TEST_F(ImageAOSTest, WriteToPPMValidImage) {
   image.set_pixel(1, Color(0.0, 0.0, 1.0));
 
   // Definir nombre de archivo temporal
-  std::string filename = "test_aos.ppm";
+  std::string const filename = "test_aos.ppm";
 
   // Llamar a write_to_ppm
-  bool result = image.write_to_ppm(filename);
+  bool const result = image.write_to_ppm(filename);
 
   // Verificar que la función devolvió true
   ASSERT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
@@ -655,10 +658,10 @@ TEST_F(ImageAOSTest, WriteToPPMInvalidPath) {
   image.set_pixel(0, Color(0.0039215, 0.0078431, 0.0117647));  // (1, 2, 3) en uint8_t
 
   // Intentar escribir a un directorio que no existe
-  std::string filename = "invalid_dir/test_error_aos.ppm";
+  std::string const filename = "invalid_dir/test_error_aos.ppm";
 
   // Llamar a write_to_ppm
-  bool result = image.write_to_ppm(filename);
+  bool const result = image.write_to_ppm(filename);
 
   // Verificar que la función devolvió false (propagando el error de PPMWriter)
   ASSERT_FALSE(result) << "write_to_ppm debe devolver false cuando la ruta es inválida";
@@ -678,10 +681,10 @@ TEST_F(ImageAOSTest, WriteToPPMComplexImage) {
   image.set_pixel(5, Color(0.0, 1.0, 1.0));  // Cian
 
   // Definir nombre de archivo temporal
-  std::string filename = "test_aos.ppm";
+  std::string const filename = "test_aos.ppm";
 
   // Llamar a write_to_ppm
-  bool result = image.write_to_ppm(filename);
+  bool const result = image.write_to_ppm(filename);
 
   // Verificar que la función devolvió true
   ASSERT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
@@ -741,19 +744,19 @@ TEST_F(ImageAOSTest, WriteToPPMPreservesImageState) {
   image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
 
   // Guardar valores antes de write_to_ppm
-  ImageAOS::Pixel p0_before = image.get_pixel(0);
-  ImageAOS::Pixel p1_before = image.get_pixel(1);
+  ImageAOS::Pixel const p0_before = image.get_pixel(0);
+  ImageAOS::Pixel const p1_before = image.get_pixel(1);
 
   // Definir nombre de archivo temporal
-  std::string filename = "test_aos.ppm";
+  std::string const filename = "test_aos.ppm";
 
   // Llamar a write_to_ppm
-  bool result = image.write_to_ppm(filename);
+  bool const result = image.write_to_ppm(filename);
   ASSERT_TRUE(result);
 
   // Verificar que los píxeles NO cambiaron después de write_to_ppm
-  ImageAOS::Pixel p0_after = image.get_pixel(0);
-  ImageAOS::Pixel p1_after = image.get_pixel(1);
+  ImageAOS::Pixel const p0_after = image.get_pixel(0);
+  ImageAOS::Pixel const p1_after = image.get_pixel(1);
 
   ASSERT_EQ(p0_after.r, p0_before.r) << "Píxel 0 R no debe cambiar después de write_to_ppm";
   ASSERT_EQ(p0_after.g, p0_before.g) << "Píxel 0 G no debe cambiar después de write_to_ppm";
@@ -772,17 +775,17 @@ TEST_F(ImageAOSTest, WriteToPPMMultipleTimes) {
   // Primera escritura: píxel rojo
   image.set_pixel(0, Color(1.0, 0.0, 0.0));
 
-  std::string filename = "test_aos.ppm";
+  std::string const filename = "test_aos.ppm";
 
   // Primera llamada a write_to_ppm
-  bool result1 = image.write_to_ppm(filename);
+  bool const result1 = image.write_to_ppm(filename);
   ASSERT_TRUE(result1);
 
   // Modificar la imagen: píxel verde
   image.set_pixel(0, Color(0.0, 1.0, 0.0));
 
   // Segunda llamada a write_to_ppm (sobrescribe el archivo)
-  bool result2 = image.write_to_ppm(filename);
+  bool const result2 = image.write_to_ppm(filename);
   ASSERT_TRUE(result2);
 
   // Verificar que el archivo contiene el píxel VERDE (segunda escritura)
