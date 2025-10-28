@@ -1,15 +1,12 @@
 #ifndef RENDERING_ENGINE_HPP
 #define RENDERING_ENGINE_HPP
 
-#include "../../aos/include/image_aos.hpp"
 #include "../../common/include/camera.hpp"
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/renderer.hpp"
-#include "../../common/include/scene_parser.hpp"
 #include "../../common/include/utilities/random.hpp"
-#include "../../soa/include/image_soa.hpp"
 #include <iostream>
-#include <memory>
+
 
 // RenderContext struct
 struct RenderContext {

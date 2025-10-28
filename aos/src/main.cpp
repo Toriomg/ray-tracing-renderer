@@ -1,13 +1,9 @@
 #include "../../common/include/config_parser.hpp"
-#include "./../include/rendering_engine.hpp"
+#include "../../common/include/rendering_engine.hpp"
+#include "../../common/include/scene_parser.hpp"
+#include "image_aos.hpp"
 #include <iostream>
 #include <string>
-
-/*
-std::string const FilepathScene  = "/workspace/res/scene_scripts/scene2.txt";
-std::string const FilepathConfig = "/workspace/res/config_scripts/config2.txt";
-std::string const FilepathOutAOS = "/workspace/outputImageAOS.ppm";
-*/
 
 int main(int argc, char * argv[]) {
   std::vector<std::string> const args(argv, argv + argc);

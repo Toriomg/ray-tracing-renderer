@@ -8,8 +8,8 @@ echo "--- Iniciando ejecución 4 en $(hostname) ---"
 # Rutas a los archivos de entrada y salida
 CONFIG_FILE="res/config_scripts/config4example.txt"  
 SCENE_FILE="res/scene_scripts/scene4example.txt"
-OUTPUT_FILE_SOA="img/out4_SOA.ppm"
-OUTPUT_FILE_AOS="outputImageAOS.ppm"
+OUTPUT_FILE_SOA="out4_SOA.ppm"
+OUTPUT_FILE_AOS="out4_AOS.ppm"
 
 # Ruta a los ejecutables compilados
 RENDER_SOA_EXE="./out/build/default/soa/Release/render-soa"
@@ -25,8 +25,7 @@ echo ""
 echo "========================================="
 echo ">>> Midiendo 'render-aos' (5 ejecuciones)"
 echo "========================================="
-#perf stat -r 5 ${RENDER_AOS_EXE} #${CONFIG_FILE} ${SCENE_FILE} ${OUTPUT_FILE_AOS}
-echo "main aos por hacer bien aun"
+perf stat -r 5 ${RENDER_AOS_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE_AOS}
 
 echo "--- Mediciones finalizadas. ---"
 echo "--- Ejecución finalizada ---"

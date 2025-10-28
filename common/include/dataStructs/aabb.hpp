@@ -37,34 +37,43 @@ public:
     return AABB{min, max};
   }
 
-  [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min,
-                                      double t_max) {  // intersección de caja AABB con rayos
-    // El inicializador {x:..., y:...} no es válido. Usa el constructor normal.
+  [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min, double t_max) {
+    // Usando la implementación interna de Vec3 con el array e[3]
     Vec3 invDir = {1.0 / r.direction.x, 1.0 / r.direction.y, 1.0 / r.direction.z};
 
-    // Usamos std::array en lugar de arrays de estilo C.
-    // También usamos 'bool' para 'sign', es más claro y la conversión a 0/1 es segura.
-    std::array<bool, 3> sign = {invDir.x < 0, invDir.y < 0, invDir.z < 0};
-
-    // Usamos std::array para los límites de la caja.
-    std::array<Point3, 2> bounds = {box.min_point, box.max_point};
-
-    for (size_t axis = 0; axis < 3; ++axis) {
-        
-        // Esta lógica es óptima (sin saltos) y ahora no genera advertencias
-        // porque 'axis' ya es del tipo correcto.
-        double const t_near = ((sign.at(axis) ? bounds.at(1) : bounds.at(0))[axis] - r.point[axis]) * invDir[axis];
-        double const t_far  = ((sign.at(axis) ? bounds.at(0) : bounds.at(1))[axis] - r.point[axis]) * invDir[axis];
-
-        t_min = std::max(t_near, t_min);
-        t_max = std::min(t_far, t_max);
-
-        if (t_min > t_max) {
-            return false;
-        }
+    // Eje X
+    double t0 = (box.min_point.x - r.point.x) * invDir.x;
+    double t1 = (box.max_point.x - r.point.x) * invDir.x;
+    if (invDir.x < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    if (t_max <= t_min) {
+      return false;
     }
 
-    return true;
+    // Eje Y
+    t0 = (box.min_point.y - r.point.y) * invDir.y;
+    t1 = (box.max_point.y - r.point.y) * invDir.y;
+    if (invDir.y < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    if (t_max <= t_min) {
+      return false;
+    }
+
+    // Eje Z
+    t0 = (box.min_point.z - r.point.z) * invDir.z;
+    t1 = (box.max_point.z - r.point.z) * invDir.z;
+    if (invDir.z < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    return t_max > t_min;
   }
 };
 
