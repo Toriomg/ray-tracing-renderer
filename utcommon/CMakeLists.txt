@@ -7,6 +7,10 @@ set(CURRENT_DIR_SRC_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/test_vector.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/test_config_parser.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/test_scene_parser.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_renderer.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_camera.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_ppm_writer.cpp"
   #aqui se añade el test del fichero puesto arriba
 )
 
