@@ -1,7 +1,7 @@
 #include "utilities/random.hpp"
 #include "utilities/vec3.hpp"
+#include <cstdint>
 #include <gtest/gtest.h>
-#include <vector>
 
 // ============================================================================
 // FIXTURE DE GOOGLETEST PARA RandomGenerator
@@ -25,30 +25,30 @@ protected:
 // Test 1: Determinismo - misma semilla produce mismos resultados
 TEST_F(RandomTest, DeterminismCheck) {
   // Configuración: dos generadores con la misma semilla
-  std::uint64_t seed = 12'345;
+  std::uint64_t const seed = 12'345;
   RandomGenerator rng1(seed);
   RandomGenerator rng2(seed);
 
   // Verificar que get_double() produce los mismos valores
-  double val1 = rng1.get_double();
-  double val2 = rng2.get_double();
+  double const val1 = rng1.get_double();
+  double const val2 = rng2.get_double();
   ASSERT_DOUBLE_EQ(val1, val2) << "get_double() debe ser determinista con la misma semilla";
 
   // Verificar que get_double(min, max) produce los mismos valores
-  double val3 = rng1.get_double(-5.0, 5.0);
-  double val4 = rng2.get_double(-5.0, 5.0);
+  double const val3 = rng1.get_double(-5.0, 5.0);
+  double const val4 = rng2.get_double(-5.0, 5.0);
   ASSERT_DOUBLE_EQ(val3, val4) << "get_double(min, max) debe ser determinista con la misma semilla";
 
   // Verificar que get_vector_minus1_to_1() produce los mismos vectores
-  Vec3 vec1 = rng1.get_vector_minus1_to_1();
-  Vec3 vec2 = rng2.get_vector_minus1_to_1();
+  Vec3 const vec1 = rng1.get_vector_minus1_to_1();
+  Vec3 const vec2 = rng2.get_vector_minus1_to_1();
   ASSERT_DOUBLE_EQ(vec1.x, vec2.x) << "get_vector_minus1_to_1() componente X debe ser determinista";
   ASSERT_DOUBLE_EQ(vec1.y, vec2.y) << "get_vector_minus1_to_1() componente Y debe ser determinista";
   ASSERT_DOUBLE_EQ(vec1.z, vec2.z) << "get_vector_minus1_to_1() componente Z debe ser determinista";
 
   // Verificar que get_unit_sphere() produce los mismos vectores
-  Vec3 vec3 = rng1.get_unit_sphere();
-  Vec3 vec4 = rng2.get_unit_sphere();
+  Vec3 const vec3 = rng1.get_unit_sphere();
+  Vec3 const vec4 = rng2.get_unit_sphere();
   ASSERT_DOUBLE_EQ(vec3.x, vec4.x) << "get_unit_sphere() componente X debe ser determinista";
   ASSERT_DOUBLE_EQ(vec3.y, vec4.y) << "get_unit_sphere() componente Y debe ser determinista";
   ASSERT_DOUBLE_EQ(vec3.z, vec4.z) << "get_unit_sphere() componente Z debe ser determinista";
@@ -61,7 +61,7 @@ TEST_F(RandomTest, GetDouble0To1Range) {
 
   // Generar muchos valores y verificar que están en el rango correcto
   for (int i = 0; i < 1'000; ++i) {
-    double val = rng.get_double();
+    double const val = rng.get_double();
 
     // Verificar límite inferior: val >= 0.0
     ASSERT_GE(val, 0.0) << "get_double() debe retornar valores >= 0.0";
@@ -75,12 +75,12 @@ TEST_F(RandomTest, GetDouble0To1Range) {
 TEST_F(RandomTest, GetDoubleMinToMaxRange) {
   // Configuración
   RandomGenerator rng(2);
-  double min = -10.0;
-  double max = 10.0;
+  double const min = -10.0;
+  double const max = 10.0;
 
   // Generar muchos valores y verificar que están en el rango correcto
   for (int i = 0; i < 1'000; ++i) {
-    double val = rng.get_double(min, max);
+    double const val = rng.get_double(min, max);
 
     // Verificar límite inferior: val >= min
     ASSERT_GE(val, min) << "get_double(min, max) debe retornar valores >= min";
@@ -96,21 +96,21 @@ TEST_F(RandomTest, GetDoubleMinToMaxDifferentRanges) {
 
   // Rango positivo grande
   for (int i = 0; i < 100; ++i) {
-    double val = rng.get_double(100.0, 200.0);
+    double const val = rng.get_double(100.0, 200.0);
     ASSERT_GE(val, 100.0);
     ASSERT_LT(val, 200.0);
   }
 
   // Rango negativo
   for (int i = 0; i < 100; ++i) {
-    double val = rng.get_double(-50.0, -10.0);
+    double const val = rng.get_double(-50.0, -10.0);
     ASSERT_GE(val, -50.0);
     ASSERT_LT(val, -10.0);
   }
 
   // Rango muy pequeño
   for (int i = 0; i < 100; ++i) {
-    double val = rng.get_double(0.0, 0.001);
+    double const val = rng.get_double(0.0, 0.001);
     ASSERT_GE(val, 0.0);
     ASSERT_LT(val, 0.001);
   }
@@ -123,7 +123,7 @@ TEST_F(RandomTest, GetVectorMinus1To1Range) {
 
   // Generar muchos vectores y verificar que los componentes están en el rango correcto
   for (int i = 0; i < 1'000; ++i) {
-    Vec3 v = rng.get_vector_minus1_to_1();
+    Vec3 const v = rng.get_vector_minus1_to_1();
 
     // Verificar componente X
     ASSERT_GE(v.x, -1.0) << "get_vector_minus1_to_1() componente X debe ser >= -1.0";
@@ -143,11 +143,11 @@ TEST_F(RandomTest, GetVectorMinus1To1Range) {
 TEST_F(RandomTest, GetVectorInRangeRange) {
   // Configuración
   RandomGenerator rng(5);
-  double range = 5.0;
+  double const range = 5.0;
 
   // Generar muchos vectores y verificar que los componentes están en el rango correcto
   for (int i = 0; i < 1'000; ++i) {
-    Vec3 v = rng.get_vector_in_range(range);
+    Vec3 const v = rng.get_vector_in_range(range);
 
     // Verificar componente X
     ASSERT_GE(v.x, -range) << "get_vector_in_range() componente X debe ser >= -range";
@@ -170,7 +170,7 @@ TEST_F(RandomTest, GetUnitSphereRange) {
 
   // Generar muchos vectores y verificar que están dentro de la esfera unitaria
   for (int i = 0; i < 1'000; ++i) {
-    Vec3 v = rng.get_unit_sphere();
+    Vec3 const v = rng.get_unit_sphere();
 
     // Verificar que el vector está DENTRO de la esfera unitaria
     // length_squared() debe ser ESTRICTAMENTE menor que 1.0
@@ -186,18 +186,18 @@ TEST_F(RandomTest, DifferentSeedsDifferentSequences) {
   RandomGenerator rng2(200);
 
   // Generar valores y verificar que son diferentes
-  double val1 = rng1.get_double();
-  double val2 = rng2.get_double();
+  double const val1 = rng1.get_double();
+  double const val2 = rng2.get_double();
 
   // Nota: Técnicamente, con probabilidad extremadamente baja, podrían ser iguales
   // pero con semillas diferentes y MT19937, esto no debería ocurrir en la práctica
   ASSERT_NE(val1, val2) << "Semillas diferentes deben producir valores diferentes";
 
-  Vec3 vec1 = rng1.get_unit_sphere();
-  Vec3 vec2 = rng2.get_unit_sphere();
+  Vec3 const vec1 = rng1.get_unit_sphere();
+  Vec3 const vec2 = rng2.get_unit_sphere();
 
   // Al menos uno de los componentes debería ser diferente
-  bool are_different = (vec1.x != vec2.x) or (vec1.y != vec2.y) or (vec1.z != vec2.z);
+  bool const are_different = (vec1.x != vec2.x) or (vec1.y != vec2.y) or (vec1.z != vec2.z);
   ASSERT_TRUE(are_different) << "Semillas diferentes deben producir vectores diferentes";
 }
 
@@ -207,7 +207,7 @@ TEST_F(RandomTest, GetVectorInRangeDifferentRanges) {
 
   // Rango pequeño
   for (int i = 0; i < 100; ++i) {
-    Vec3 v = rng.get_vector_in_range(0.1);
+    Vec3 const v = rng.get_vector_in_range(0.1);
     ASSERT_GE(v.x, -0.1);
     ASSERT_LT(v.x, 0.1);
     ASSERT_GE(v.y, -0.1);
@@ -218,7 +218,7 @@ TEST_F(RandomTest, GetVectorInRangeDifferentRanges) {
 
   // Rango grande
   for (int i = 0; i < 100; ++i) {
-    Vec3 v = rng.get_vector_in_range(100.0);
+    Vec3 const v = rng.get_vector_in_range(100.0);
     ASSERT_GE(v.x, -100.0);
     ASSERT_LT(v.x, 100.0);
     ASSERT_GE(v.y, -100.0);
@@ -231,24 +231,24 @@ TEST_F(RandomTest, GetVectorInRangeDifferentRanges) {
 // Test 10: Verificar la secuencia completa con determinismo
 TEST_F(RandomTest, FullSequenceDeterminism) {
   // Configuración: dos generadores con la misma semilla
-  std::uint64_t seed = 99'999;
+  std::uint64_t const seed = 99'999;
   RandomGenerator rng1(seed);
   RandomGenerator rng2(seed);
 
   // Generar una secuencia de diferentes llamadas y verificar determinismo
   for (int i = 0; i < 10; ++i) {
-    double d1 = rng1.get_double();
-    double d2 = rng2.get_double();
+    double const d1 = rng1.get_double();
+    double const d2 = rng2.get_double();
     ASSERT_DOUBLE_EQ(d1, d2);
 
-    Vec3 v1 = rng1.get_vector_minus1_to_1();
-    Vec3 v2 = rng2.get_vector_minus1_to_1();
+    Vec3 const v1 = rng1.get_vector_minus1_to_1();
+    Vec3 const v2 = rng2.get_vector_minus1_to_1();
     ASSERT_DOUBLE_EQ(v1.x, v2.x);
     ASSERT_DOUBLE_EQ(v1.y, v2.y);
     ASSERT_DOUBLE_EQ(v1.z, v2.z);
 
-    double d3 = rng1.get_double(0.0, 10.0);
-    double d4 = rng2.get_double(0.0, 10.0);
+    double const d3 = rng1.get_double(0.0, 10.0);
+    double const d4 = rng2.get_double(0.0, 10.0);
     ASSERT_DOUBLE_EQ(d3, d4);
   }
 }

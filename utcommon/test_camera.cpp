@@ -38,7 +38,7 @@ TEST_F(CameraTest, ValidSimpleSetup) {
   config->image_width   = 100;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // Verificar los resultados calculados
 
@@ -103,7 +103,7 @@ TEST_F(CameraTest, ValidOffsetSetup) {
   config->image_width   = 160;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // Verificar resultados clave
 
@@ -149,7 +149,7 @@ TEST_F(CameraTest, EdgeCaseSamePositionAndTarget) {
   config->image_width   = 100;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // Verificar el resultado: focalVector = (0,0,0), normalize(0) produce NaN
 
@@ -182,7 +182,7 @@ TEST_F(CameraTest, SmallFOV) {
   config->image_width   = 100;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // Con FOV muy pequeño, la ventana de proyección debe ser muy pequeña
   // FOV_rad = 1.0 * (PI/180) ≈ 0.0174533
@@ -190,7 +190,7 @@ TEST_F(CameraTest, SmallFOV) {
   // focalLength = 10.0
   // projWindowHeight = 2 * 0.008727 * 10.0 ≈ 0.17454
 
-  double expected_height = 2.0 * std::tan((1.0 * Constants::PI / 180.0) / 2.0) * 10.0;
+  double const expected_height = 2.0 * std::tan((1.0 * Constants::PI / 180.0) / 2.0) * 10.0;
   ASSERT_NEAR(camera.ProjWindow.projWindowHeight, expected_height, 1e-9);
 
   // projWindowWidth debe ser igual (aspect 1:1)
@@ -210,7 +210,7 @@ TEST_F(CameraTest, LargeFOV) {
   config->image_width   = 100;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // Con FOV muy grande, la ventana de proyección debe ser muy grande
   // FOV_rad = 170 * (PI/180) ≈ 2.9671
@@ -218,7 +218,7 @@ TEST_F(CameraTest, LargeFOV) {
   // focalLength = 1.0
   // projWindowHeight = 2 * 11.43 * 1.0 ≈ 22.86
 
-  double expected_height = 2.0 * std::tan((170.0 * Constants::PI / 180.0) / 2.0) * 1.0;
+  double const expected_height = 2.0 * std::tan((170.0 * Constants::PI / 180.0) / 2.0) * 1.0;
   ASSERT_NEAR(camera.ProjWindow.projWindowHeight, expected_height, 1e-6);
 
   // projWindowWidth debe ser igual (aspect 1:1)
@@ -238,7 +238,7 @@ TEST_F(CameraTest, ExtremeAspectRatio) {
   config->image_width   = 320;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // imageHeight = 320 * (9.0/32.0) = 90
   ASSERT_EQ(camera.ProjWindow.imageHeight, 90);
@@ -262,19 +262,19 @@ TEST_F(CameraTest, NonOrthogonalNorth) {
   config->image_width   = 160;
 
   // Llamar al constructor
-  Camera camera(config);
+  Camera const camera(config);
 
   // Verificar que cameraRight y cameraUp son ortogonales entre sí
-  double dot_right_up = dot(camera.cameraRight, camera.cameraUp);
+  double const dot_right_up = dot(camera.cameraRight, camera.cameraUp);
   ASSERT_NEAR(dot_right_up, 0.0, 1e-9);
 
   // Verificar que cameraRight es ortogonal a focalVector normalizado
-  Vec3 focal_norm        = camera.focalVector.normalize();
-  double dot_right_focal = dot(camera.cameraRight, focal_norm);
+  Vec3 const focal_norm        = camera.focalVector.normalize();
+  double const dot_right_focal = dot(camera.cameraRight, focal_norm);
   ASSERT_NEAR(dot_right_focal, 0.0, 1e-9);
 
   // Verificar que cameraUp es ortogonal a focalVector normalizado
-  double dot_up_focal = dot(camera.cameraUp, focal_norm);
+  double const dot_up_focal = dot(camera.cameraUp, focal_norm);
   ASSERT_NEAR(dot_up_focal, 0.0, 1e-9);
 
   // Verificar que cameraRight y cameraUp tienen longitud 1 (son normalizados)

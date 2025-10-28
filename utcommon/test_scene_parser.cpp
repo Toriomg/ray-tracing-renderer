@@ -1,6 +1,7 @@
 #include "dataStructs/material.hpp"
 #include "dataStructs/settings_structs.hpp"
 #include "scene_parser.hpp"
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -201,7 +202,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorTooFewArguments_NoValues) {
   // Menos de 5 tokens: falta todo (solo el comando)
   writeSceneFile("matte:\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (error de parsing)
   ASSERT_TRUE(scene.matte.r.empty());
@@ -215,7 +216,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorTooFewArguments_OnlyName) {
   // Solo nombre, faltan los valores RGB
   writeSceneFile("matte: mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -227,7 +228,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorTooFewArguments_NameAndR) {
   // Solo nombre y componente R, faltan G y B
   writeSceneFile("matte: mat1 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -239,7 +240,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorTooFewArguments_NameRG) {
   // Solo nombre, R y G, falta B
   writeSceneFile("matte: mat1 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -251,7 +252,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorTooManyArguments_OneExtra) {
   // Más de 5 tokens: un argumento extra
   writeSceneFile("matte: mat1 0.5 0.5 0.5 extra\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (error de parsing)
   ASSERT_TRUE(scene.matte.r.empty());
@@ -263,7 +264,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorTooManyArguments_Multiple) {
   // Múltiples argumentos extra
   writeSceneFile("matte: mat1 0.5 0.5 0.5 extra1 extra2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -277,7 +278,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorNonNumericRComponent) {
   // Componente R no numérico
   writeSceneFile("matte: mat1 abc 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -289,7 +290,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorNonNumericGComponent) {
   // Componente G no numérico
   writeSceneFile("matte: mat1 0.5 abc 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -301,7 +302,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorNonNumericBComponent) {
   // Componente B no numérico
   writeSceneFile("matte: mat1 0.5 0.5 abc\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -313,7 +314,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorAllNonNumeric) {
   // Todos los componentes RGB no numéricos
   writeSceneFile("matte: mat1 abc def ghi\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -325,7 +326,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorAlphanumericMixedInComponent) {
   // Valor alfanumérico mixto (parsedouble debería rechazarlo)
   writeSceneFile("matte: mat1 0.5abc 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -337,7 +338,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorEmptyValues) {
   // Valores vacíos después del nombre
   writeSceneFile("matte: mat1   \n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -351,7 +352,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorRComponentBelowZero) {
   // Componente R menor que 0
   writeSceneFile("matte: mat1 -0.1 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (fuera de rango)
   ASSERT_TRUE(scene.matte.r.empty());
@@ -363,7 +364,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorGComponentAboveOne) {
   // Componente G mayor que 1
   writeSceneFile("matte: mat1 0.5 1.1 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -375,7 +376,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorBComponentBelowZero) {
   // Componente B menor que 0
   writeSceneFile("matte: mat1 0.5 0.5 -0.1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -387,7 +388,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorBComponentAboveOne) {
   // Componente B mayor que 1
   writeSceneFile("matte: mat1 0.5 0.5 1.1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -399,7 +400,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorRComponentFarBelowZero) {
   // Componente R muy negativo
   writeSceneFile("matte: mat1 -100.0 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -411,7 +412,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorGComponentFarAboveOne) {
   // Componente G muy por encima de 1
   writeSceneFile("matte: mat1 0.5 100.0 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -423,7 +424,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorAllComponentsBelowZero) {
   // Todos los componentes menores que 0
   writeSceneFile("matte: mat1 -0.1 -0.2 -0.3\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -435,7 +436,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorAllComponentsAboveOne) {
   // Todos los componentes mayores que 1
   writeSceneFile("matte: mat1 1.1 1.2 1.3\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -447,7 +448,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorBComponentFarOutOfRange) {
   // Componente B = 2 (muy fuera de rango)
   writeSceneFile("matte: mat1 0.5 0.5 2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -459,7 +460,7 @@ TEST_F(SceneParserMatteMaterialTest, ErrorBComponentNegativeFarOutOfRange) {
   // Componente B = -1 (muy fuera de rango)
   writeSceneFile("matte: mat1 0.5 0.5 -1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -521,7 +522,7 @@ TEST_F(SceneParserMatteMaterialTest, BoundaryJustBelowZeroInvalid) {
   // Valor justo por debajo de 0.0 (inválido)
   writeSceneFile("matte: mat1 -0.0001 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -531,7 +532,7 @@ TEST_F(SceneParserMatteMaterialTest, BoundaryJustAboveOneInvalid) {
   // Valor justo por encima de 1.0 (inválido)
   writeSceneFile("matte: mat1 0.5 1.0001 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.matte.r.empty());
@@ -631,7 +632,7 @@ TEST_F(SceneParserMatteMaterialTest, ScientificNotationOutOfRange) {
   // 1e1 = 10.0, que está fuera de [0, 1]
   writeSceneFile("matte: mat1 1e1 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (fuera de rango)
   ASSERT_TRUE(scene.matte.r.empty());
@@ -690,7 +691,7 @@ TEST_F(SceneParserMatteMaterialTest, InfinityValue) {
   // parsedouble acepta "inf", pero debe ser rechazado por validateColorComponents
   writeSceneFile("matte: mat1 inf 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (inf > 1.0)
   ASSERT_TRUE(scene.matte.r.empty());
@@ -701,7 +702,7 @@ TEST_F(SceneParserMatteMaterialTest, NaNValue) {
   // parsedouble acepta "nan", pero validateColorComponents debería rechazarlo
   writeSceneFile("matte: mat1 nan 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (nan falla la comparación)
   ASSERT_TRUE(scene.matte.r.empty());
@@ -1028,7 +1029,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NoValues) {
   // Menos de 6 tokens: falta todo (solo el comando)
   writeSceneFile("metal:\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (error de parsing)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1043,7 +1044,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_OnlyName) {
   // Solo nombre, faltan los valores RGB y diffusion
   writeSceneFile("metal: met1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1055,7 +1056,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NameAndRGB) {
   // Solo nombre y RGB, falta diffusion
   writeSceneFile("metal: met1 0.5 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1067,7 +1068,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NameRG) {
   // Solo nombre, R y G, faltan B y diffusion
   writeSceneFile("metal: met1 0.5 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1079,7 +1080,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooFewArguments_NameR) {
   // Solo nombre y R, faltan G, B y diffusion
   writeSceneFile("metal: met1 0.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1091,7 +1092,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooManyArguments_OneExtra) {
   // Más de 6 tokens: un argumento extra
   writeSceneFile("metal: met1 0.5 0.5 0.5 0.2 extra\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (error de parsing)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1103,7 +1104,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorTooManyArguments_Multiple) {
   // Múltiples argumentos extra
   writeSceneFile("metal: met1 0.5 0.5 0.5 0.2 extra1 extra2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1117,7 +1118,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericRComponent) {
   // Componente R no numérico
   writeSceneFile("metal: met1 abc 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1129,7 +1130,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericGComponent) {
   // Componente G no numérico
   writeSceneFile("metal: met1 0.5 abc 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1141,7 +1142,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericBComponent) {
   // Componente B no numérico
   writeSceneFile("metal: met1 0.5 0.5 abc 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1153,7 +1154,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorNonNumericDiffusion) {
   // Diffusion no numérico
   writeSceneFile("metal: met1 0.5 0.5 0.5 abc\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1165,7 +1166,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorAllNonNumeric) {
   // Todos los valores no numéricos
   writeSceneFile("metal: met1 abc def ghi jkl\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1177,7 +1178,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorAlphanumericMixedInComponent) {
   // Valor alfanumérico mixto (parsedouble debería rechazarlo)
   writeSceneFile("metal: met1 0.5abc 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1189,7 +1190,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorEmptyValues) {
   // Valores vacíos después del nombre
   writeSceneFile("metal: met1   \n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1203,7 +1204,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorRComponentBelowZero) {
   // Componente R menor que 0
   writeSceneFile("metal: met1 -0.1 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (fuera de rango)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1215,7 +1216,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorGComponentAboveOne) {
   // Componente G mayor que 1
   writeSceneFile("metal: met1 0.5 1.1 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1227,7 +1228,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorBComponentBelowZero) {
   // Componente B menor que 0
   writeSceneFile("metal: met1 0.5 0.5 -0.1 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1239,7 +1240,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorBComponentAboveOne) {
   // Componente B mayor que 1
   writeSceneFile("metal: met1 0.5 0.5 1.1 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1251,7 +1252,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorAllRGBComponentsBelowZero) {
   // Todos los componentes RGB menores que 0
   writeSceneFile("metal: met1 -0.1 -0.2 -0.3 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1263,7 +1264,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorAllRGBComponentsAboveOne) {
   // Todos los componentes RGB mayores que 1
   writeSceneFile("metal: met1 1.1 1.2 1.3 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1275,7 +1276,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorRComponentFarBelowZero) {
   // Componente R muy negativo
   writeSceneFile("metal: met1 -100.0 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1287,7 +1288,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorGComponentFarAboveOne) {
   // Componente G muy por encima de 1
   writeSceneFile("metal: met1 0.5 100.0 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1301,7 +1302,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorDiffusionBelowZero) {
   // Factor de difusión menor que 0 (inválido según código)
   writeSceneFile("metal: met1 0.5 0.5 0.5 -0.1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (diffusion < 0.0 es inválido)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1313,7 +1314,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorDiffusionFarBelowZero) {
   // Factor de difusión muy negativo
   writeSceneFile("metal: met1 0.5 0.5 0.5 -100.0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1325,7 +1326,7 @@ TEST_F(SceneParserMetalMaterialTest, ErrorCombinedRGBAndDiffusionOutOfRange) {
   // RGB fuera de rango Y diffusion negativo (múltiples errores)
   writeSceneFile("metal: met1 -0.1 1.5 0.5 -0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1409,7 +1410,7 @@ TEST_F(SceneParserMetalMaterialTest, BoundaryRGBJustBelowZeroInvalid) {
   // Valor RGB justo por debajo de 0.0 (inválido)
   writeSceneFile("metal: met1 -0.0001 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1419,7 +1420,7 @@ TEST_F(SceneParserMetalMaterialTest, BoundaryRGBJustAboveOneInvalid) {
   // Valor RGB justo por encima de 1.0 (inválido)
   writeSceneFile("metal: met1 0.5 1.0001 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1429,7 +1430,7 @@ TEST_F(SceneParserMetalMaterialTest, BoundaryDiffusionJustBelowZeroInvalid) {
   // Difusión justo por debajo de 0.0 (inválido)
   writeSceneFile("metal: met1 0.5 0.5 0.5 -0.0001\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1530,7 +1531,7 @@ TEST_F(SceneParserMetalMaterialTest, ScientificNotationOutOfRange) {
   // 1e1 = 10.0, que está fuera de [0, 1]
   writeSceneFile("metal: met1 1e1 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (fuera de rango)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1603,7 +1604,7 @@ TEST_F(SceneParserMetalMaterialTest, InfinityValueInRGB) {
   // parsedouble acepta "inf", pero debe ser rechazado por validateColorComponents
   writeSceneFile("metal: met1 inf 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (inf > 1.0)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1627,7 +1628,7 @@ TEST_F(SceneParserMetalMaterialTest, NaNValueInRGB) {
   // parsedouble acepta "nan", pero validateColorComponents debería rechazarlo
   writeSceneFile("metal: met1 nan 0.5 0.5 0.2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (nan falla la comparación)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1637,7 +1638,7 @@ TEST_F(SceneParserMetalMaterialTest, NaNValueInDiffusion) {
   // Valor NaN en diffusion (no válido)
   writeSceneFile("metal: met1 0.5 0.5 0.5 nan\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (nan falla la comparación >= 0)
   ASSERT_TRUE(scene.metal.r.empty());
@@ -1923,7 +1924,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorTooFewArguments_NoValues) {
   // Menos de 3 tokens: falta todo (solo el comando)
   writeSceneFile("refractive:\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (error de parsing)
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -1935,7 +1936,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorTooFewArguments_OnlyName) {
   // Solo nombre, falta IOR
   writeSceneFile("refractive: glass\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -1947,7 +1948,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorTooManyArguments_OneExtra) {
   // Más de 3 tokens: un argumento extra
   writeSceneFile("refractive: glass 1.5 extra\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (error de parsing)
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -1959,7 +1960,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorTooManyArguments_Multiple) {
   // Múltiples argumentos extra
   writeSceneFile("refractive: glass 1.5 extra1 extra2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -1973,7 +1974,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorNonNumericIOR) {
   // IOR no numérico
   writeSceneFile("refractive: glass abc\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -1985,7 +1986,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorAlphanumericMixedInIOR) {
   // Valor alfanumérico mixto (parsedouble debería rechazarlo)
   writeSceneFile("refractive: glass 1.5abc\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -1997,7 +1998,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorEmptyIORValue) {
   // Valor IOR vacío
   writeSceneFile("refractive: glass  \n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2011,7 +2012,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorIORZero) {
   // IOR igual a cero (inválido según código: ior <= 0.0)
   writeSceneFile("refractive: glass 0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (IOR debe ser > 0)
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2023,7 +2024,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorIORExactlyZero) {
   // IOR exactamente 0.0
   writeSceneFile("refractive: glass 0.0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2035,7 +2036,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorIORNegative) {
   // IOR negativo: -1.5
   writeSceneFile("refractive: glass -1.5\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (IOR negativo no tiene sentido físico)
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2047,7 +2048,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorIORNegativeSmall) {
   // IOR negativo pequeño: -0.1
   writeSceneFile("refractive: glass -0.1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2059,7 +2060,7 @@ TEST_F(SceneParserRefractiveMaterialTest, ErrorIORVeryNegative) {
   // IOR muy negativo: -100.0
   writeSceneFile("refractive: glass -100.0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2103,7 +2104,7 @@ TEST_F(SceneParserRefractiveMaterialTest, BoundaryIORJustBelowZeroInvalid) {
   // IOR justo por debajo de 0.0 (inválido): -0.0001
   writeSceneFile("refractive: glass -0.0001\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2252,7 +2253,7 @@ TEST_F(SceneParserRefractiveMaterialTest, NaNValue) {
   // parsedouble acepta "nan", pero debería fallar la comparación ior <= 0
   writeSceneFile("refractive: glass nan\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (nan falla la comparación > 0)
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2262,7 +2263,7 @@ TEST_F(SceneParserRefractiveMaterialTest, NegativeZero) {
   // -0.0 es equivalente a 0.0 en punto flotante (inválido, no es > 0)
   writeSceneFile("refractive: glass -0.0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Debe permanecer vacío (-0.0 no es > 0)
   ASSERT_TRUE(scene.refractive.ior.empty());
@@ -2514,7 +2515,7 @@ TEST_F(SceneParserFindMaterialIndexTest, MaterialNotFound) {
   writeSceneFile("matte: existing_mat 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1 nonexistent_mat\n");  // Material inexistente
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -2528,7 +2529,7 @@ TEST_F(SceneParserFindMaterialIndexTest, EmptyMaterialList) {
   // (lista materialNames vacía)
   writeSceneFile("sphere: 0 0 0 1 any_mat\n");  // No hay materiales definidos
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // No debe haber materiales
   ASSERT_EQ(scene.materialNames.size(), 0);
@@ -2558,7 +2559,7 @@ TEST_F(SceneParserFindMaterialIndexTest, CaseSensitiveSearchUpperCase) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1 MAT1\n");  // Todo en mayúsculas
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material "mat1" fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -2572,7 +2573,7 @@ TEST_F(SceneParserFindMaterialIndexTest, PartialMatchNotFound) {
   writeSceneFile("matte: material 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1 mat\n");  // Prefijo del nombre real
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material "material" fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -2702,7 +2703,7 @@ TEST_F(SceneParserFindMaterialIndexTest, IntegrationCylinderMaterialNotFound) {
   writeSceneFile("metal: existing 0.7 0.7 0.7 0.3\n"
                  "cylinder: 0 0 0 0.5 0 1 0 nonexistent\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -2937,7 +2938,7 @@ TEST_F(SceneParserSphereTest, ErrorTooFewArguments) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1.0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -2951,7 +2952,7 @@ TEST_F(SceneParserSphereTest, ErrorTooFewArgumentsMissingMultiple) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -2962,7 +2963,7 @@ TEST_F(SceneParserSphereTest, ErrorOnlyCommand) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere:\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -2973,7 +2974,7 @@ TEST_F(SceneParserSphereTest, ErrorTooManyArguments) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1.0 mat1 extra_arg\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -2987,7 +2988,7 @@ TEST_F(SceneParserSphereTest, ErrorTooManyArgumentsMultiple) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1.0 mat1 extra1 extra2 extra3\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3000,7 +3001,7 @@ TEST_F(SceneParserSphereTest, ErrorNonNumericX) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: abc 0 0 1.0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3011,7 +3012,7 @@ TEST_F(SceneParserSphereTest, ErrorNonNumericY) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 xyz 0 1.0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3022,7 +3023,7 @@ TEST_F(SceneParserSphereTest, ErrorNonNumericZ) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 invalid 1.0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3033,7 +3034,7 @@ TEST_F(SceneParserSphereTest, ErrorNonNumericRadius) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 notanumber mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3044,7 +3045,7 @@ TEST_F(SceneParserSphereTest, ErrorPartialNumericValue) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 5abc 0 0 1.0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3058,7 +3059,7 @@ TEST_F(SceneParserSphereTest, ErrorEmptyStringAsNumber) {
       "matte: mat1 0.5 0.5 0.5\n"
       "sphere: 0 0 0 1.0 mat1\n");  // Este es válido, el caso de string vacío es difícil de crear
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Este caso en realidad es válido, pero documenta la protección
   ASSERT_EQ(scene.spheres.x.size(), 1);
@@ -3071,7 +3072,7 @@ TEST_F(SceneParserSphereTest, ErrorRadiusZero) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3085,7 +3086,7 @@ TEST_F(SceneParserSphereTest, ErrorRadiusNegative) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 -1.0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3099,7 +3100,7 @@ TEST_F(SceneParserSphereTest, ErrorRadiusVeryNegative) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 -1000000 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3110,7 +3111,7 @@ TEST_F(SceneParserSphereTest, ErrorRadiusNegativeScientific) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 -1.5e-2 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3137,7 +3138,7 @@ TEST_F(SceneParserSphereTest, ErrorNoMaterialsDefined) {
   // Caso adicional: Intentar crear esfera sin definir ningún material
   writeSceneFile("sphere: 0 0 0 1.0 any_material\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // No debe haber materiales
   ASSERT_TRUE(scene.materialNames.empty());
@@ -3166,7 +3167,7 @@ TEST_F(SceneParserSphereTest, ErrorMaterialAllUpperCase) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 1.0 MAT1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material mat1 fue añadido (en minúsculas)
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3212,7 +3213,7 @@ TEST_F(SceneParserSphereTest, EdgeCaseNegativeInfinityRadius) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 -inf mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido (-inf < 0)
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3224,7 +3225,7 @@ TEST_F(SceneParserSphereTest, EdgeCaseNaNRadius) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "sphere: 0 0 0 nan mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // La esfera NO debe haberse añadido (NaN no cumple > 0)
   ASSERT_TRUE(scene.spheres.x.empty());
@@ -3594,7 +3595,7 @@ TEST_F(SceneParserCylinderTest, ErrorTooFewArguments) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 1 0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3608,7 +3609,7 @@ TEST_F(SceneParserCylinderTest, ErrorTooFewArgumentsMissingMultiple) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3619,7 +3620,7 @@ TEST_F(SceneParserCylinderTest, ErrorOnlyCommand) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder:\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3630,7 +3631,7 @@ TEST_F(SceneParserCylinderTest, ErrorTooManyArguments) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 1 0 mat1 extra_arg\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3644,7 +3645,7 @@ TEST_F(SceneParserCylinderTest, ErrorTooManyArgumentsMultiple) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 1 0 mat1 extra1 extra2\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3657,7 +3658,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericCentreX) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: abc 0 0 0.5 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3668,7 +3669,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericCentreY) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 xyz 0 0.5 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3679,7 +3680,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericCentreZ) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 invalid 0.5 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3690,7 +3691,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericRadius) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 notanumber 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3701,7 +3702,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericAxisX) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 bad 0 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3712,7 +3713,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericAxisY) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 bad 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3723,7 +3724,7 @@ TEST_F(SceneParserCylinderTest, ErrorNonNumericAxisZ) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 0 bad mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3734,7 +3735,7 @@ TEST_F(SceneParserCylinderTest, ErrorPartialNumericValue) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 5abc 0 0 0.5 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3747,7 +3748,7 @@ TEST_F(SceneParserCylinderTest, ErrorRadiusZero) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3761,7 +3762,7 @@ TEST_F(SceneParserCylinderTest, ErrorRadiusNegative) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 -0.5 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3775,7 +3776,7 @@ TEST_F(SceneParserCylinderTest, ErrorRadiusVeryNegative) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 -1000000 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3786,7 +3787,7 @@ TEST_F(SceneParserCylinderTest, ErrorRadiusNegativeScientific) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 -1.5e-2 0 1 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3800,7 +3801,7 @@ TEST_F(SceneParserCylinderTest, ErrorZeroAxisVector) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 0 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material fue añadido
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3814,7 +3815,7 @@ TEST_F(SceneParserCylinderTest, ErrorZeroAxisVectorExplicit) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 5 5 5 2.0 0.0 0.0 0.0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3841,7 +3842,7 @@ TEST_F(SceneParserCylinderTest, ErrorNoMaterialsDefined) {
   // Caso adicional: Intentar crear cilindro sin definir ningún material
   writeSceneFile("cylinder: 0 0 0 0.5 0 1 0 any_material\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // No debe haber materiales
   ASSERT_TRUE(scene.materialNames.empty());
@@ -3870,7 +3871,7 @@ TEST_F(SceneParserCylinderTest, ErrorMaterialAllUpperCase) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 0.5 0 1 0 MAT1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // Verificar que el material mat1 fue añadido (en minúsculas)
   ASSERT_EQ(scene.materialNames.size(), 1);
@@ -3914,7 +3915,7 @@ TEST_F(SceneParserCylinderTest, EdgeCaseNegativeInfinityRadius) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 -inf 1 0 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido (-inf < 0)
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -3925,7 +3926,7 @@ TEST_F(SceneParserCylinderTest, EdgeCaseNaNRadius) {
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 nan 1 0 0 mat1\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro NO debe haberse añadido (NaN no cumple > 0)
   ASSERT_TRUE(scene.cylinders.r.empty());
@@ -4044,7 +4045,7 @@ TEST_F(SceneParserCylinderTest, IntegrationCylinderWithZeroAxisRejectedBeforeMat
   writeSceneFile("matte: mat1 0.5 0.5 0.5\n"
                  "cylinder: 0 0 0 1.0 0 0 0 nonexistent\n");
 
-  SceneSettings scene = loadSceneFromFile(temp_filename);
+  SceneSettings const scene = loadSceneFromFile(temp_filename);
 
   // El cilindro no debe añadirse por el eje cero (detectado antes de buscar material)
   ASSERT_TRUE(scene.cylinders.r.empty());
