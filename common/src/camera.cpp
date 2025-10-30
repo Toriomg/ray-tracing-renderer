@@ -1,6 +1,7 @@
 #include "camera.hpp"
 #include "constants.hpp"
 #include "dataStructs/settings_structs.hpp"
+#include "utilities/vec3.hpp"
 #include <cmath>
 #include <utility>
 

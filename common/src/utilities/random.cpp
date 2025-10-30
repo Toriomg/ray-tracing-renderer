@@ -1,4 +1,5 @@
 #include "utilities/random.hpp"
+#include "utilities/vec3.hpp"
 
 RandomGenerator::RandomGenerator(std::uint64_t seed) : m_engine(seed) { }
 

@@ -1,5 +1,9 @@
 #include "renderer.hpp"
+#include "dataStructs/aabb.hpp"
 #include "dataStructs/material.hpp"
+#include "dataStructs/settings_structs.hpp"
+#include "ray.hpp"
+#include "utilities/random.hpp"
 #include "utilities/vec3.hpp"
 #include <cstddef>
 
@@ -110,7 +114,7 @@ std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Poin
   return Intersection{t, p, normal};
 }
 
-std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(  // NOLINT
+std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
     Ray const & r, CylinderGeometry const & cyl, double closest_t) {
   Vec3 const oc      = r.point - cyl.center;
   Vec3 const dr_perp = component_perpendicular(r.direction, cyl.unit_axis);
@@ -181,8 +185,8 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
 }
 
 std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
-    SceneSettings const & scene,                    // NOLINT
-    size_t idx, Ray const & r, double closest_t) {  // Ray debe ser const&
+    SceneSettings const & scene, size_t idx, Ray const & r,
+    double closest_t) {  // Ray debe ser const&
   // --- 1. Obtener datos directamente de la estructura SoA ---
   Point3 const center = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]};
   Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};

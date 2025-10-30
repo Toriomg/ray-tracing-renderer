@@ -1,7 +1,6 @@
 #include "../include/image_soa.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
-#include <../../common/include/constants.hpp>
 #include <../../common/include/utilities/vec3.hpp>
 #include <cmath>
 #include <stdexcept>

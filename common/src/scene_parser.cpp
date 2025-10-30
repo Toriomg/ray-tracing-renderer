@@ -1,4 +1,6 @@
 #include "scene_parser.hpp"
+#include "dataStructs/aabb.hpp"
+#include "dataStructs/material.hpp"
 #include "dataStructs/settings_structs.hpp"
 #include <cerrno>
 #include <charconv>
