@@ -1,9 +1,0 @@
-refractive: mat_0 1.46
-refractive: mat_1 1.36
-refractive: mat_2 1.65
-refractive: mat_3 1.68
-
-sphere: -9.23 3.75 -2.12 0.48 mat_0
-sphere: 3.43 5.10 4.06 0.50 mat_1
-sphere: -9.62 0.05 2.45 0.71 mat_2
-sphere: 0.94 4.57 3.68 0.31 mat_3

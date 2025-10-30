@@ -10,8 +10,8 @@ import random
 BASE_PATH = os.getcwd() # Asume que se ejecuta desde /workspace/scripts/testRen
 
 # Rutas a los ejecutables (relativas a BASE_PATH)
-RENDER_SOA_EXE = os.path.join(BASE_PATH, "../../out/build/default/soa/Release/render-soa")
-RENDER_AOS_EXE = os.path.join(BASE_PATH, "../../out/build/default/aos/Release/render-aos")
+RENDER_SOA_EXE = "../../out/build/default/soa/Release/render-soa"
+RENDER_AOS_EXE = "../../out/build/default/aos/Release/render-aos"
 
 # --- Parámetros para las pruebas de CONFIGURACIÓN ---
 # Se usará una escena fija que se copiará al directorio de pruebas.
@@ -19,9 +19,9 @@ ESCENA_FIJA_ORIGEN = os.path.join(BASE_PATH, "../../res/scene_scripts/scene2.txt
 ESCENA_FIJA_DESTINO = "scene_fixed.txt" # Nombre del archivo copiado
 
 # Listas de valores para cada tipo de prueba de configuración
-VALORES_PROFUNDIDAD = [5, 10, 20, 50, 100, 200, 400, 600]
-VALORES_SAMPLES = [3, 5, 15, 30, 50, 100, 150, 200]
-VALORES_ANCHO_IMAGEN = [270, 720, 1280,1440, 1920, 2340, 3840, 7680]
+VALORES_PROFUNDIDAD = [5, 10, 20, 50, 100, 200]
+VALORES_SAMPLES = [3, 5, 15, 30, 50, 150]
+VALORES_ANCHO_IMAGEN = [270, 720, 1280, 1920, 2340, 3840]
 
 # --- Parámetros para las pruebas de ESCENA ---
 # Se usará una configuración vacía para forzar valores por defecto.
@@ -64,23 +64,23 @@ RENDER_SOA_EXE="{RENDER_SOA_EXE}"
 RENDER_AOS_EXE="{RENDER_AOS_EXE}"
 
 # Comando de medición con energía
-PERF_COMMAND="perf stat -r 3 -e cycles,instructions,power/energy-pkg/"
+PERF_COMMAND="perf stat -r 3 -e power/energy-pkg/"
 
 # --- Medición de rendimiento para render-soa ---
 echo ""
 echo "========================================="
 echo ">>> Midiendo 'render-soa' (3 ejecuciones)"
 echo "========================================="
-#$PERF_COMMAND ${{RENDER_SOA_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_SOA}}
- ${{RENDER_SOA_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_SOA}}
+$PERF_COMMAND ${{RENDER_SOA_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_SOA}}
+# ${{RENDER_SOA_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_SOA}}
 
 # --- Medición de rendimiento para render-aos ---
 echo ""
 echo "========================================="
 echo ">>> Midiendo 'render-aos' (3 ejecuciones)"
 echo "========================================="
-#$PERF_COMMAND ${{RENDER_AOS_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_AOS}}
- ${{RENDER_AOS_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_AOS}}
+$PERF_COMMAND ${{RENDER_AOS_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_AOS}}
+# ${{RENDER_AOS_EXE}} ${{SCENE_FILE}} ${{CONFIG_FILE}} ${{OUTPUT_FILE_AOS}}
 
 echo "--- Prueba '{test_name}' finalizada. ---"
 """

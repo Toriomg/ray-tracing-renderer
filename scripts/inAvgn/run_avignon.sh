@@ -39,8 +39,8 @@ echo ""
 # -print0 y read -d '' manejan de forma segura nombres de archivo con espacios (aunque no debería haber).
 find tests_de_config tests_de_escenas -type f -name "*.sh" -print0 | while IFS= read -r -d $'\0' script; do
     echo "-> Enviando trabajo: $script"
-    #sbatch "$script"
-    bash "$script"
+    sbatch "$script"
+    #bash "$script"
 done
 
 echo ""

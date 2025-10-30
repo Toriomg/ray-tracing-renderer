@@ -1,9 +1,0 @@
-refractive: mat_0 1.46
-refractive: mat_1 1.36
-refractive: mat_2 1.65
-refractive: mat_3 1.68
-
-cylinder: -9.23 3.75 -2.12 0.48 1.03 1.76 -0.28 mat_0
-cylinder: -0.03 -5.73 3.65 0.42 2.11 0.28 1.53 mat_1
-cylinder: -1.32 -3.53 12.02 0.69 -0.74 -2.43 0.07 mat_2
-cylinder: -0.08 4.81 6.94 0.50 0.45 -0.74 -2.71 mat_3

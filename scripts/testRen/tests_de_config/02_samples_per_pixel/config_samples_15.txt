@@ -1,1 +1,0 @@
-samples_per_pixel: 15
