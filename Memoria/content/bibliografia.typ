@@ -1,6 +1,8 @@
+
 = Bibliografía
+\
 #set enum(numbering: "[1]", start: 1)
-+ CppCon, _Learn C++ Performance Secrets from a Bloomberg Engineer At CppCon 2025!_, Youtube, 24 agosto 2025 [Online] URL: https://youtu.be/hyZ3gEGVvC8?si=Njp9NAfaxhsJGhy9)
++ CppCon, _Learn C++ Performance Secrets from a Bloomberg Engineer At CppCon 2025!_, Youtube, 24 agosto 2025 [Online] URL: https://youtu.be/hyZ3gEGVvC8?si=Njp9NAfaxhsJGhy9) 
 
 + Y. Bonenberger (CppCon), _Designing Fast and Efficient List-like Data Structures_ Youtube, 13 marzo 2024 [Online] URL: https://youtu.be/stfEry0zz5E?si=Pf4h9k_m9RTxTdpB 
 
@@ -17,3 +19,5 @@
 + MND, _3D collision detection_ [Online] URL: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 
 + Toriomg, _OpenGL_ , Github, 2025. [Online] URL: https://github.com/Toriomg/OpenGL
+
++ Guidelines de formato IEEE para escritura de artículos.[Online] URL:  https://revistas.pucp.edu.pe/imagenes/electro/ee_formato_ieee.pdf 
