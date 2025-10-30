@@ -17,29 +17,29 @@ public:
 
   // Contructor que permite meter una esfera en una caja AABB para simplificar las intersecciones
   static AABB from_sphere(Point3 const & center, double radius) {
-    Point3 min(center.x - radius, center.y - radius, center.z - radius);
-    Point3 max(center.x + radius, center.y + radius, center.z + radius);
+    Point3 const min(center.x - radius, center.y - radius, center.z - radius);
+    Point3 const max(center.x + radius, center.y + radius, center.z + radius);
     return AABB{min, max};
   }
 
   // Mismo constructor pero para cilindros (que no siempre están alineados con los ejes)
   static AABB from_cylinder(Point3 const & center, Vec3 const & axis, double radius,
                             double height) {
-    Vec3 unit_axis = axis.normalize();
-    Vec3 half_axis = 0.5 * height * unit_axis;
-    Point3 p1      = center - half_axis;
-    Point3 p2      = center + half_axis;
+    Vec3 const unit_axis = axis.normalize();
+    Vec3 const half_axis = 0.5 * height * unit_axis;
+    Point3 const p1      = center - half_axis;
+    Point3 const p2      = center + half_axis;
 
-    Point3 min(std::min(p1.x, p2.x) - radius, std::min(p1.y, p2.y) - radius,
-               std::min(p1.z, p2.z) - radius);
-    Point3 max(std::max(p1.x, p2.x) + radius, std::max(p1.y, p2.y) + radius,
-               std::max(p1.z, p2.z) + radius);
+    Point3 const min(std::min(p1.x, p2.x) - radius, std::min(p1.y, p2.y) - radius,
+                     std::min(p1.z, p2.z) - radius);
+    Point3 const max(std::max(p1.x, p2.x) + radius, std::max(p1.y, p2.y) + radius,
+                     std::max(p1.z, p2.z) + radius);
     return AABB{min, max};
   }
 
   [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min, double t_max) {
     // Usando la implementación interna de Vec3 con el array e[3]
-    Vec3 invDir = {1.0 / r.direction.x, 1.0 / r.direction.y, 1.0 / r.direction.z};
+    Vec3 const invDir = {1.0 / r.direction.x, 1.0 / r.direction.y, 1.0 / r.direction.z};
 
     // Eje X
     double t0 = (box.min_point.x - r.point.x) * invDir.x;

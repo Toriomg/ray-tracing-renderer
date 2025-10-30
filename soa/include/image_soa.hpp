@@ -42,7 +42,7 @@ public:
   // Permite llenar todos los arrays a partir de datos en double con valores de 0 a 1 a valores
   // válidos del 0 al 255
   void fill_from_double(std::vector<double> const & r_data, std::vector<double> const & g_data,
-                       std::vector<double> const & b_data, double gamma = Constants::Gamma);
+                        std::vector<double> const & b_data, double gamma = Constants::Gamma);
 
   // Métodos para recibir las dimensiones de la imagen
   [[nodiscard]] size_t width() const { return width_; }

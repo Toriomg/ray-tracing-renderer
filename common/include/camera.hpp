@@ -9,8 +9,8 @@ struct ProjectionWindow {
   // Initialize members to default values to prevent garbage data.
   double projWindowHeight = 0.0F;
   double projWindowWidth  = 0.0F;
-  int imageHeight        = 0;
-  int imageWidth         = 0;
+  int imageHeight         = 0;
+  int imageWidth          = 0;
   Vec3 viewportHorizontal;
   Vec3 viewportVertical;
   Point3 viewportOrigin;

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 
+
 /*
 std::string const FilepathScene  = "/workspace/res/scene_scripts/scene3example.txt";
 std::string const FilepathConfig = "/workspace/res/config_scripts/config3example.txt";

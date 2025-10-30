@@ -85,7 +85,7 @@ void ImageSOA::fill_from_double(std::vector<double> const & r_data,
                                 std::vector<double> const & g_data,
                                 std::vector<double> const & b_data, double gamma) {
   // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
-  size_t expected_size = width_ * height_;
+  size_t const expected_size = width_ * height_;
 
   // Verificamos que los datos proporcionados coinciden con las dimensiones de la imagen
   if (r_data.size() != expected_size or

@@ -61,7 +61,7 @@ struct Vec3 {
 
   constexpr Vec3 & operator/=(double scalar) noexcept {
     assert(scalar != 0.0F and "Division by zero!");  // this in release version is not compiled
-    double inv_scalar = (1.0F / scalar);             // Multiplication is faster than division
+    const double inv_scalar = (1.0F / scalar);             // Multiplication is faster than division
     x *= inv_scalar;
     y *= inv_scalar;
     z *= inv_scalar;
@@ -152,22 +152,22 @@ using Point3 = Vec3;
                                      double etai_over_etat) noexcept {
   // CORRECCIÓN 1: Cálculo correcto del coseno
   auto cos_theta   = std::min(-dot(uv, n), 1.0);
-  double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+  const double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
 
   // CORRECCIÓN 2: Verificar reflexión interna total primero
   if (etai_over_etat * sin_theta > 1.0) {
     return reflect(uv, n);
   }
 
-  Vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
+  const Vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
 
   // CORRECCIÓN 3: Protección numérica sin fabs
-  double discriminant = 1.0 - r_out_perp.length_squared();
+  const double discriminant = 1.0 - r_out_perp.length_squared();
   if (discriminant < 0) {
     return reflect(uv, n);  // Fallback seguro
   }
 
-  Vec3 r_out_parallel = -std::sqrt(discriminant) * n;
+  const Vec3 r_out_parallel = -std::sqrt(discriminant) * n;
   return r_out_perp + r_out_parallel;
 }
 
