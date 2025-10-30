@@ -7,7 +7,6 @@
 #include "utilities/vec3.hpp"
 #include <cmath>
 #include <gtest/gtest.h>
-#include <string>
 #include <string_view>
 
 namespace {
@@ -19,7 +18,7 @@ namespace {
     double height{};
   };
 
-  void setupSingleSphereScene(SceneSettings* scene, Point3 center, double radius,
+  void setupSingleSphereScene(SceneSettings * scene, Point3 center, double radius,
                               unsigned int mat_id) {
     scene->spheres.x.push_back(center.x);
     scene->spheres.y.push_back(center.y);
@@ -31,8 +30,8 @@ namespace {
     scene->spheres.aabbs.push_back(AABB::from_sphere(center, radius));
   }
 
-  void setupMatteMaterial(SceneSettings* scene, std::string_view name, Color color) {
-    scene->materialNames.push_back(std::string(name));
+  void setupMatteMaterial(SceneSettings * scene, std::string_view name, Color color) {
+    scene->materialNames.emplace_back(name);
     scene->matte.r.push_back(color.x);
     scene->matte.g.push_back(color.y);
     scene->matte.b.push_back(color.z);
@@ -41,9 +40,9 @@ namespace {
     scene->materialTable.push_back({MaterialType::MATTE, local_index});
   }
 
-  void setupMetalMaterial(SceneSettings* scene, std::string_view name, Color color,
+  void setupMetalMaterial(SceneSettings * scene, std::string_view name, Color color,
                           double diffusion) {
-    scene->materialNames.push_back(std::string(name));
+    scene->materialNames.emplace_back(name);
     scene->metal.r.push_back(color.x);
     scene->metal.g.push_back(color.y);
     scene->metal.b.push_back(color.z);
@@ -53,8 +52,7 @@ namespace {
     scene->materialTable.push_back({MaterialType::METAL, local_index});
   }
 
-  void setupSingleCylinderScene(SceneSettings* scene, CylinderParams params,
-                                unsigned int mat_id) {
+  void setupSingleCylinderScene(SceneSettings * scene, CylinderParams params, unsigned int mat_id) {
     scene->cylinders.x.push_back(params.center.x);
     scene->cylinders.y.push_back(params.center.y);
     scene->cylinders.z.push_back(params.center.z);
@@ -70,15 +68,15 @@ namespace {
         AABB::from_cylinder(params.center, params.axis, params.radius, params.height));
   }
 
-  void setupRefractiveMaterial(SceneSettings* scene, std::string_view name, double ior) {
-    scene->materialNames.push_back(std::string(name));
+  void setupRefractiveMaterial(SceneSettings * scene, std::string_view name, double ior) {
+    scene->materialNames.emplace_back(name);
     scene->refractive.ior.push_back(ior);
 
     auto local_index = static_cast<unsigned int>(scene->refractive.ior.size() - 1);
     scene->materialTable.push_back({MaterialType::REFRACTIVE, local_index});
   }
 
-  void clearScene(SceneSettings* scene) {
+  void clearScene(SceneSettings * scene) {
     scene->spheres.x.clear();
     scene->spheres.y.clear();
     scene->spheres.z.clear();
