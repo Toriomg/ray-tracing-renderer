@@ -8,7 +8,14 @@
 
 namespace {
 
-  void setupSingleSphereScene(SceneSettings & scene, Point3 center, double radius,
+  struct CylinderParams {
+    Point3 center;
+    Vec3 axis;
+    double radius;
+    double height;
+  };
+
+  void setupSingleSphereScene(SceneSettings & scene, Point3 const & center, double radius,
                               unsigned int mat_id) {
     scene.spheres.x.push_back(center.x);
     scene.spheres.y.push_back(center.y);
@@ -20,7 +27,7 @@ namespace {
     scene.spheres.aabbs.push_back(AABB::from_sphere(center, radius));
   }
 
-  void setupMatteMaterial(SceneSettings & scene, std::string const & name, Color color) {
+  void setupMatteMaterial(SceneSettings & scene, std::string const & name, Color const & color) {
     scene.materialNames.push_back(name);
     scene.matte.r.push_back(color.x);
     scene.matte.g.push_back(color.y);
@@ -30,7 +37,7 @@ namespace {
     scene.materialTable.push_back({MaterialType::MATTE, local_index});
   }
 
-  void setupMetalMaterial(SceneSettings & scene, std::string const & name, Color color,
+  void setupMetalMaterial(SceneSettings & scene, std::string const & name, Color const & color,
                           double diffusion) {
     scene.materialNames.push_back(name);
     scene.metal.r.push_back(color.x);
@@ -42,20 +49,21 @@ namespace {
     scene.materialTable.push_back({MaterialType::METAL, local_index});
   }
 
-  void setupSingleCylinderScene(SceneSettings & scene, Point3 center, Vec3 axis, double radius,
-                                double height, unsigned int mat_id) {
-    scene.cylinders.x.push_back(center.x);
-    scene.cylinders.y.push_back(center.y);
-    scene.cylinders.z.push_back(center.z);
-    scene.cylinders.vx.push_back(axis.x);
-    scene.cylinders.vy.push_back(axis.y);
-    scene.cylinders.vz.push_back(axis.z);
-    scene.cylinders.r.push_back(radius);
-    scene.cylinders.invAxisLen.push_back(1.0 / height);
+  void setupSingleCylinderScene(SceneSettings & scene, CylinderParams const & params,
+                                unsigned int mat_id) {
+    scene.cylinders.x.push_back(params.center.x);
+    scene.cylinders.y.push_back(params.center.y);
+    scene.cylinders.z.push_back(params.center.z);
+    scene.cylinders.vx.push_back(params.axis.x);
+    scene.cylinders.vy.push_back(params.axis.y);
+    scene.cylinders.vz.push_back(params.axis.z);
+    scene.cylinders.r.push_back(params.radius);
+    scene.cylinders.invAxisLen.push_back(1.0 / params.height);
     scene.cylinders.materialIndex.push_back(static_cast<int>(mat_id));
 
     // Generar AABB para el cilindro
-    scene.cylinders.aabbs.push_back(AABB::from_cylinder(center, axis, radius, height));
+    scene.cylinders.aabbs.push_back(
+        AABB::from_cylinder(params.center, params.axis, params.radius, params.height));
   }
 
   void setupRefractiveMaterial(SceneSettings & scene, std::string const & name, double ior) {
@@ -107,7 +115,7 @@ class RendererTest : public ::testing::Test {
 protected:
   SceneSettings scene;
   ConfigSettings config;
-  RandomGenerator rng;
+  RandomGenerator rng{12'345};
 
   void SetUp() override {
     clearScene(scene);
@@ -119,9 +127,6 @@ protected:
     config.max_depth              = 5;
     config.background_dark_color  = Color(0.5, 0.7, 1.0);
     config.background_light_color = Color(1.0, 1.0, 1.0);
-
-    // Inicializar RNG con seed fija
-    rng = RandomGenerator(12'345);
   }
 
   void TearDown() override { clearScene(scene); }
@@ -412,7 +417,8 @@ TEST_F(RendererTest, CylinderHitLateralSurface) {
   // Centro (0, -10, 0), Eje Y (0,1,0), Radio 2.0, Altura 4.0
   // El cilindro está en coordenadas y: [-12, -8]
   setupMatteMaterial(scene, "cyan_matte", Color(0.0, 1.0, 1.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (0, -10, 0) hacia -Z (golpea superficie lateral)
   Ray ray(Point3(0, -10, 0), Vec3(0, 0, -1), 1);
@@ -429,7 +435,8 @@ TEST_F(RendererTest, CylinderHitLateralSurface) {
 TEST_F(RendererTest, CylinderHitTopCap) {
   // Setup: Cilindro con tapa superior en y=-8
   setupMatteMaterial(scene, "yellow_matte", Color(1.0, 1.0, 0.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (0, 0, 0) hacia (0, -1, 0) (golpea tapa superior)
   Ray ray(Point3(0, 0, 0), Vec3(0, -1, 0), 1);
@@ -446,7 +453,8 @@ TEST_F(RendererTest, CylinderHitTopCap) {
 TEST_F(RendererTest, CylinderHitBottomCap) {
   // Setup: Cilindro con tapa inferior en y=-12
   setupMatteMaterial(scene, "magenta_matte", Color(1.0, 0.0, 1.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (0, -20, 0) hacia (0, 1, 0) (golpea tapa inferior)
   Ray ray(Point3(0, -20, 0), Vec3(0, 1, 0), 1);
@@ -463,7 +471,8 @@ TEST_F(RendererTest, CylinderHitBottomCap) {
 TEST_F(RendererTest, CylinderMissCompletely) {
   // Setup: Cilindro en (0, -10, 0)
   setupMatteMaterial(scene, "red_matte", Color(1.0, 0.0, 0.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (10, 10, 0) hacia (0, 0, -1) (muy lejos del cilindro)
   Ray ray(Point3(10, 10, 0), Vec3(0, 0, -1), 1);
@@ -484,7 +493,8 @@ TEST_F(RendererTest, CylinderMissCompletely) {
 TEST_F(RendererTest, CylinderMissHitsInfiniteLateralOutsideHeight) {
   // Setup: Cilindro con altura limitada (y: -12 a -8)
   setupMatteMaterial(scene, "blue_matte", Color(0.0, 0.0, 1.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (0, 0, 0) [y=0, muy por encima] hacia (0, 0, -1)
   // Golpearía el cilindro infinito pero está fuera de la altura válida
@@ -506,7 +516,8 @@ TEST_F(RendererTest, CylinderMissHitsInfiniteLateralOutsideHeight) {
 TEST_F(RendererTest, CylinderMissHitsCapPlaneOutsideRadius) {
   // Setup: Cilindro con radio 2.0
   setupMatteMaterial(scene, "green_matte", Color(0.0, 1.0, 0.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (5, 0, 0) hacia (0, -1, 0)
   // Golpea el plano de la tapa superior pero x=5 está fuera del radio 2.0
@@ -528,7 +539,8 @@ TEST_F(RendererTest, CylinderMissHitsCapPlaneOutsideRadius) {
 TEST_F(RendererTest, CylinderMissRayParallelToCap) {
   // Setup: Cilindro con eje Y
   setupMatteMaterial(scene, "orange_matte", Color(1.0, 0.5, 0.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (0, -10, 0) hacia (1, 0, 0)
   // Paralelo a las tapas (perpendicular al eje Y), denominador cero en intersectCap
@@ -550,7 +562,8 @@ TEST_F(RendererTest, CylinderMissRayParallelToCap) {
 TEST_F(RendererTest, CylinderMissRayParallelToAxis) {
   // Setup: Cilindro con eje Y, radio 2.0
   setupMatteMaterial(scene, "white_matte", Color(1.0, 1.0, 1.0));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (5, 0, 0) [x=5, fuera del radio] hacia (0, 1, 0) [paralelo al eje]
   // Denominador cero en intersectLateralSurface
@@ -572,7 +585,8 @@ TEST_F(RendererTest, CylinderMissRayParallelToAxis) {
 TEST_F(RendererTest, CylinderHitClosestIsLateral) {
   // Setup: Cilindro base
   setupMatteMaterial(scene, "purple_matte", Color(0.5, 0.0, 0.5));
-  setupSingleCylinderScene(scene, Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0, 0);
+  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
+  setupSingleCylinderScene(scene, cyl, 0);
 
   // Rayo con depth=1 desde (1, -7, -1) hacia (0, -1, -1)
   // Este rayo debería golpear la superficie lateral antes que la tapa superior
@@ -621,7 +635,7 @@ TEST_F(RendererTest, MatteMaterialComputesAttenuation) {
   ASSERT_LE(result.z, attenuation.z);
 
   // Verificar que no sea negro (asumiendo que el fondo no es negro)
-  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0);
+  ASSERT_TRUE(result.x > 0.0 or result.y > 0.0 or result.z > 0.0);
 }
 
 // Test 2: Matte material near zero bounce case
@@ -689,7 +703,7 @@ TEST_F(RendererTest, MetalMaterialPerfectReflection) {
   ASSERT_LE(result.z, attenuation.z);
 
   // Verificar que no sea negro (el rebote depth=1 debe golpear el fondo)
-  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0);
+  ASSERT_TRUE(result.x > 0.0 or result.y > 0.0 or result.z > 0.0);
 }
 
 // Test 2: Metal material with fuzzed reflection (diffusion > 0.0)
@@ -756,7 +770,7 @@ TEST_F(RendererTest, RefractiveMaterialComputesRefraction) {
   // ASERCIÓN ROBUSTA: El resultado no debe ser negro
   // (prueba que el rebote depth=1 golpeó el fondo con color)
   // Asumimos que backgroundColor no es completamente negro
-  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0)
+  ASSERT_TRUE(result.x > 0.0 or result.y > 0.0 or result.z > 0.0)
       << "Expected non-black color from refracted ray hitting background, got (" << result.x << ", "
       << result.y << ", " << result.z << ")";
 }
@@ -795,7 +809,7 @@ TEST_F(RendererTest, RefractiveMaterialComputesTotalInternalReflection) {
   // ASERCIÓN ROBUSTA: El resultado no debe ser negro
   // (prueba que la reflexión interna total funcionó y el rayo reflejado
   // eventualmente golpeó el fondo con color)
-  ASSERT_TRUE(result.x > 0.0 || result.y > 0.0 || result.z > 0.0)
+  ASSERT_TRUE(result.x > 0.0 or result.y > 0.0 or result.z > 0.0)
       << "Expected non-black color from total internal reflection hitting background, got ("
       << result.x << ", " << result.y << ", " << result.z << ")";
 }
