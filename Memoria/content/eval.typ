@@ -42,6 +42,34 @@ Para realizar una estimación del efecto de las cualidades de la imagen en el ti
 En resumen y de manera completamente general, podemos concluir que el tiempo de ejecución crece influenciado mayoritariamente por los factores de muestras por pixel y tamaño de la imagen, dado que estos crecen de manera más concreta y predecible presentando un aumento exponencial en el tiempo de ejecución. El efecto de la profundidad en lo mismo resulta más complejo de entender y presenta un patrón de crecimiento menos predecible. Por ello, para sacar unas conclusiones más concreto sería necesario realizar pruebas más complejas, combinando el factor junto con otros factores para entender mejor su impacto en casos menos aislados y concretos.
 No obstante, como en los casos anteriores, nuestros modelos, probablemente porque el modelo de optimización utilizado presenta una solución eficiente, tanto el AOS como el SOA no presentan diferencias significativas en los tiempos de ejecución, presentando en todos los casos de estudio comportamientos muy similares que no nos ayudan a decantarnos por un modelo u otro.
 == Evaluación de la energía
-Del mismo modo y con la misma metodología que hemos presentado en los casos anteriores, hemos aplicado los mismos casos de estudio al análisis del consumo energético de nuestro programa. 
 === Comparativa de rendimiento en base a las figuras y sus materiales.
+Las gráficas resultantes en este caso, del mismo modo que en el anterior y presentando una escala logarítmica, son las que se pueden observar a continuación:
+#figure(
+  grid(
+    columns: 2,
+    gutter: 0.75cm,
+    figure(image("../img/evaluacion/energiaesferas.png", width: 100%), caption: [Consumo de energía en esferas]),
+    figure(image("../img/evaluacion/energiacilindros.jpg", width: 100%), caption: [Consumo de energía en cilindros]),
+  ),
+)
+Los comentarios a hacer son realmente similares, pues como se observa la forma y crecimiento de estas gráficas es prácticamente identica a las del tiempo dejecución. Esto, deja entrever que ambas estan fuertemente relacionadas, es decir, a mayor tiempo de ejecución también es mayor el consumo energético. Además, un apunte a realizar que no se ha realizado con anterioridad y que también se puede ver en el caso del tiempo de ejecución, es el hecho de que en ambos casos, la variación de energía para los primeros casos (de 2 objetos a 16) el incremento es prácticamente nulo y todos presentan un consumo energético muy similar. Esto, puede deberse a que en estos casos el consumo energético base del programa es mucho mayor que el incremento producido por la adición de nuevos objetos, por lo que no se aprecia un incremento real en el consumo energético hasta que el número de objetos es suficientemente grande.
+\
+Por lo demás, como ya hemos mencionado en el caso anterior, el consumo energético de los cilindros es mayor que el de las esferas, presentando un patrón de crecimiento similar en ambos casos. Además, tampoco se aprecian diferencias significativas entre el modelo AOS y SOA, presentando ambos patrones de crecimiento similares y sin diferencias notables en los valores.
 === Comparativa de rendimiento en base a las cualidades de la imagen generada.
+Para finlizar el estudio de la energía consumida, presentamos las gráficas resultantes del análisis de las cualidades de la imagen en el consumo energético.
+#figure(
+  grid(
+    columns: 3,
+    gutter: 0.3cm,
+    figure(image("../img/evaluacion/energiamuestras.png", width: 100%), caption: [Consumo de energía en función de las muestras por pixel]),
+    figure(image("../img/evaluacion/energiaprofundidad.png", width: 100%), caption: [Consumo de energía en función de la profundidad]),
+    figure(image("../img/evaluacion/energiatamano.png", width: 100%), caption: [Consumo de energía en función del tamaño]),
+  ),
+)
+En las gráficas presentadas se puede observar, como en el caso del tiempo de ejecución, un patrón de crecimiento practicamente idéntico entre los modelos AOS y SOA, que se prepresenta de manera muy similar a un incremento exponencial, recalcando la ya mencionada relación entre el tiempo de ejecución y el consumo energético.
+\ Sin embargo, como en el caso anterior el modelo de profundiad presenta un comportamiento diferente. De hecho, el comportamiento que presenta es también diferente al del tiempo de ejecución. En el caso del SOA la similaridad es mayor, no obstante, en el caso del AOS el patrón de crecimiento es realmente diferente, presentando un incremento de la energía consumida mucho más lento y controlado que en el caso del tiempo de ejecución que se mantiene en el tiempo cayendo ligeramente incluso en los casos de profundidad más elevada. De este modo, en este caso si podemos concluir practicamente con total seguridad que para casos de profundidades elevadas el modelo _AOS_ presenta una mejor eficiencia energética, y más importante, mayor escalabilidad dado su incremento más reducido. 
+
+== Conclusiones finales
+En definitiva, dados los datos presentados y las conclusiones extraidas, podemos concluir que nuestro modelo de optimización AABB (Axis Aligned Bounding Box) presenta una buena escalabilidad y eficiencia tanto en tiempo de ejecución como en consumo energético. Esto lo sabemos principalmente por los datos lineales de incremento en función del número de elementos. En defintiva, este método de optimización pretende optimizar los casos en los que hay mucho flujo de figuras, reduciendo el cálculo de intersecciones innecesarias.
+\ Además, podemos concluir que los factores que más afectan al tiempo de ejecución y consumo energético en relación a la configuración de la imagen son el tamaño de la imagen y el número de muestras por pixel, ambos con un crecimiento exponencial en ambas métricas. Por otro lado, la profundidad presenta un comportamiento más complejo y menos predecible.
+\ Finalmente, en cuanto a la comparación entre los modelos _AOS_ y _SOA_, podemos concluir que ambos presentan comportamientos muy similares en la mayoría de los casos, sin diferencias significativas en tiempo de ejecución o consumo energético. Esto seguramente tenga relación con la aplicación de nuestros métodos de optimización. No obstante, en el caso del consumo energético en función de la profundidad, el modelo _AOS_ presenta un comportamiento más eficiente y escalable, lo que podría hacerlo más adecuado para escenas con altas profundidades.
