@@ -1,3 +1,15 @@
 = Evaluación rendimiento y energía
+En esta sección realizaremos un analisis del rendimiento y de la energía. EN nuestro caso, la analizaremos en base a diferentes factores, entre ellos: el tipo de figura y su material y las características de la imagen: tamaño, profundidad y numero de muestras por pixel. De este modo, hemos realizado comprobaciones de los tiempos de ejecucción y energía consumida para differentes valores de las métricas mencionadas. Los datos resultantes, además de poder encontrarse en el repositorio en una carpeta que contiene los srulms y escenas analizadas, podemos encontrarlos en la hoja de cálculoq que podemos encontrar en el siguiente link: #link("https://docs.google.com/spreadsheets/d/1D7kaNXWP4gC8RAW2v4KfTMQ5f_zqdt1GROYGn20AvnI/edit?usp=sharing", "Evaluación de rendimiento y energía."). 
+\ Un apunte previo a realizar es el hecho de que para las gráficas de estudio de lasesferas y cilindros, tanto en el caso de estudio de rendimiento como en el de energía, dado que el número de elementos a analizar se ha planteado de manera exponencial (estudiamos el incremento con 1, 2, 4 etc. figuras) los datos se presentan con un ajuste logarítmico en el eje de ordenadas la métrica no es el tiempo si no el logaritmo en base dos del tiempo o energía consumida. De esta manera, podemos entender debidamente el patrón de crecimiento de nuestro problema, pues ambos ejes están ajustados a sus respectivos valores. 
 == Evaluación del rendimiento
+Para comenzar con el estudio, presentamos la siguiente gráfica que analiza la diferencia de tiempos de ejecución entre nuestras escenas y las escenas de referencia presentadas. 
+#figure(
+  image("../img/evaluacion/comparativaref.png", width: 90%),
+  caption: [Gráfica comparativa de imagenes de referencia e implementación propia.]
+) <comparativa>
+Como se observa en la gráfica, los patrones de comportamiento entre nuestra implementación y los valores de referencia son completamentes. Esta divergencia no solo se manifiesta en la disparidad de valores, en los que podemos observar una clara reducción con respecto a los de referencia en los nuestros, sino también en la velocidad de crecimiento respecto a las escenas, que es significativamente más lenta en nuestro caso. De hecho, mientras la imagen de referencia muestra un crecimiento continuo en el tiempo de ejecución, nuestra implementación presenta una reducción en la cuarta escena. Esto se debe a que nuestro modelo de optimización AABB, pese a producir una mejora del rendimiento en todos los casos, es más destacable a mayor sea el número de elementos de la imagen, lo que presenta una buena escalabilidad de nuestro modelo.
+=== Comparativa de rendimiento en base a las figuras y sus materiales. 
+
+=== Conparativa de rendimiento en base a las cualidades de la imagen generada. 
+
 == Evaluación de la energía
