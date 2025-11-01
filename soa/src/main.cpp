@@ -1,9 +1,13 @@
+#include "../../common/include/camera.hpp"
 #include "../../common/include/config_parser.hpp"
+#include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/rendering_engine.hpp"
 #include "../../common/include/scene_parser.hpp"
+#include "../../common/include/utilities/random.hpp"
 #include "image_soa.hpp"
 #include <iostream>
 #include <string>
+#include <vector>
 
 /*
 std::string const FilepathScene  = "/workspace/res/scene_scripts/scene3example.txt";

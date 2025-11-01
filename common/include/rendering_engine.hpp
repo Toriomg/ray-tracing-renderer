@@ -7,7 +7,6 @@
 #include "../../common/include/utilities/random.hpp"
 #include <iostream>
 
-
 // RenderContext struct
 struct RenderContext {
   SceneSettings * scene;
@@ -41,21 +40,23 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
     for (size_t col = 0; col < imageWidth; col++) {
       Color accumulated_color(0.0, 0.0, 0.0);
 
-      Point3 pixel_corner = pixel00_loc +  // LOC pixel actual
-                            (static_cast<double>(col) * pixel_delta_u) +
-                            (static_cast<double>(row) * pixel_delta_v);
+      Point3 const pixel_corner = pixel00_loc +  // LOC pixel actual
+                                  (static_cast<double>(col) * pixel_delta_u) +
+                                  (static_cast<double>(row) * pixel_delta_v);
       for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {
         // Genera un punto aleatorio DENTRO del cuadrado del píxel
-        double px = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
-        double py = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
+        double const px = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
+        double const py = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
 
-        Point3 pixel_sample_point = pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
-        Ray ray(camera.cameraPos, pixel_sample_point - camera.cameraPos, ctx.config->max_depth);
+        Point3 const pixel_sample_point =
+            pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
+        Ray const ray(camera.cameraPos, pixel_sample_point - camera.cameraPos,
+                      ctx.config->max_depth);
         accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, *ctx.rngMaterial);
       }
-      Color final_pixel_color = accumulated_color * static_cast<double>(scale);
+      Color const final_pixel_color = accumulated_color * static_cast<double>(scale);
 
-      size_t index = image.indice(row, col);
+      size_t const index = image.indice(row, col);
       image.set_pixel(index, final_pixel_color, ctx.config->gamma);
     }
   }

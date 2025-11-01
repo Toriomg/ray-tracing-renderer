@@ -4,7 +4,7 @@ ViewportData compute_viewport(CameraData const & cam) {
   ViewportData vp;
 
   // Vector from camera target to camera position
-  Vec3 focal           = cam.position - cam.target;
+  Vec3 focal            = cam.position - cam.target;
   double focal_distance = focal.length();
 
   // Projection window based on FOV and distance

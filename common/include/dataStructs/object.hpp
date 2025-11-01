@@ -38,9 +38,7 @@ struct alignas(16) CylinderData {
     }
   }
 
-  void addAABB(AABB const & aabb) {
-    aabbs.push_back(aabb);
-  }
+  void addAABB(AABB const & aabb) { aabbs.push_back(aabb); }
 };
 
 #endif

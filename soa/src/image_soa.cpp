@@ -1,7 +1,6 @@
 #include "../include/image_soa.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
-#include <../../common/include/constants.hpp>
 #include <../../common/include/utilities/vec3.hpp>
 #include <cmath>
 #include <vector>
@@ -36,7 +35,7 @@ void ImageSOA::fill_from_double(std::vector<double> const & r_data,
                                 std::vector<double> const & g_data,
                                 std::vector<double> const & b_data, double gamma) {
   // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
-  size_t expected_size = width_ * height_;
+  size_t const expected_size = width_ * height_;
 
   // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
   for (size_t i = 0; i < expected_size; ++i) {
