@@ -2,6 +2,8 @@
 #include "dataStructs/aabb.hpp"
 #include "dataStructs/material.hpp"
 #include "dataStructs/settings_structs.hpp"
+#include <bits/ptr_traits.h>
+#include <cctype>
 #include <cerrno>
 #include <charconv>
 #include <cmath>
@@ -10,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 namespace {
@@ -240,7 +243,7 @@ namespace {
       std::cerr << "Error: material desconocido '" << tokens[8] << "' para cilindro\n";
       return false;
     }
-    double axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
+    double const axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
     scene.cylinders.addCentre(x, y, z);
     scene.cylinders.addAxis(vx, vy, vz);  // This will compute invAxisLen internally
     scene.cylinders.r.push_back(radius);

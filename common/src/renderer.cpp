@@ -5,7 +5,11 @@
 #include "ray.hpp"
 #include "utilities/random.hpp"
 #include "utilities/vec3.hpp"
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
+#include <optional>
 
 Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
                          ConfigSettings const & config, RandomGenerator & materialRng) {
@@ -220,20 +224,20 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
       if (t > 0.001 and t < t_max) {
         Point3 const p = r.at(t);
         if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
-          Vec3 normal = component_perpendicular(p - center, unit_axis);
-          best_hit    = Intersection{t, p, normal};
-          t_max       = t;
+          Vec3 const normal = component_perpendicular(p - center, unit_axis);
+          best_hit          = Intersection{t, p, normal};
+          t_max             = t;
         }
       }
       // Solo comprobamos la segunda raíz si la primera no fue válida Y está dentro del rango
       if (!best_hit) {
         t = (-b + sqrt_discr) * inv_2a;
         if (t > 0.001 and t < t_max) {
-          Point3 p = r.at(t);
+          Point3 const p = r.at(t);
           if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
-            Vec3 normal = component_perpendicular(p - center, unit_axis);
-            best_hit    = Intersection{t, p, normal};
-            t_max       = t;
+            Vec3 const normal = component_perpendicular(p - center, unit_axis);
+            best_hit          = Intersection{t, p, normal};
+            t_max             = t;
           }
         }
       }
@@ -242,7 +246,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
 
   // --- 3. Intersección con Tapas (usando el t_max actualizado) ---
   // Tapa superior
-  Point3 top_center = center + unit_axis * half_height;
+  Point3 const top_center = center + unit_axis * half_height;
   if (auto cap_hit = intersectCap(r, top_center, unit_axis, radius_sq)) {
     if (cap_hit->t < t_max) {
       best_hit = cap_hit;
@@ -251,7 +255,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
   }
 
   // Tapa inferior
-  Point3 bottom_center = center - unit_axis * half_height;
+  Point3 const bottom_center = center - unit_axis * half_height;
   if (auto cap_hit = intersectCap(r, bottom_center, -unit_axis, radius_sq)) {
     if (cap_hit->t < t_max) {
       best_hit = cap_hit;
@@ -277,7 +281,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
 /*----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {
-  Vec3 unit_direction = r.direction.normalize();
+  Vec3 const unit_direction = r.direction.normalize();
   auto t_bg = 0.5 * (unit_direction.y + 1.0);  // Mapea la altura del rayo a un valor entre 0 y 1
 
   // Mezcla lineal entre el color claro y oscuro del fondo
@@ -285,9 +289,9 @@ Color Renderer::backgroundColor(Ray const & r, ConfigSettings const & config) {
 }
 
 Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
-  unsigned int matte_idx = material_id.localIndex;
-  Color attenuation      = {ctx.scene->matte.r[matte_idx], ctx.scene->matte.g[matte_idx],
-                            ctx.scene->matte.b[matte_idx]};
+  unsigned int const matte_idx = material_id.localIndex;
+  Color const attenuation      = {ctx.scene->matte.r[matte_idx], ctx.scene->matte.g[matte_idx],
+                                  ctx.scene->matte.b[matte_idx]};
 
   Vec3 bounce_direction = hit_rec.normal + ctx.materialRng->get_vector_minus1_to_1();
 
@@ -295,49 +299,50 @@ Color Renderer::matteColor(MaterialID material_id, MaterialContext const & ctx, 
     bounce_direction = hit_rec.normal;
   }
 
-  Ray bounced_ray(hit_rec.p, bounce_direction, hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
+  Ray const bounced_ray(hit_rec.p, bounce_direction,
+                        hit_rec.prev_ray.depth - 1);  // Creación nuevo rayo
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
 Color Renderer::metalColor(MaterialID material_id, MaterialContext const & ctx, HitRecord hit_rec) {
-  unsigned int metal_idx  = material_id.localIndex;
-  Color attenuation       = {ctx.scene->metal.r[metal_idx], ctx.scene->metal.g[metal_idx],
-                             ctx.scene->metal.b[metal_idx]};
-  double diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
+  unsigned int const metal_idx  = material_id.localIndex;
+  Color const attenuation       = {ctx.scene->metal.r[metal_idx], ctx.scene->metal.g[metal_idx],
+                                   ctx.scene->metal.b[metal_idx]};
+  double const diffusion_factor = ctx.scene->metal.diffusion[metal_idx];
 
-  Vec3 reflected_dir       = reflect(hit_rec.prev_ray.direction, hit_rec.normal);
-  Vec3 fuzz                = diffusion_factor * ctx.materialRng->get_vector_minus1_to_1();
-  Vec3 scattered_direction = reflected_dir.normalize() + fuzz;
+  Vec3 const reflected_dir       = reflect(hit_rec.prev_ray.direction, hit_rec.normal);
+  Vec3 const fuzz                = diffusion_factor * ctx.materialRng->get_vector_minus1_to_1();
+  Vec3 const scattered_direction = reflected_dir.normalize() + fuzz;
 
-  Ray bounced_ray = Ray(hit_rec.p, scattered_direction, hit_rec.prev_ray.depth - 1);
+  Ray const bounced_ray = Ray(hit_rec.p, scattered_direction, hit_rec.prev_ray.depth - 1);
 
   return attenuation * rayColor(bounced_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
 
 Color Renderer::refractiveColor(MaterialID material_id, MaterialContext const & ctx,
                                 HitRecord hit_rec) {
-  unsigned int refractive_idx = material_id.localIndex;
-  double ior                  = ctx.scene->refractive.ior[refractive_idx];
-  Vec3 unit_direction         = hit_rec.prev_ray.direction.normalize();
+  unsigned int const refractive_idx = material_id.localIndex;
+  double const ior                  = ctx.scene->refractive.ior[refractive_idx];
+  Vec3 const unit_direction         = hit_rec.prev_ray.direction.normalize();
 
-  double refraction_ratio = hit_rec.front_face ? (1.0 / ior) : ior;
+  double const refraction_ratio = hit_rec.front_face ? (1.0 / ior) : ior;
 
-  double cos_theta = std::min(-dot(unit_direction, hit_rec.normal), 1.0);
-  double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+  double const cos_theta = std::min(-dot(unit_direction, hit_rec.normal), 1.0);
+  double const sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
 
   Vec3 direction;
 
   if (refraction_ratio * sin_theta > 1.0) {
     direction = reflect(unit_direction, hit_rec.normal);  // Reflexión interna total
   } else {                                                // Refracción normal
-    Vec3 i              = refraction_ratio * (unit_direction + cos_theta * hit_rec.normal);
-    double discriminant = 1.0 - i.length_squared();
-    Vec3 j              = -std::sqrt(std::max(0.0, discriminant)) * hit_rec.normal;
-    direction           = i + j;
+    Vec3 const i              = refraction_ratio * (unit_direction + cos_theta * hit_rec.normal);
+    double const discriminant = 1.0 - i.length_squared();
+    Vec3 const j              = -std::sqrt(std::max(0.0, discriminant)) * hit_rec.normal;
+    direction                 = i + j;
   }
 
-  Ray refracted_ray(hit_rec.p, direction, hit_rec.prev_ray.depth - 1);
-  Color attenuation(1.0, 1.0, 1.0);
+  Ray const refracted_ray(hit_rec.p, direction, hit_rec.prev_ray.depth - 1);
+  Color const attenuation(1.0, 1.0, 1.0);
 
   return attenuation * rayColor(refracted_ray, *ctx.scene, *ctx.config, *ctx.materialRng);
 }
