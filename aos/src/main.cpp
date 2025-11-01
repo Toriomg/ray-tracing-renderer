@@ -1,9 +1,14 @@
 #include "../../common/include/config_parser.hpp"
 #include "../../common/include/rendering_engine.hpp"
 #include "../../common/include/scene_parser.hpp"
+#include "camera.hpp"
+#include "dataStructs/settings_structs.hpp"
 #include "image_aos.hpp"
+#include "utilities/random.hpp"
+#include <cstddef>
 #include <iostream>
 #include <string>
+#include <vector>
 
 int main(int argc, char * argv[]) {
   std::vector<std::string> const args(argv, argv + argc);
