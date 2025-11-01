@@ -1,4 +1,5 @@
 #include "ppm_writer.hpp"
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -9,7 +10,7 @@
 bool PPMWriter::write_ppm(std::string const & filename, Pixels const & pixels, size_t width,
                           size_t height) {
   // Checkeamos que el número de pixeles coincide con el tamaño de los arrays que se han definido
-  size_t total_pixels = width * height;
+  size_t const total_pixels = width * height;
   if (pixels.r_channel.size() != total_pixels or
       pixels.g_channel.size() != total_pixels or
       pixels.b_channel.size() != total_pixels)

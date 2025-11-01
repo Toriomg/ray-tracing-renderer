@@ -2,7 +2,6 @@
 #define CAMERA_HPP
 
 #include "utilities/vec3.hpp"
-#include <memory>
 
 struct ConfigSettings;
 
@@ -10,8 +9,8 @@ struct ProjectionWindow {
   // Initialize members to default values to prevent garbage data.
   double projWindowHeight = 0.0F;
   double projWindowWidth  = 0.0F;
-  int imageHeight        = 0;
-  int imageWidth         = 0;
+  int imageHeight         = 0;
+  int imageWidth          = 0;
   Vec3 viewportHorizontal;
   Vec3 viewportVertical;
   Point3 viewportOrigin;
@@ -28,7 +27,7 @@ public:
   Vec3 cameraUp;
   Vec3 focalVector;
 
-  Camera(std::shared_ptr<ConfigSettings> & config);
+  Camera(ConfigSettings const & config);
 };
 
 #endif

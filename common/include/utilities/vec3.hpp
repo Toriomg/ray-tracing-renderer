@@ -16,6 +16,28 @@ struct Vec3 {
 
   constexpr Vec3() noexcept = default;
 
+  [[nodiscard]] double & operator[](size_t i) noexcept {
+    assert(i < 3);  // Solo necesitamos comprobar el límite superior
+    if (i == 0) {
+      return x;
+    };
+    if (i == 1) {
+      return y;
+    };
+    return z;
+  }
+
+  [[nodiscard]] double const & operator[](size_t i) const noexcept {
+    assert(i < 3);
+    if (i == 0) {
+      return x;
+    };
+    if (i == 1) {
+      return y;
+    };
+    return z;
+  }
+
   constexpr Vec3 & operator+=(Vec3 const & other) noexcept {
     x += other.x;
     y += other.y;
@@ -39,7 +61,7 @@ struct Vec3 {
 
   constexpr Vec3 & operator/=(double scalar) noexcept {
     assert(scalar != 0.0F and "Division by zero!");  // this in release version is not compiled
-    double inv_scalar = (1.0F / scalar);              // Multiplication is faster than division
+    const double inv_scalar = (1.0F / scalar);             // Multiplication is faster than division
     x *= inv_scalar;
     y *= inv_scalar;
     z *= inv_scalar;
@@ -128,9 +150,24 @@ using Point3 = Vec3;
 
 [[nodiscard]] constexpr Vec3 refract(Vec3 const & uv, Vec3 const & n,
                                      double etai_over_etat) noexcept {
-  auto cos_theta      = std::min(dot(-uv, n), 1.0);
-  Vec3 r_out_perp     = etai_over_etat * (uv + cos_theta * n);
-  Vec3 r_out_parallel = -std::sqrt(std::fabs(1.0F - r_out_perp.length_squared())) * n;
+  // CORRECCIÓN 1: Cálculo correcto del coseno
+  auto cos_theta   = std::min(-dot(uv, n), 1.0);
+  const double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+
+  // CORRECCIÓN 2: Verificar reflexión interna total primero
+  if (etai_over_etat * sin_theta > 1.0) {
+    return reflect(uv, n);
+  }
+
+  const Vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
+
+  // CORRECCIÓN 3: Protección numérica sin fabs
+  const double discriminant = 1.0 - r_out_perp.length_squared();
+  if (discriminant < 0) {
+    return reflect(uv, n);  // Fallback seguro
+  }
+
+  const Vec3 r_out_parallel = -std::sqrt(discriminant) * n;
   return r_out_perp + r_out_parallel;
 }
 

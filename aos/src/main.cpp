@@ -1,27 +1,33 @@
 #include "../../common/include/config_parser.hpp"
-#include "./../include/rendering_engine.hpp"
+#include "../../common/include/rendering_engine.hpp"
+#include "../../common/include/scene_parser.hpp"
+#include "camera.hpp"
+#include "dataStructs/settings_structs.hpp"
+#include "image_aos.hpp"
+#include "utilities/random.hpp"
+#include <cstddef>
 #include <iostream>
 #include <string>
+#include <vector>
 
-// File paths
-std::string const FilepathScene  = "/workspace/res/scene_scripts/scene2.txt";
-std::string const FilepathConfig = "/workspace/res/configs/config2.txt";
-std::string const FilepathOutAOS = "/workspace/outputImageAOS.ppm";
+int main(int argc, char * argv[]) {
+  std::vector<std::string> const args(argv, argv + argc);
+  if (args.size() != 4) {
+    std::cerr << "Usage: " << args[0] << " <scene_file> <config_file> <output_file>\n";
+    std::cerr << "Example: " << args[0] << " res/scene.txt res/config.txt output.ppm\n";
+    return 1;
+  }
 
-int main() {
   // Load configuration and scene
-  ConfigSettings config = loadConfigFromFile(FilepathConfig);
-  SceneSettings scene   = loadSceneFromFile(FilepathScene);
-
-  // Create shared_ptr for Camera
-  std::shared_ptr<ConfigSettings> config_ptr = std::make_shared<ConfigSettings>(config);
+  ConfigSettings config = loadConfigFromFile(args[2]);
+  SceneSettings scene   = loadSceneFromFile(args[1]);
 
   // Create random generators
   auto rngRay      = RandomGenerator(config.ray_rng_seed);
   auto rngMaterial = RandomGenerator(config.material_rng_seed);
 
   // Create camera
-  auto camera      = Camera(config_ptr);
+  auto camera      = Camera(config);
   auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
@@ -33,7 +39,7 @@ int main() {
     std::cout << "Rendering with ImageAOS..." << '\n';
     ImageAOS imageAos(imageWidth, imageHeight);
     renderImage(imageAos, camera, ctx);
-    if (!imageAos.write_to_ppm(FilepathOutAOS)) {
+    if (!imageAos.write_to_ppm(args[3])) {
       std::cerr << "Error writing ImageAOS to .ppm file\n";
     }
   }

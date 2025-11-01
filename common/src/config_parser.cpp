@@ -1,13 +1,16 @@
 #include "config_parser.hpp"
 #include "constants.hpp"
 #include "dataStructs/settings_structs.hpp"
+#include <cctype>
 #include <cerrno>
 #include <charconv>
+#include <cstddef>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <unordered_map>
 #include <vector>
 

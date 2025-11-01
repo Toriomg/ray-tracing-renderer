@@ -2,6 +2,7 @@
 #define SETTINGS_STRUCTS_HPP
 
 #include "../utilities/vec3.hpp"
+#include "constants.hpp"
 #include "material.hpp"
 #include "object.hpp"
 #include <vector>
@@ -10,14 +11,14 @@ struct ConfigSettings {
   Point3 camera_pos;
   Point3 camera_target;
   Vec3 camera_north;
-  double field_of_view;
+  double field_of_view = Constants::FOV;
   std::pair<unsigned int, unsigned int> aspect_ratio;
-  int image_width;
-  double gamma;
-  int max_depth;
-  int samples_per_pixel;
-  unsigned long material_rng_seed;
-  unsigned long ray_rng_seed;
+  int image_width                 = Constants::ImageWidth;
+  double gamma                    = Constants::Gamma;
+  int max_depth                   = Constants::MaxDepth;
+  int samples_per_pixel           = Constants::SamplesPerPixel;
+  unsigned long material_rng_seed = Constants::RNGSeedMaterial;
+  unsigned long ray_rng_seed      = Constants::RNGSeedRay;
   Color background_dark_color;
   Color background_light_color;
 };

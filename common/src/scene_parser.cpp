@@ -1,5 +1,9 @@
 #include "scene_parser.hpp"
+#include "dataStructs/aabb.hpp"
+#include "dataStructs/material.hpp"
 #include "dataStructs/settings_structs.hpp"
+#include <bits/ptr_traits.h>
+#include <cctype>
 #include <cerrno>
 #include <charconv>
 #include <cmath>
@@ -8,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 namespace {
@@ -229,8 +234,7 @@ namespace {
       std::cerr << "Error: radio del cilindro debe ser positivo\n";
       return false;
     }
-    // Check for zero axis vector
-    if (vx == 0.0 and vy == 0.0 and vz == 0.0) {
+    if (vx == 0.0 and vy == 0.0 and vz == 0.0) {  // Check for zero axis vector
       std::cerr << "Error: vector de axis del cilindro no puede ser cero\n";
       return false;
     }
@@ -239,12 +243,13 @@ namespace {
       std::cerr << "Error: material desconocido '" << tokens[8] << "' para cilindro\n";
       return false;
     }
-    // Use the existing CylinderData methods
+    double const axisLength = std::sqrt(vx * vx + vy * vy + vz * vz);
     scene.cylinders.addCentre(x, y, z);
     scene.cylinders.addAxis(vx, vy, vz);  // This will compute invAxisLen internally
     scene.cylinders.r.push_back(radius);
     scene.cylinders.materialIndex.push_back(materialIndex);
-
+    scene.cylinders.addAABB(AABB::from_cylinder({x, y, z}, {vx, vy, vz}, radius,
+                                                axisLength));  // Generamos la caja AABB
     return true;
   }
 

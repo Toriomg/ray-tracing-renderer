@@ -17,65 +17,63 @@ public:
 
   // Contructor que permite meter una esfera en una caja AABB para simplificar las intersecciones
   static AABB from_sphere(Point3 const & center, double radius) {
-    Point3 min(center.x - radius, center.y - radius, center.z - radius);
-    Point3 max(center.x + radius, center.y + radius, center.z + radius);
+    Point3 const min(center.x - radius, center.y - radius, center.z - radius);
+    Point3 const max(center.x + radius, center.y + radius, center.z + radius);
     return AABB{min, max};
   }
 
   // Mismo constructor pero para cilindros (que no siempre están alineados con los ejes)
   static AABB from_cylinder(Point3 const & center, Vec3 const & axis, double radius,
                             double height) {
-    Vec3 unit_axis = axis.normalize();
-    Vec3 half_axis = 0.5 * height * unit_axis;
-    Point3 p1      = center - half_axis;
-    Point3 p2      = center + half_axis;
+    Vec3 const unit_axis = axis.normalize();
+    Vec3 const half_axis = 0.5 * height * unit_axis;
+    Point3 const p1      = center - half_axis;
+    Point3 const p2      = center + half_axis;
 
-    Point3 min(std::min(p1.x, p2.x) - radius, std::min(p1.y, p2.y) - radius,
-               std::min(p1.z, p2.z) - radius);
-    Point3 max(std::max(p1.x, p2.x) + radius, std::max(p1.y, p2.y) + radius,
-               std::max(p1.z, p2.z) + radius);
+    Point3 const min(std::min(p1.x, p2.x) - radius, std::min(p1.y, p2.y) - radius,
+                     std::min(p1.z, p2.z) - radius);
+    Point3 const max(std::max(p1.x, p2.x) + radius, std::max(p1.y, p2.y) + radius,
+                     std::max(p1.z, p2.z) + radius);
     return AABB{min, max};
   }
 
-  [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min,
-                                      double t_max) {  // intersección de caja AABB con rayos
-    for (int axis = 0; axis < 3; ++axis) {
-      double invD = 0.0;
-      double t0   = 0.0;
-      double t1   = 0.0;
+  [[nodiscard]] static bool intersect(Ray const & r, AABB const & box, double t_min, double t_max) {
+    // Usando la implementación interna de Vec3 con el array e[3]
+    Vec3 const invDir = {1.0 / r.direction.x, 1.0 / r.direction.y, 1.0 / r.direction.z};
 
-      switch (axis) {  // stablecemos la intersección del rayo con cada eje de a caja AABB
-        case 0:        // eje X
-          invD = 1.0 / r.direction.x;
-          t0   = (box.min_point.x - r.point.x) * invD;
-          t1   = (box.max_point.x - r.point.x) * invD;
-          break;
-        case 1:  // eje Y
-          invD = 1.0 / r.direction.y;
-          t0   = (box.min_point.y - r.point.y) * invD;
-          t1   = (box.max_point.y - r.point.y) * invD;
-          break;
-        case 2:  // eje Z
-          invD = 1.0 / r.direction.z;
-          t0   = (box.min_point.z - r.point.z) * invD;
-          t1   = (box.max_point.z - r.point.z) * invD;
-          break;
-        default: continue;
-      }
-
-      if (invD < 0.0) {  // gestionamos el caso en el que la dirección del rayo es hacia atrás
-        std::swap(t0, t1);
-      }
-
-      t_min = t0 > t_min ? t0 : t_min;  // entrada del rayo en toda la caja
-      t_max = t1 < t_max ? t1 : t_max;  // primera salida del rayo de cualquiera de los ejes
-
-      if (t_max <= t_min) {  // para que haya intersección el rayo debe haber entrado a la caja (no
-                             // sale de ningún eje antes de haber entrado en todos)
-        return false;
-      }
+    // Eje X
+    double t0 = (box.min_point.x - r.point.x) * invDir.x;
+    double t1 = (box.max_point.x - r.point.x) * invDir.x;
+    if (invDir.x < 0.0) {
+      std::swap(t0, t1);
     }
-    return true;
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    if (t_max <= t_min) {
+      return false;
+    }
+
+    // Eje Y
+    t0 = (box.min_point.y - r.point.y) * invDir.y;
+    t1 = (box.max_point.y - r.point.y) * invDir.y;
+    if (invDir.y < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    if (t_max <= t_min) {
+      return false;
+    }
+
+    // Eje Z
+    t0 = (box.min_point.z - r.point.z) * invDir.z;
+    t1 = (box.max_point.z - r.point.z) * invDir.z;
+    if (invDir.z < 0.0) {
+      std::swap(t0, t1);
+    }
+    t_min = t0 > t_min ? t0 : t_min;
+    t_max = t1 < t_max ? t1 : t_max;
+    return t_max > t_min;
   }
 };
 
