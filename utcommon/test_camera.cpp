@@ -4,7 +4,6 @@
 #include "utilities/vec3.hpp"
 #include <cmath>
 #include <gtest/gtest.h>
-#include <memory>
 
 // ============================================================================
 // FIXTURE DE GOOGLETEST PARA Camera
@@ -28,14 +27,14 @@ protected:
 // Test 1: Configuración simple válida
 TEST_F(CameraTest, ValidSimpleSetup) {
   // Configuración: cámara en el origen, mirando a -Z, FOV 90, aspect 1:1
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(0, 0, 0);
-  config->camera_target = Point3(0, 0, -1);
-  config->camera_north  = Vec3(0, 1, 0);
-  config->field_of_view = 90.0;
-  config->aspect_ratio  = {1, 1};
-  config->image_width   = 100;
+  config.camera_pos    = Point3(0, 0, 0);
+  config.camera_target = Point3(0, 0, -1);
+  config.camera_north  = Vec3(0, 1, 0);
+  config.field_of_view = 90.0;
+  config.aspect_ratio  = {1, 1};
+  config.image_width   = 100;
 
   // Llamar al constructor
   Camera const camera(config);
@@ -93,14 +92,14 @@ TEST_F(CameraTest, ValidSimpleSetup) {
 // Test 2: Configuración con cámara desplazada y aspect ratio 16:9
 TEST_F(CameraTest, ValidOffsetSetup) {
   // Configuración: cámara desplazada, aspect 16:9
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(0, 2, 5);
-  config->camera_target = Point3(0, 0, 0);
-  config->camera_north  = Vec3(0, 1, 0);
-  config->field_of_view = 60.0;
-  config->aspect_ratio  = {16, 9};
-  config->image_width   = 160;
+  config.camera_pos    = Point3(0, 2, 5);
+  config.camera_target = Point3(0, 0, 0);
+  config.camera_north  = Vec3(0, 1, 0);
+  config.field_of_view = 60.0;
+  config.aspect_ratio  = {16, 9};
+  config.image_width   = 160;
 
   // Llamar al constructor
   Camera const camera(config);
@@ -139,14 +138,14 @@ TEST_F(CameraTest, ValidOffsetSetup) {
 // Test 3: Caso borde - misma posición y target (genera NaN)
 TEST_F(CameraTest, EdgeCaseSamePositionAndTarget) {
   // Configuración: pos == target (bug: focalVector = 0, normalize(0) = NaN)
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(1, 1, 1);
-  config->camera_target = Point3(1, 1, 1);
-  config->camera_north  = Vec3(0, 1, 0);
-  config->field_of_view = 90.0;
-  config->aspect_ratio  = {1, 1};
-  config->image_width   = 100;
+  config.camera_pos    = Point3(1, 1, 1);
+  config.camera_target = Point3(1, 1, 1);
+  config.camera_north  = Vec3(0, 1, 0);
+  config.field_of_view = 90.0;
+  config.aspect_ratio  = {1, 1};
+  config.image_width   = 100;
 
   // Llamar al constructor
   Camera const camera(config);
@@ -172,14 +171,14 @@ TEST_F(CameraTest, EdgeCaseSamePositionAndTarget) {
 // Test 4: FOV muy pequeño (caso borde)
 TEST_F(CameraTest, SmallFOV) {
   // Configuración: FOV muy pequeño (1 grado)
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(0, 0, 10);
-  config->camera_target = Point3(0, 0, 0);
-  config->camera_north  = Vec3(0, 1, 0);
-  config->field_of_view = 1.0;
-  config->aspect_ratio  = {1, 1};
-  config->image_width   = 100;
+  config.camera_pos    = Point3(0, 0, 10);
+  config.camera_target = Point3(0, 0, 0);
+  config.camera_north  = Vec3(0, 1, 0);
+  config.field_of_view = 1.0;
+  config.aspect_ratio  = {1, 1};
+  config.image_width   = 100;
 
   // Llamar al constructor
   Camera const camera(config);
@@ -200,14 +199,14 @@ TEST_F(CameraTest, SmallFOV) {
 // Test 5: FOV muy grande (caso borde)
 TEST_F(CameraTest, LargeFOV) {
   // Configuración: FOV muy grande (170 grados)
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(0, 0, 1);
-  config->camera_target = Point3(0, 0, 0);
-  config->camera_north  = Vec3(0, 1, 0);
-  config->field_of_view = 170.0;
-  config->aspect_ratio  = {1, 1};
-  config->image_width   = 100;
+  config.camera_pos    = Point3(0, 0, 1);
+  config.camera_target = Point3(0, 0, 0);
+  config.camera_north  = Vec3(0, 1, 0);
+  config.field_of_view = 170.0;
+  config.aspect_ratio  = {1, 1};
+  config.image_width   = 100;
 
   // Llamar al constructor
   Camera const camera(config);
@@ -228,14 +227,14 @@ TEST_F(CameraTest, LargeFOV) {
 // Test 6: Aspect ratio extremo (muy ancho)
 TEST_F(CameraTest, ExtremeAspectRatio) {
   // Configuración: aspect ratio muy ancho (32:9)
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(0, 0, 5);
-  config->camera_target = Point3(0, 0, 0);
-  config->camera_north  = Vec3(0, 1, 0);
-  config->field_of_view = 90.0;
-  config->aspect_ratio  = {32, 9};
-  config->image_width   = 320;
+  config.camera_pos    = Point3(0, 0, 5);
+  config.camera_target = Point3(0, 0, 0);
+  config.camera_north  = Vec3(0, 1, 0);
+  config.field_of_view = 90.0;
+  config.aspect_ratio  = {32, 9};
+  config.image_width   = 320;
 
   // Llamar al constructor
   Camera const camera(config);
@@ -252,14 +251,14 @@ TEST_F(CameraTest, ExtremeAspectRatio) {
 // Test 7: Cámara con north no ortogonal a focal (caso común)
 TEST_F(CameraTest, NonOrthogonalNorth) {
   // Configuración: north no perfectamente ortogonal a focalVector
-  auto config = std::make_shared<ConfigSettings>();
+  ConfigSettings config;
 
-  config->camera_pos    = Point3(5, 5, 5);
-  config->camera_target = Point3(0, 0, 0);
-  config->camera_north  = Vec3(0, 1, 0);  // north está en Y, pero focal no está en plano XZ
-  config->field_of_view = 60.0;
-  config->aspect_ratio  = {16, 9};
-  config->image_width   = 160;
+  config.camera_pos    = Point3(5, 5, 5);
+  config.camera_target = Point3(0, 0, 0);
+  config.camera_north  = Vec3(0, 1, 0);  // north está en Y, pero focal no está en plano XZ
+  config.field_of_view = 60.0;
+  config.aspect_ratio  = {16, 9};
+  config.image_width   = 160;
 
   // Llamar al constructor
   Camera const camera(config);
