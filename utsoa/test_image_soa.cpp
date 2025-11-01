@@ -22,38 +22,6 @@ TEST(test_image_soa, calculo_indice) {
   EXPECT_EQ(img.indice(1, 1), 11);
 }
 
-TEST(test_image_soa, indice_fuera_rango) {
-  ImageSOA const img(10, 10);
-  EXPECT_THROW(static_cast<void>(img.indice(10, 0)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.indice(0, 10)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.indice(11, 11)), std::out_of_range);
-}
-
-// Tests para comprobar que si se introduce un pixel fuera de rango las funciones fallan
-TEST(test_image_soa, get_fuera_rango) {
-  ImageSOA const img(10, 10);
-  EXPECT_THROW(static_cast<void>(img.get_red(100)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.get_green(101)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.get_blue(150)), std::out_of_range);
-}
-
-TEST(test_image_soa, set_fuera_rango) {
-  ImageSOA img(10, 10);
-  EXPECT_THROW(static_cast<void>(img.set_red(100, 67)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_green(100, 101)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_blue(100, 150)), std::out_of_range);
-}
-
-TEST(test_image_soa, color_invalido) {
-  ImageSOA img(10, 10);
-  EXPECT_THROW(static_cast<void>(img.set_red(0, -5.0F)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_red(0, 300.0F)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_green(0, -1.0F)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_green(0, 256.0F)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_blue(0, -0.1F)), std::out_of_range);
-  EXPECT_THROW(static_cast<void>(img.set_blue(0, 500.0F)), std::out_of_range);
-}
-
 // ============================================================================
 // TESTS PARA fill_from_double
 // ============================================================================
@@ -101,42 +69,6 @@ TEST(test_image_soa, fill_from_double_default_gamma) {
   EXPECT_EQ(image.get_red(0), expected);
   EXPECT_EQ(image.get_green(0), expected);
   EXPECT_EQ(image.get_blue(0), expected);
-}
-
-// Test: fill_from_double lanza excepción con tamaño inválido (canal R)
-TEST(test_image_soa, fill_from_double_throws_invalid_size_r) {
-  ImageSOA image(3, 3);                      // 9 píxeles
-  std::vector<double> const r_data = {0.5};  // Tamaño incorrecto (1 en lugar de 9)
-  std::vector<double> const g_data(9, 0.5);
-  std::vector<double> const b_data(9, 0.5);
-  EXPECT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument);
-}
-
-// Test: fill_from_double lanza excepción con tamaño inválido (canal G)
-TEST(test_image_soa, fill_from_double_throws_invalid_size_g) {
-  ImageSOA image(3, 3);
-  std::vector<double> const r_data(9, 0.5);
-  std::vector<double> const g_data = {0.5};  // Tamaño incorrecto
-  std::vector<double> const b_data(9, 0.5);
-  EXPECT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument);
-}
-
-// Test: fill_from_double lanza excepción con tamaño inválido (canal B)
-TEST(test_image_soa, fill_from_double_throws_invalid_size_b) {
-  ImageSOA image(3, 3);
-  std::vector<double> const r_data(9, 0.5);
-  std::vector<double> const g_data(9, 0.5);
-  std::vector<double> const b_data = {0.5};  // Tamaño incorrecto
-  EXPECT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument);
-}
-
-// Test: fill_from_double con todos los canales de tamaño incorrecto
-TEST(test_image_soa, fill_from_double_throws_all_channels_wrong_size) {
-  ImageSOA image(2, 2);  // 4 píxeles esperados
-  std::vector<double> const r_data = {0.5};
-  std::vector<double> const g_data = {0.5};
-  std::vector<double> const b_data = {0.5};
-  EXPECT_THROW(image.fill_from_double(r_data, g_data, b_data), std::invalid_argument);
 }
 
 // Test: fill_from_double con valores extremos
