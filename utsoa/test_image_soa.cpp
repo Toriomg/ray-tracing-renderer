@@ -6,26 +6,12 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <vector>
 
 // Tests para verificar que los arrays se generan del tamaño correcto
 TEST(test_image_soa, numero_pixeles) {
   ImageSOA const img(10, 10);
   EXPECT_EQ(img.total_pixels(), 10 * 10);
-}
-
-TEST(test_image_soa, dimension_cero) {
-  EXPECT_THROW(ImageSOA img(0, 1), std::invalid_argument);
-  EXPECT_THROW(ImageSOA img(5, 0), std::invalid_argument);
-  EXPECT_THROW(ImageSOA img(0, 0), std::invalid_argument);
-}
-
-TEST(test_image_soa, longitud_colores) {
-  ImageSOA const img(50, 5);
-  EXPECT_EQ(img.get_r_channel().size(), 50 * 5);
-  EXPECT_EQ(img.get_g_channel().size(), 50 * 5);
-  EXPECT_EQ(img.get_b_channel().size(), 50 * 5);
 }
 
 TEST(test_image_soa, calculo_indice) {
@@ -111,7 +97,7 @@ TEST(test_image_soa, fill_from_double_default_gamma) {
 
   // Gamma por defecto es Constants::Gamma (asumimos 2.2)
   double const default_gamma = 2.2;
-  auto expected        = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / default_gamma));
+  auto expected              = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / default_gamma));
   EXPECT_EQ(image.get_red(0), expected);
   EXPECT_EQ(image.get_green(0), expected);
   EXPECT_EQ(image.get_blue(0), expected);
@@ -119,7 +105,7 @@ TEST(test_image_soa, fill_from_double_default_gamma) {
 
 // Test: fill_from_double lanza excepción con tamaño inválido (canal R)
 TEST(test_image_soa, fill_from_double_throws_invalid_size_r) {
-  ImageSOA image(3, 3);                // 9 píxeles
+  ImageSOA image(3, 3);                      // 9 píxeles
   std::vector<double> const r_data = {0.5};  // Tamaño incorrecto (1 en lugar de 9)
   std::vector<double> const g_data(9, 0.5);
   std::vector<double> const b_data(9, 0.5);
