@@ -5,7 +5,6 @@
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/renderer.hpp"
 #include "../../common/include/utilities/random.hpp"
-#include <iostream>
 
 // RenderContext struct
 struct RenderContext {
