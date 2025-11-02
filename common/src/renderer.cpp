@@ -118,68 +118,6 @@ std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Poin
   return Intersection{t, p, normal};
 }
 
-std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
-    Ray const & r, CylinderGeometry const & cyl, double closest_t) {
-  Vec3 const oc      = r.point - cyl.center;
-  Vec3 const dr_perp = component_perpendicular(r.direction, cyl.unit_axis);
-  Vec3 const rc_perp = component_perpendicular(oc, cyl.unit_axis);
-  double const a     = dr_perp.length_squared();
-
-  if (std::fabs(a) < 1e-8) {  // Evitar división por cero si el rayo es paralelo al eje.
-    return std::nullopt;
-  }
-
-  double const b     = 2.0 * dot(rc_perp, dr_perp);
-  double const c     = rc_perp.length_squared() - cyl.radius * cyl.radius;
-  double const discr = b * b - 4 * a * c;
-
-  if (discr < 0) {
-    return std::nullopt;
-  }
-
-  // --- Lógica corregida para comprobar AMBAS raíces ---
-  double const sqrt_discr  = std::sqrt(discr);
-  double const half_height = cyl.height * 0.5;
-  std::optional<Intersection> best_hit;
-
-  // 1. Evaluar la primera raíz (la más cercana al origen del rayo)
-  double const t1 = (-b - sqrt_discr) / (2.0 * a);
-  if (t1 > 0.001 and t1 < closest_t) {
-    Point3 const p1          = r.at(t1);
-    double const projection1 = dot(p1 - cyl.center, cyl.unit_axis);
-
-    // Comprobamos si esta intersección está dentro de las tapas del cilindro
-    if (std::fabs(projection1) <= half_height) {
-      // Si es válida, la guardamos como nuestra mejor candidata hasta ahora.
-      Vec3 const unscaled_normal = component_perpendicular(p1 - cyl.center, cyl.unit_axis);
-      Vec3 const normal          = unscaled_normal / cyl.radius;
-      best_hit                   = Intersection{t1, p1, normal};
-    }
-  }
-
-  // 2. Evaluar la segunda raíz
-  double const t2 = (-b + sqrt_discr) / (2.0 * a);
-
-  // Determinamos la distancia más cercana actual para no evaluar innecesariamente
-  double const current_closest = best_hit ? best_hit->t : closest_t;
-
-  if (t2 > 0.001 and t2 < current_closest) {
-    Point3 const p2          = r.at(t2);
-    double const projection2 = dot(p2 - cyl.center, cyl.unit_axis);
-
-    // Comprobamos si esta intersección está dentro de las tapas del cilindro
-    if (std::fabs(projection2) <= half_height) {
-      // Si es válida Y más cercana que la anterior, la guardamos.
-      Vec3 const unscaled_normal = component_perpendicular(p2 - cyl.center, cyl.unit_axis);
-      Vec3 const normal          = unscaled_normal / cyl.radius;
-      best_hit                   = Intersection{t2, p2, normal};
-    }
-  }
-
-  return best_hit;  // Devolvemos la mejor intersección encontrada (o nullopt si ninguna fue válida)
-  // --- FIN DE LA LÓGICA CORREGIDA ---
-}
-
 void Renderer::updateBestHit(std::optional<Intersection> & best, double & closest,
                              std::optional<Intersection> const & new_hit) {
   if (new_hit and new_hit->t < closest) {
@@ -188,27 +126,14 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
   }
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
-    SceneSettings const & scene, size_t idx, Ray const & r,
-    double closest_t) {  // Ray debe ser const&
-  // --- 1. Obtener datos directamente de la estructura SoA ---
-  Point3 const center = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]};
-  Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
-  double const radius = scene.cylinders.r[idx];
-  double const inv_len = scene.cylinders.invAxisLen[idx];
-  double const height  = 1.0 / inv_len;
-
-  Vec3 const unit_axis     = raw_axis * inv_len;
-  double const half_height = height * 0.5;
-  double const radius_sq   = radius * radius;
-
-  std::optional<Intersection> best_hit;
-  double t_max = closest_t;
-
-  // --- 2. Intersección Lateral (más eficiente) ---
-  Vec3 const oc      = r.point - center;
-  Vec3 const dr_perp = component_perpendicular(r.direction, unit_axis);
-  Vec3 const oc_perp = component_perpendicular(oc, unit_axis);
+std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
+    Ray const & r, CylinderGeometry const & cyl, double closest_t,
+    std::optional<Intersection> & best_hit) {
+  double const half_height = cyl.height * 0.5;
+  double const radius_sq   = cyl.radius * cyl.radius;
+  Vec3 const oc            = r.point - cyl.center;  // intersección lateral
+  Vec3 const dr_perp       = component_perpendicular(r.direction, cyl.unit_axis);
+  Vec3 const oc_perp       = component_perpendicular(oc, cyl.unit_axis);
 
   double const a = dr_perp.length_squared();
   if (std::fabs(a) > 1e-8) {
@@ -221,52 +146,64 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(
       double const inv_2a     = 1.0 / (2.0 * a);
       double t                = (-b - sqrt_discr) * inv_2a;  // Raíz más cercana
 
-      if (t > 0.001 and t < t_max) {
+      if (t > 0.001 and t < closest_t) {
         Point3 const p = r.at(t);
-        if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
-          Vec3 const normal = component_perpendicular(p - center, unit_axis);
+        if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
+          Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
           best_hit          = Intersection{t, p, normal};
-          t_max             = t;
+          closest_t         = t;
         }
       }
-      // Solo comprobamos la segunda raíz si la primera no fue válida Y está dentro del rango
-      if (!best_hit) {
+      if (!best_hit) {  // segunda raiz
         t = (-b + sqrt_discr) * inv_2a;
-        if (t > 0.001 and t < t_max) {
+        if (t > 0.001 and t < closest_t) {
           Point3 const p = r.at(t);
-          if (std::fabs(dot(p - center, unit_axis)) <= half_height) {
-            Vec3 const normal = component_perpendicular(p - center, unit_axis);
+          if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
+            Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
             best_hit          = Intersection{t, p, normal};
-            t_max             = t;
+            closest_t         = t;
           }
         }
       }
     }
   }
+  return best_hit;
+}
 
-  // --- 3. Intersección con Tapas (usando el t_max actualizado) ---
-  // Tapa superior
-  Point3 const top_center = center + unit_axis * half_height;
+std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
+                                                             size_t idx, Ray const & r,
+                                                             double closest_t) {
+  Point3 const center = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]};
+  Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
+  double const radius = scene.cylinders.r[idx];
+  double const inv_len     = scene.cylinders.invAxisLen[idx];
+  double const height      = 1.0 / inv_len;
+  Vec3 const unit_axis     = raw_axis * inv_len;
+  double const half_height = height * 0.5;
+  double const radius_sq   = radius * radius;
+  std::optional<Intersection> best_hit;
+  double t_max = closest_t;
+
+  CylinderGeometry cyl_geo = {center, unit_axis, radius, height};  // intersección lateral
+  intersectLateralSurface(r, cyl_geo, t_max, best_hit);
+
+  Point3 const top_center = center + unit_axis * half_height;  // tapa superior
   if (auto cap_hit = intersectCap(r, top_center, unit_axis, radius_sq)) {
     if (cap_hit->t < t_max) {
       best_hit = cap_hit;
       t_max    = cap_hit->t;
     }
   }
-
-  // Tapa inferior
-  Point3 const bottom_center = center - unit_axis * half_height;
+  Point3 const bottom_center = center - unit_axis * half_height;  // Tapa inferior
   if (auto cap_hit = intersectCap(r, bottom_center, -unit_axis, radius_sq)) {
     if (cap_hit->t < t_max) {
       best_hit = cap_hit;
     }
   }
 
-  // --- 4. Construir el HitRecord final ---
-  if (!best_hit) {
+  if (!best_hit) {  // hitrecord final
     return std::nullopt;
   }
-
   HitRecord rec;
   rec.t                  = best_hit->t;
   rec.p                  = best_hit->p;
