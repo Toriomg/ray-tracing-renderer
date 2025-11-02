@@ -4,10 +4,7 @@ import tempfile
 import sys
 import os
 import traceback
-
-# --- CONFIGURACIÓN ---
-# ¡IMPORTANTE! Cambia esta ruta para que apunte a tu ejecutable compilado.
-EXECUTABLE_PATH = "/workspace/out/build/default/aos/Release/render-aos"
+import argparse
 
 # --- CONTENIDO DE ARCHIVOS VÁLIDOS (PARA USAR COMO BASE) ---
 VALID_CONFIG_CONTENT = """
@@ -18,20 +15,19 @@ gamma: 2.2
 VALID_SCENE_CONTENT = "matte: default_mat 1 1 1\nsphere: 0 0 0 1 default_mat\n"
 
 # --- FUNCIÓN HELPER PARA EJECUTAR EL PROGRAMA ---
-def run_executable(scene_path, config_path, output_path):
+def run_executable(executable_path, scene_path, config_path, output_path):
     """Ejecuta el programa C++ y captura su salida."""
-    command = [EXECUTABLE_PATH, str(scene_path), str(config_path), str(output_path)]
-    if not os.path.exists(EXECUTABLE_PATH):
+    command = [executable_path, str(scene_path), str(config_path), str(output_path)]
+    if not os.path.exists(executable_path):
         raise FileNotFoundError(
-            f"El ejecutable no se encontró en '{EXECUTABLE_PATH}'. Por favor, edita la ruta en el script."
+            f"El ejecutable no se encontró en '{executable_path}'."
         )
     result = subprocess.run(command, capture_output=True, text=True, encoding='utf-8')
     return result.stderr, result.returncode
 
 # --- DEFINICIÓN DE LAS PRUEBAS ---
-# Cada aserción ahora tiene un mensaje de error detallado.
 
-def test_success_valid_files():
+def test_success_valid_files(executable_path):
     """FICHERO DE ESTUDIO: ambos. OBJETO DE PRUEBA: Escena y configuración validas."""
     with tempfile.TemporaryDirectory() as temp_dir:
         d = Path(temp_dir)
@@ -46,11 +42,11 @@ def test_success_valid_files():
         """.replace(';', '\n')
         config_path.write_text(VALID_CONFIG_CONTENT)
         scene_path.write_text(scene_from_spreadsheet)
-        stderr, code = run_executable(scene_path, config_path, output_path)
+        stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
         assert code == 0, f"El programa falló con archivos válidos (código {code}).\n    STDERR OBTENIDO:\n---\n{stderr.strip()}\n---"
         assert stderr == "", f"Se esperaba un stderr vacío, pero se obtuvo:\n---\n{stderr.strip()}\n---"
 
-def test_config_unrecognized_keys():
+def test_config_unrecognized_keys(executable_path):
     """FICHERO DE ESTUDIO: configuracion. OBJETO DE PRUEBA: Etiquetas no reconocidas."""
     cases = [
         ("image_widt:", "Error: Unknown configuration key: [image_widt:]"),
@@ -62,11 +58,11 @@ def test_config_unrecognized_keys():
             config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
             config_path.write_text(line + "\n")
             scene_path.write_text(VALID_SCENE_CONTENT)
-            stderr, code = run_executable(scene_path, config_path, output_path)
+            stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
             assert code != 0, f"Caso '{line}' tuvo éxito, pero se esperaba un error."
             assert expected_err in stderr, f"Caso '{line}' no produjo el error esperado.\n    ESPERADO CONTENER: '{expected_err}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_config_invalid_values():
+def test_config_invalid_values(executable_path):
     """FICHERO DE ESTUDIO: configuracion. OBJETO DE PRUEBA: Valores invalidos."""
     cases = [
         "aspect_ratio: 1 0", "aspect_ratio: 0 1", "aspect_ratio: invalido", "image_width: 0",
@@ -80,7 +76,7 @@ def test_config_invalid_values():
             config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
             config_path.write_text(line + "\n")
             scene_path.write_text(VALID_SCENE_CONTENT)
-            stderr, code = run_executable(scene_path, config_path, output_path)
+            stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
             key = line.split()[0]
             expected_err_1 = f"Error: Invalid value for key: [{key}]"
             expected_err_2 = f"Line: \"{line}\""
@@ -88,19 +84,19 @@ def test_config_invalid_values():
             assert expected_err_1 in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER: '{expected_err_1}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
             assert expected_err_2 in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER: '{expected_err_2}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_scene_unrecognized_entity():
+def test_scene_unrecognized_entity(executable_path):
     """FICHERO DE ESTUDIO: descripción. OBJETO DE PRUEBA: etiquetas no reconocidas."""
     with tempfile.TemporaryDirectory() as temp_dir:
         d = Path(temp_dir)
         config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
         config_path.write_text(VALID_CONFIG_CONTENT)
         scene_path.write_text("pyramid:\n")
-        stderr, code = run_executable(scene_path, config_path, output_path)
+        stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
         expected_err = "Error: Unknown scene entity: pyramid"
         assert code != 0, "El programa tuvo éxito con una entidad desconocida, pero se esperaba un error."
         assert expected_err in stderr, f"No se produjo el error esperado.\n    ESPERADO CONTENER: '{expected_err}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_scene_insufficient_info():
+def test_scene_insufficient_info(executable_path):
     """FICHERO DE ESTUDIO: descripción. OBJETO DE PRUEBA: información insuficiente."""
     cases = [
         ("matte: mat 0.8 0.1", "Error: Invalid matte parameters"),
@@ -115,12 +111,12 @@ def test_scene_insufficient_info():
             config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
             config_path.write_text(VALID_CONFIG_CONTENT)
             scene_path.write_text("metal: met1 1 1 1 0\n" + line + "\n")
-            stderr, code = run_executable(scene_path, config_path, output_path)
+            stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
             assert code != 0, f"Caso '{line}' tuvo éxito, pero se esperaba un error."
             assert expected_err in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER: '{expected_err}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
             assert f"Line: \"{line}\"" in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER LA LÍNEA DEL ERROR.\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_scene_excessive_info():
+def test_scene_excessive_info(executable_path):
     """FICHERO DE ESTUDIO: descripción. OBJETO DE PRUEBA: información excesiva."""
     cases = [
         ("refractive: ref 0.3 2", "refractive:", "\"2\""),
@@ -133,7 +129,7 @@ def test_scene_excessive_info():
             config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
             config_path.write_text(VALID_CONFIG_CONTENT)
             scene_path.write_text("matte: mat1 1 1 1\nmetal: metal1 1 1 1 0\n" + line + "\n")
-            stderr, code = run_executable(scene_path, config_path, output_path)
+            stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
             expected_err_1 = f"Error: Extra data after configuration value for key: [{key}]"
             expected_err_2 = f"Extra: {extra}"
             expected_err_3 = f"Line: \"{line}\""
@@ -142,7 +138,7 @@ def test_scene_excessive_info():
             assert expected_err_2 in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER: '{expected_err_2}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
             assert expected_err_3 in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER: '{expected_err_3}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_scene_invalid_info():
+def test_scene_invalid_info(executable_path):
     """FICHERO DE ESTUDIO: descripción. OBJETO DE PRUEBA: información invalida."""
     cases = [
         ("matte: mat 8 a 7", "Error: Invalid matte parameters"),
@@ -157,12 +153,12 @@ def test_scene_invalid_info():
             config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
             config_path.write_text(VALID_CONFIG_CONTENT)
             scene_path.write_text("matte: mat1 1 1 1\nrefractive: ref1 1.3\n" + line + "\n")
-            stderr, code = run_executable(scene_path, config_path, output_path)
+            stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
             assert code != 0, f"Caso '{line}' tuvo éxito, pero se esperaba un error."
             assert expected_err in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER: '{expected_err}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
             assert f"Line: \"{line}\"" in stderr, f"Caso '{line}'.\n    ESPERADO CONTENER LA LÍNEA DEL ERROR.\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_scene_duplicate_material():
+def test_scene_duplicate_material(executable_path):
     """FICHERO DE ESTUDIO: descripción. OBJETO DE PRUEBA: materiales repetidos."""
     line = "matte: matA 0.1 0.2 0.3"
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -170,14 +166,14 @@ def test_scene_duplicate_material():
         config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
         config_path.write_text(VALID_CONFIG_CONTENT)
         scene_path.write_text("matte: matA 0.8 0.1 0.7\n" + line + "\n")
-        stderr, code = run_executable(scene_path, config_path, output_path)
+        stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
         expected_err_1 = "Error: Material with name [matA] already exists"
         expected_err_2 = f"Line: \"{line}\""
         assert code != 0, "El programa tuvo éxito con material duplicado, pero se esperaba un error."
         assert expected_err_1 in stderr, f"No se produjo el error de material duplicado.\n    ESPERADO CONTENER: '{expected_err_1}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
         assert expected_err_2 in stderr, f"No se mostró la línea del error para material duplicado.\n    ESPERADO CONTENER: '{expected_err_2}'\n    STDERR OBTENIDO: '{stderr.strip()}'"
 
-def test_scene_material_not_found():
+def test_scene_material_not_found(executable_path):
     """FICHERO DE ESTUDIO: descripción. OBJETO DE PRUEBA: materiales no existentes."""
     line = "sphere: -5 6 7 10 inex"
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -185,7 +181,7 @@ def test_scene_material_not_found():
         config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
         config_path.write_text(VALID_CONFIG_CONTENT)
         scene_path.write_text(line + "\n")
-        stderr, code = run_executable(scene_path, config_path, output_path)
+        stderr, code = run_executable(executable_path, scene_path, config_path, output_path)
         expected_err_1 = "Error: Material not found: [inex]"
         expected_err_2 = f"Line: \"{line}\""
         assert code != 0, "El programa tuvo éxito con material no encontrado, pero se esperaba un error."
@@ -194,9 +190,20 @@ def test_scene_material_not_found():
 
 # --- TEST RUNNER MANUAL ---
 def main():
-    """Ejecuta todas las pruebas y reporta un resumen."""
-    # Se eliminó la prueba de valores por defecto de la lista principal
-    # ya que no está en la hoja de cálculo y puede ser confusa.
+    """Analiza los argumentos, ejecuta todas las pruebas y reporta un resumen."""
+    
+    parser = argparse.ArgumentParser(
+        description="Suite de pruebas funcionales para el renderizador."
+    )
+    parser.add_argument(
+        'executable_path',
+        help="Ruta al ejecutable del renderizador que se va a probar."
+    )
+    args = parser.parse_args()
+
+    executable_path = args.executable_path
+
+    # Eliminamos la prueba de valores por defecto que no estaba en la hoja de cálculo
     tests_to_run = [
         test_success_valid_files,
         test_config_unrecognized_keys,
@@ -217,12 +224,11 @@ def main():
         test_name = test_func.__name__
         print(f"Running: {test_name}...")
         try:
-            test_func()
+            test_func(executable_path)
             print("  -> \033[92mPASSED\033[0m")
             passed_count += 1
         except AssertionError as e:
             print(f"  -> \033[91mFAILED\033[0m")
-            # Imprimir el mensaje de error de la aserción, que ahora es detallado
             print(f"    \033[91mReason: {e}\033[0m")
             failed_count += 1
         except Exception as e:
