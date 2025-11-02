@@ -5,6 +5,9 @@
 #include "../../common/include/utilities/color_utils.hpp"
 #include <../../common/include/utilities/vec3.hpp>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <string>
 #include <vector>
 
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario

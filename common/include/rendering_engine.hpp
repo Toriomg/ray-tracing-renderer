@@ -34,9 +34,6 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
   for (size_t row = 0; row < imageHeight; row++) {
-    std::cerr << "\rScanlines remaining: " << imageHeight - 1 - row
-              << ". Porcentage: " << 100 * (imageHeight - 1 - row) / imageHeight << "% "
-              << std::flush;
     for (size_t col = 0; col < imageWidth; col++) {
       Color accumulated_color(0.0, 0.0, 0.0);
 
@@ -60,7 +57,6 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
       image.set_pixel(index, final_pixel_color, ctx.config->gamma);
     }
   }
-  std::cerr << "\n";
 }
 
 #endif

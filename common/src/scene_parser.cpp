@@ -131,9 +131,13 @@ namespace {
 
   ParseResult parseMatteMaterial(std::vector<std::string_view> const & tokens,
                                  SceneSettings & scene) {
-    if (tokens.size() != 5) {
+    if (tokens.size() < 5) {
       return ParseResult(ParseError::InvalidParameters);
     }
+    if (tokens.size() > 5) {
+      return {ParseError::ExtraData, join_tokens(tokens, 5)};
+    }
+
     if (findMaterialIndex(tokens[1], scene) != -1) {
       return {ParseError::DuplicateMaterialName, std::string(tokens[1])};
     }
@@ -163,9 +167,13 @@ namespace {
 
   ParseResult parseMetalMaterial(std::vector<std::string_view> const & tokens,
                                  SceneSettings & scene) {
-    if (tokens.size() != 6) {
+    if (tokens.size() < 6) {
       return ParseResult(ParseError::InvalidParameters);
     }
+    if (tokens.size() > 6) {
+      return {ParseError::ExtraData, join_tokens(tokens, 6)};
+    }
+
     if (findMaterialIndex(tokens[1], scene) != -1) {
       return {ParseError::DuplicateMaterialName, std::string(tokens[1])};
     }
@@ -198,9 +206,15 @@ namespace {
 
   ParseResult parseRefractiveMaterial(std::vector<std::string_view> const & tokens,
                                       SceneSettings & scene) {
-    if (tokens.size() != 3) {
+    // Comprueba si faltan parámetros
+    if (tokens.size() < 3) {
       return ParseResult(ParseError::InvalidParameters);
     }
+    // Comprueba si sobran parámetros
+    if (tokens.size() > 3) {
+      return {ParseError::ExtraData, join_tokens(tokens, 3)};
+    }
+
     if (findMaterialIndex(tokens[1], scene) != -1) {
       return {ParseError::DuplicateMaterialName, std::string(tokens[1])};
     }

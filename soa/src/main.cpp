@@ -5,6 +5,7 @@
 #include "../../common/include/scene_parser.hpp"
 #include "../../common/include/utilities/random.hpp"
 #include "image_soa.hpp"
+#include <cstddef>
 #include <iostream>
 #include <optional>
 #include <string>

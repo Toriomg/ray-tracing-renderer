@@ -291,7 +291,7 @@ namespace {
       return {ParseError::ExtraData, join_tokens(tokens, 2)};
     }
     unsigned long seed = 0;
-    if (!parseUnsignedLong(tokens[1], seed)) {
+    if (!parseUnsignedLong(tokens[1], seed) or seed <= 0) {
       return ParseResult(ParseError::InvalidValue);
     }
     config.material_rng_seed = seed;
@@ -307,7 +307,7 @@ namespace {
       return {ParseError::ExtraData, join_tokens(tokens, 2)};
     }
     unsigned long seed = 0;
-    if (!parseUnsignedLong(tokens[1], seed)) {
+    if (!parseUnsignedLong(tokens[1], seed) or seed <= 0) {
       return ParseResult(ParseError::InvalidValue);
     }
     config.ray_rng_seed = seed;
