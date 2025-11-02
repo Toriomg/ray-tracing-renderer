@@ -1,6 +1,7 @@
 #include "config_parser.hpp"
 #include "constants.hpp"
 #include "dataStructs/settings_structs.hpp"
+#include "utilities/vec3.hpp"
 
 #include <cctype>
 #include <charconv>
@@ -9,13 +10,14 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <unordered_map>
-#include <utility>  // Para std::move
+#include <utility>
 #include <vector>
 
 // --- Espacio de nombres anónimo para helpers internos del parser ---
