@@ -10,11 +10,11 @@
 // RenderContext struct
 struct RenderContext {
   SceneSettings * scene;
-  ConfigSettings * config;
+  ConfigSettings const * config;
   RandomGenerator * rngRay;
   RandomGenerator * rngMaterial;
 
-  RenderContext(SceneSettings * scn, ConfigSettings * cfg, RandomGenerator * rngR,
+  RenderContext(SceneSettings * scn, ConfigSettings const * cfg, RandomGenerator * rngR,
                 RandomGenerator * rngM)
       : scene(scn), config(cfg), rngRay(rngR), rngMaterial(rngM) { }
 };

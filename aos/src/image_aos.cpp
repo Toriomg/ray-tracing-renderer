@@ -1,3 +1,5 @@
+// no hacemos comprobaciones porque la mayoría ya se incluyen en el parser y en la configuración
+
 #include "../include/image_aos.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"

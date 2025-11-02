@@ -43,7 +43,6 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
     MaterialContext const ctx(
         &scene, &config,
         &materialRng);  // Creamos el contexto de material usando punteros en lugar de referencias
-
     switch (material_id.type) {
       case MATTE:      return Renderer::matteColor(material_id, ctx, *hit_rec);
       case METAL:      return Renderer::metalColor(material_id, ctx, *hit_rec);
