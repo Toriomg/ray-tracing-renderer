@@ -263,87 +263,81 @@ TEST_F(ImageSOAIOTest, WriteToPPMInvalidPath) {
 }
 
 // Test: write_to_ppm con imagen compleja (varios píxeles)
-TEST_F(ImageSOAIOTest, WriteToPPMComplexImage) {
-  // Configuración: imagen de 3x2 (6 píxeles)
-  ImageSOA image(3, 2);
+namespace {
 
-  // Establecer píxeles con diferentes colores (usando valores 0.0 y 1.0 para simplicidad)
-  // Fila 0: Rojo, Verde, Azul
-  image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
-  image.set_pixel(1, Color(0.0, 1.0, 0.0));  // Verde
-  image.set_pixel(2, Color(0.0, 0.0, 1.0));  // Azul
-
-  // Fila 1: Amarillo, Magenta, Cian
-  image.set_pixel(3, Color(1.0, 1.0, 0.0));  // Amarillo
-  image.set_pixel(4, Color(1.0, 0.0, 1.0));  // Magenta
-  image.set_pixel(5, Color(0.0, 1.0, 1.0));  // Cian
-
-  // Definir nombre de archivo temporal
-  std::string const filename = "test_soa.ppm";
-
-  // Llamar a write_to_ppm
-  bool const result = image.write_to_ppm(filename);
-
-  // Verificar que la función devolvió true
-  EXPECT_TRUE(result) << "write_to_ppm debe devolver true para imagen válida";
-
-  // Verificar el contenido del archivo
-  std::ifstream file(filename);
-  ASSERT_TRUE(file.is_open()) << "El archivo debe existir y ser legible";
-
-  // Leer y verificar la cabecera PPM
-  std::string line;
-
-  // Línea 1: "P3"
-  std::getline(file, line);
-  EXPECT_EQ(line, "P3");
-
-  // Línea 2: Dimensiones "3 2"
-  std::getline(file, line);
-  EXPECT_EQ(line, "3 2") << "Dimensiones deben ser '3 2'";
-
-  // Línea 3: Valor máximo "255"
-  std::getline(file, line);
-  EXPECT_EQ(line, "255");
-
-  // Leer y verificar los 6 píxeles (solo verificamos valores extremos 0 y 255)
-  std::vector<std::tuple<bool, bool, bool>> expected_channels = {
-    { true, false, false}, // Rojo: R=255, G=0, B=0
-    {false,  true, false}, // Verde: R=0, G=255, B=0
-    {false, false,  true}, // Azul: R=0, G=0, B=255
-    { true,  true, false}, // Amarillo: R=255, G=255, B=0
-    { true, false,  true}, // Magenta: R=255, G=0, B=255
-    {false,  true,  true}  // Cian: R=0, G=255, B=255
+  // Estructura Auxiliar para representar el color de un píxel en formato 0-255
+  struct ExpectedPixel {
+    int r, g, b;
   };
 
-  for (size_t i = 0; i < expected_channels.size(); ++i) {
-    int r = 0;
-    int g = 0;
-    int b = 0;
-    file >> r >> g >> b;
+  // Función Auxiliar para Verificar la Cabecera de un archivo PPM
+  void verifyPPMHeader(std::ifstream & file, int expected_width, int expected_height) {
+    std::string line;
+    ASSERT_TRUE(std::getline(file, line));
+    EXPECT_EQ(line, "P3");
 
-    auto [expect_r_max, expect_g_max, expect_b_max] = expected_channels[i];
+    ASSERT_TRUE(std::getline(file, line));
+    EXPECT_EQ(line, std::to_string(expected_width) + " " + std::to_string(expected_height));
 
-    if (expect_r_max) {
-      EXPECT_EQ(r, 255) << "Píxel " << i << ": componente R debe ser 255";
-    } else {
-      EXPECT_EQ(r, 0) << "Píxel " << i << ": componente R debe ser 0";
-    }
-
-    if (expect_g_max) {
-      EXPECT_EQ(g, 255) << "Píxel " << i << ": componente G debe ser 255";
-    } else {
-      EXPECT_EQ(g, 0) << "Píxel " << i << ": componente G debe ser 0";
-    }
-
-    if (expect_b_max) {
-      EXPECT_EQ(b, 255) << "Píxel " << i << ": componente B debe ser 255";
-    } else {
-      EXPECT_EQ(b, 0) << "Píxel " << i << ": componente B debe ser 0";
-    }
+    ASSERT_TRUE(std::getline(file, line));
+    EXPECT_EQ(line, "255");
   }
 
-  // Cerrar el archivo
+  // Función Auxiliar para Verificar un Píxel Específico
+  void verifyPixel(std::ifstream & file, size_t pixel_index, ExpectedPixel const & expected_color) {
+    int r = 0, g = 0, b = 0;
+    // Ahora los tipos coinciden, la advertencia desaparece.
+    ASSERT_TRUE(file >> r >> g >> b) << "Fallo al leer los datos del píxel " << pixel_index;
+
+    EXPECT_EQ(r, expected_color.r) << "Píxel " << pixel_index << ": componente R incorrecto";
+    EXPECT_EQ(g, expected_color.g) << "Píxel " << pixel_index << ": componente G incorrecto";
+    EXPECT_EQ(b, expected_color.b) << "Píxel " << pixel_index << ": componente B incorrecto";
+  }
+
+}  // namespace
+
+// --- PRUEBA PRINCIPAL (AHORA SIMPLIFICADA) ---
+TEST_F(ImageSOAIOTest, WriteToPPMComplexImage) {
+  // 1. Arrange (Preparar)
+  ImageSOA image(3, 2);
+  image.set_pixel(0, Color(1.0, 0.0, 0.0));
+  image.set_pixel(1, Color(0.0, 1.0, 0.0));
+  image.set_pixel(2, Color(0.0, 0.0, 1.0));
+  image.set_pixel(3, Color(1.0, 1.0, 0.0));
+  image.set_pixel(4, Color(1.0, 0.0, 1.0));
+  image.set_pixel(5, Color(0.0, 1.0, 1.0));
+
+  std::string const filename = "test_soa.ppm";
+
+  // 2. Act (Actuar)
+  bool const result = image.write_to_ppm(filename);
+  EXPECT_TRUE(result) << "write_to_ppm debe devolver true para una operación exitosa";
+
+  // 3. Assert (Verificar)
+  std::ifstream file(filename);
+  ASSERT_TRUE(file.is_open()) << "El archivo PPM no se pudo abrir para verificación";
+
+  verifyPPMHeader(file, 3, 2);
+
+  // Los datos esperados ahora son mucho más explícitos y fáciles de leer.
+  std::vector<ExpectedPixel> const expected_pixels = {
+    {255,   0,   0}, // Rojo
+    {  0, 255,   0}, // Verde
+    {  0,   0, 255}, // Azul
+    {255, 255,   0}, // Amarillo
+    {255,   0, 255}, // Magenta
+    {  0, 255, 255}  // Cian
+  };
+
+  // El bucle de verificación ahora es simple y no tiene condicionales.
+  for (size_t i = 0; i < expected_pixels.size(); ++i) {
+    verifyPixel(file, i, expected_pixels[i]);
+  }
+
+  // Verificar que no hay más datos en el archivo
+  int dummy = 0;
+  EXPECT_FALSE(file >> dummy) << "Hay datos extra en el archivo después de los píxeles";
+
   file.close();
 }
 

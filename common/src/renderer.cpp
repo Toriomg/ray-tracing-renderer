@@ -183,7 +183,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
   std::optional<Intersection> best_hit;
   double t_max = closest_t;
 
-  CylinderGeometry cyl_geo = {center, unit_axis, radius, height};  // intersección lateral
+  CylinderGeometry const cyl_geo = {center, unit_axis, radius, height};  // intersección lateral
   intersectLateralSurface(r, cyl_geo, t_max, best_hit);
 
   Point3 const top_center = center + unit_axis * half_height;  // tapa superior
