@@ -1,3 +1,5 @@
+// no hacemos comprobaciones porque la mayoría ya se incluyen en el parser y en la configuración
+
 #include "../include/image_soa.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
@@ -9,6 +11,19 @@
 ImageSOA::ImageSOA(size_t width, size_t height)
     : r_channel_(width * height, 0),  // Inicializamos todos con ceros
       g_channel_(width * height, 0), b_channel_(width * height, 0), width_(width), height_(height) {
+}
+
+// Métodos para comprobar los valores de un pixel concreto
+uint8_t ImageSOA::get_red(size_t index) const {
+  return r_channel_[index];
+}
+
+uint8_t ImageSOA::get_green(size_t index) const {
+  return g_channel_[index];
+}
+
+uint8_t ImageSOA::get_blue(size_t index) const {
+  return b_channel_[index];
 }
 
 // Métodos para modificar el valor de un pixel dentro de los arrays de colores

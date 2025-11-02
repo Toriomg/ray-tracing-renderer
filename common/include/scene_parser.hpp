@@ -4,6 +4,6 @@
 #include "dataStructs/settings_structs.hpp"
 #include <string>
 
-[[nodiscard]] SceneSettings loadSceneFromFile(std::string const & filename);
+[[nodiscard]] std::optional<SceneSettings> loadSceneFromFile(std::string const & filename);
 
 #endif

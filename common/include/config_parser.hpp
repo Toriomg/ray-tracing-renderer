@@ -4,6 +4,6 @@
 #include "dataStructs/settings_structs.hpp"
 #include <string>
 
-[[nodiscard]] ConfigSettings loadConfigFromFile(std::string const & filename);
+[[nodiscard]] std::optional<ConfigSettings> loadConfigFromFile(std::string const & filename);
 
 #endif
