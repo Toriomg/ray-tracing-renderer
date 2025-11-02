@@ -127,15 +127,15 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
 }
 
 std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
-    Ray const & r, CylinderGeometry const & cyl, double closest_t,
+    Ray const & r, CylinderGeometry const & cyl, double & t_max,
     std::optional<Intersection> & best_hit) {
   double const half_height = cyl.height * 0.5;
   double const radius_sq   = cyl.radius * cyl.radius;
   Vec3 const oc            = r.point - cyl.center;  // intersección lateral
   Vec3 const dr_perp       = component_perpendicular(r.direction, cyl.unit_axis);
   Vec3 const oc_perp       = component_perpendicular(oc, cyl.unit_axis);
+  double const a           = dr_perp.length_squared();
 
-  double const a = dr_perp.length_squared();
   if (std::fabs(a) > 1e-8) {
     double const b     = 2.0 * dot(oc_perp, dr_perp);
     double const c     = oc_perp.length_squared() - radius_sq;
@@ -146,22 +146,22 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
       double const inv_2a     = 1.0 / (2.0 * a);
       double t                = (-b - sqrt_discr) * inv_2a;  // Raíz más cercana
 
-      if (t > 0.001 and t < closest_t) {
+      if (t > 0.001 and t < t_max) {
         Point3 const p = r.at(t);
         if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
           Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
           best_hit          = Intersection{t, p, normal};
-          closest_t         = t;
+          t_max             = t;
         }
       }
       if (!best_hit) {  // segunda raiz
         t = (-b + sqrt_discr) * inv_2a;
-        if (t > 0.001 and t < closest_t) {
+        if (t > 0.001 and t < t_max) {
           Point3 const p = r.at(t);
           if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
             Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
             best_hit          = Intersection{t, p, normal};
-            closest_t         = t;
+            t_max             = t;
           }
         }
       }
@@ -198,6 +198,7 @@ std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const
   if (auto cap_hit = intersectCap(r, bottom_center, -unit_axis, radius_sq)) {
     if (cap_hit->t < t_max) {
       best_hit = cap_hit;
+      t_max    = cap_hit->t;
     }
   }
 

@@ -53,7 +53,7 @@ private:
   static std::optional<Intersection> intersectCap(Ray const & r, Point3 const & center,
                                                   Vec3 const & normal, double radius_sq);
   static std::optional<Intersection> intersectLateralSurface(
-      Ray const & r, CylinderGeometry const & cyl, double closest_t,
+      Ray const & r, CylinderGeometry const & cyl, double & t_max,
       std::optional<Intersection> & best_hit);
   static void updateBestHit(std::optional<Intersection> & best, double & closest,
                             std::optional<Intersection> const & new_hit);
