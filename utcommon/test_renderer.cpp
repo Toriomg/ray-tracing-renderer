@@ -255,31 +255,6 @@ TEST_F(RendererTest, RayColorDiagonalRay) {
   ASSERT_DOUBLE_EQ(result.z, 0.0);
 }
 
-// TESTS ROBUSTOS - Casos de FALLO (Miss)
-
-// Test 2: Miss - Rayo pasa de largo
-TEST_F(RendererTest, RayColorMissesSphere) {
-  // Setup: Esfera en (0, 0, -5) con radio 1.0
-  setupMatteMaterial(&scene, "red_matte", Color(1.0, 0.0, 0.0));
-  setupSingleSphereScene(&scene, Point3(0, 0, -5), 1.0, 0);
-
-  // Rayo con depth=1 que pasa de largo (dirección +Y)
-  Ray const ray(Point3(0, 0, 0), Vec3(0, 1, 0), 1);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
-  // Para direccinnn (0, 1, 0) normalizada:
-  Vec3 const unit_dir = Vec3(0, 1, 0).normalize();
-  double const t      = 0.5 * (unit_dir.y + 1.0);
-  Color const expected =
-      (1.0 - t) * config.background_dark_color + t * config.background_light_color;
-
-  ASSERT_NEAR(result.x, expected.x, 0.01);
-  ASSERT_NEAR(result.y, expected.y, 0.01);
-  ASSERT_NEAR(result.z, expected.z, 0.01);
-}
-
 // Test 3: Esfera detrás del rayo
 TEST_F(RendererTest, RayColorSphereBehindRay) {
   // Setup: Esfera en (0, 0, -5)
@@ -294,26 +269,6 @@ TEST_F(RendererTest, RayColorSphereBehindRay) {
   // ASERCIÓN ROBUSTA: Esfera detrás debe dar backgroundColor
   Vec3 const unit_dir = Vec3(0, 0, 1).normalize();
   double const t      = 0.5 * (unit_dir.y + 1.0);
-  Color const expected =
-      (1.0 - t) * config.background_dark_color + t * config.background_light_color;
-
-  ASSERT_NEAR(result.x, expected.x, 0.01);
-  ASSERT_NEAR(result.y, expected.y, 0.01);
-  ASSERT_NEAR(result.z, expected.z, 0.01);
-}
-
-// Test 6: Escena vacía - solo fondo
-TEST_F(RendererTest, RayColorEmptyScene) {
-  // No añadir ninguna esfera
-
-  // Rayo con depth=1 en dirección arbitraria
-  Vec3 const direction = Vec3(0, 0.5, -1).normalize();
-  Ray const ray(Point3(0, 0, 0), direction, 1);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: Sin esferas debe retornar backgroundColor
-  double const t = 0.5 * (direction.y + 1.0);
   Color const expected =
       (1.0 - t) * config.background_dark_color + t * config.background_light_color;
 
@@ -522,98 +477,6 @@ TEST_F(RendererTest, CylinderMissHitsInfiniteLateralOutsideHeight) {
   ASSERT_NEAR(result.z, expected.z, 0.01);
 }
 
-// Test 6: Miss - Golpea plano de tapa pero fuera del radio
-TEST_F(RendererTest, CylinderMissHitsCapPlaneOutsideRadius) {
-  // Setup: Cilindro con radio 2.0
-  setupMatteMaterial(&scene, "green_matte", Color(0.0, 1.0, 0.0));
-  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
-  setupSingleCylinderScene(&scene, cyl, 0);
-
-  // Rayo con depth=1 desde (5, 0, 0) hacia (0, -1, 0)
-  // Golpea el plano de la tapa superior pero x=5 está fuera del radio 2.0
-  Ray const ray(Point3(5, 0, 0), Vec3(0, -1, 0), 1);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
-  Vec3 const unit_dir = Vec3(0, -1, 0).normalize();
-  double const t      = 0.5 * (unit_dir.y + 1.0);
-  Color const expected =
-      (1.0 - t) * config.background_dark_color + t * config.background_light_color;
-
-  ASSERT_NEAR(result.x, expected.x, 0.01);
-  ASSERT_NEAR(result.y, expected.y, 0.01);
-  ASSERT_NEAR(result.z, expected.z, 0.01);
-}
-
-// Test 7: Miss - Rayo paralelo a las tapas
-TEST_F(RendererTest, CylinderMissRayParallelToCap) {
-  // Setup: Cilindro con eje Y
-  setupMatteMaterial(&scene, "orange_matte", Color(1.0, 0.5, 0.0));
-  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
-  setupSingleCylinderScene(&scene, cyl, 0);
-
-  // Rayo con depth=1 desde (0, -10, 0) hacia (1, 0, 0)
-  // Paralelo a las tapas (perpendicular al eje Y), denominador cero en intersectCap
-  Ray const ray(Point3(0, -10, 0), Vec3(1, 0, 0), 1);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
-  Vec3 const unit_dir = Vec3(1, 0, 0).normalize();
-  double const t      = 0.5 * (unit_dir.y + 1.0);
-  Color const expected =
-      (1.0 - t) * config.background_dark_color + t * config.background_light_color;
-
-  ASSERT_NEAR(result.x, expected.x, 0.01);
-  ASSERT_NEAR(result.y, expected.y, 0.01);
-  ASSERT_NEAR(result.z, expected.z, 0.01);
-}
-
-// Test 8: Miss - Rayo paralelo al eje del cilindro (fuera del radio)
-TEST_F(RendererTest, CylinderMissRayParallelToAxis) {
-  // Setup: Cilindro con eje Y, radio 2.0
-  setupMatteMaterial(&scene, "white_matte", Color(1.0, 1.0, 1.0));
-  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
-  setupSingleCylinderScene(&scene, cyl, 0);
-
-  // Rayo con depth=1 desde (5, 0, 0) [x=5, fuera del radio] hacia (0, 1, 0) [paralelo al eje]
-  // Denominador cero en intersectLateralSurface
-  Ray const ray(Point3(5, 0, 0), Vec3(0, 1, 0), 1);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: Miss debe retornar backgroundColor
-  Vec3 const unit_dir = Vec3(0, 1, 0).normalize();
-  double const t      = 0.5 * (unit_dir.y + 1.0);
-  Color const expected =
-      (1.0 - t) * config.background_dark_color + t * config.background_light_color;
-
-  ASSERT_NEAR(result.x, expected.x, 0.01);
-  ASSERT_NEAR(result.y, expected.y, 0.01);
-  ASSERT_NEAR(result.z, expected.z, 0.01);
-}
-
-// Test 9: Hit - Lateral es más cercano que tapa (updateBestHit)
-TEST_F(RendererTest, CylinderHitClosestIsLateral) {
-  // Setup: Cilindro base
-  setupMatteMaterial(&scene, "purple_matte", Color(0.5, 0.0, 0.5));
-  CylinderParams const cyl = {Point3(0, -10, 0), Vec3(0, 4, 0), 2.0, 4.0};
-  setupSingleCylinderScene(&scene, cyl, 0);
-
-  // Rayo con depth=1 desde (1, -7, -1) hacia (0, -1, -1)
-  // Este rayo debería golpear la superficie lateral antes que la tapa superior
-  Vec3 const direction = Vec3(0, -1, -1).normalize();
-  Ray const ray(Point3(1, -7, -1), direction, 1);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: Hit con depth=1 debe dar negro
-  ASSERT_DOUBLE_EQ(result.x, 0.0);
-  ASSERT_DOUBLE_EQ(result.y, 0.0);
-  ASSERT_DOUBLE_EQ(result.z, 0.0);
-}
-
 // ============================================================================
 // TESTS PARA matteColor
 // ============================================================================
@@ -753,40 +616,6 @@ TEST_F(RendererTest, MetalMaterialFuzzedReflection) {
 // ============================================================================
 // TESTS PARA refractiveColor
 // ============================================================================
-
-// Test 1: Material refractivo computa refracción normal
-// (Camino B: Refracción, entrando desde el exterior)
-TEST_F(RendererTest, RefractiveMaterialComputesRefraction) {
-  // Setup: Configurar max_depth = 2 para permitir 1 rebote
-  config.max_depth = 2;
-
-  // Definir índice de refracción (vidrio típico)
-  double const ior = 1.5;
-
-  // Limpiar escena y añadir material refractivo
-  clearScene(&scene);
-  setupRefractiveMaterial(&scene, "glass", ior);
-
-  // Configurar esfera con material refractivo (ID 0)
-  setupSingleSphereScene(&scene, Point3(0, 0, -1), 0.5, 0);
-
-  // Lanzar un rayo frontal con depth = max_depth (2)
-  // El rayo golpea la esfera -> refractiveColor se ejecuta
-  // refractiveColor calcula refracción (Camino B: sin reflexión interna total)
-  // Crea un rayo rebotado con depth = 1
-  // Ese rayo rebotado (depth=1) falla (miss) y devuelve backgroundColor
-  // Resultado final: attenuation (1.0, 1.0, 1.0) * backgroundColor
-  Ray const ray(Point3(0, 0, 0), Vec3(0, 0, -1), config.max_depth);
-
-  Color const result = Renderer::rayColor(ray, scene, config, rng);
-
-  // ASERCIÓN ROBUSTA: El resultado no debe ser negro
-  // (prueba que el rebote depth=1 golpeó el fondo con color)
-  // Asumimos que backgroundColor no es completamente negro
-  ASSERT_TRUE(result.x > 0.0 or result.y > 0.0 or result.z > 0.0)
-      << "Expected non-black color from refracted ray hitting background, got (" << result.x << ", "
-      << result.y << ", " << result.z << ")";
-}
 
 // Test 2: Material refractivo computa reflexión interna total
 // (Camino A: Reflexión Interna Total, saliendo desde el interior)

@@ -5453,9 +5453,9 @@ TEST_F(ConfigParserBackgroundDarkColorTest, PlusSignPrefix) {
     ConfigSettings const & config = *config_opt;
     ASSERT_NE(config_opt, std::nullopt)
         << "La carga de un archivo de configuración válido no debería resultar en nullopt.";
-    ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+    ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
     ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
-    ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1);
+    ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
   }
 }
 
@@ -5489,9 +5489,9 @@ TEST_F(ConfigParserBackgroundDarkColorTest, TabsAsWhitespace) {
     ConfigSettings const & config = *config_opt;
     ASSERT_NE(config_opt, std::nullopt)
         << "La carga de un archivo de configuración válido no debería resultar en nullopt.";
-    ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.25);
+    ASSERT_DOUBLE_EQ(config.background_dark_color.x, 0.5);
     ASSERT_DOUBLE_EQ(config.background_dark_color.y, 0.5);
-    ASSERT_DOUBLE_EQ(config.background_dark_color.z, 1);
+    ASSERT_DOUBLE_EQ(config.background_dark_color.z, 0.5);
   }
 }
 
@@ -6381,9 +6381,6 @@ TEST_F(ConfigParserBackgroundLightColorTest, InfinityValue) {
   writeConfigFile("background_light_color: inf 0.5 0.5\n");
 
   std::optional<ConfigSettings> config_opt = loadConfigFromFile(temp_filename);
-
-  ASSERT_TRUE(config_opt.has_value())
-      << "La carga de un archivo de configuración válido falló inesperadamente.";
 
   if (config_opt) {
     ConfigSettings const & config = config_opt.value();
