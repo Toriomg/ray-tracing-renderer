@@ -1,20 +1,43 @@
 #include "config_parser.hpp"
 #include "constants.hpp"
 #include "dataStructs/settings_structs.hpp"
+
 #include <cctype>
-#include <cerrno>
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <numeric>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <unordered_map>
+#include <utility>  // Para std::move
 #include <vector>
 
+// --- Espacio de nombres anónimo para helpers internos del parser ---
 namespace {
+
+  enum class ParseError { None, InvalidValue, ExtraData };
+
+  // Agrupa el resultado de un análisis: el código de error y datos adicionales
+  // para los mensajes de error (p. ej. texto sobrante en una línea).
+  struct ParseResult {
+    ParseError error_code;
+    std::string extra_data;
+
+    // Constructor para errores simples (sin datos extra).
+    explicit ParseResult(ParseError code) : error_code(code) { }
+
+    // Constructor para errores que necesitan reportar datos adicionales.
+    ParseResult(ParseError code, std::string data)
+        : error_code(code), extra_data(std::move(data)) { }
+  };
+
+  // --- Utilidades de bajo nivel para manipular strings sin crear copias ---
 
   void trimWhitespace(std::string_view & str) {
     while (!str.empty() and (std::isspace(static_cast<unsigned char>(str.front())) != 0)) {
@@ -27,347 +50,323 @@ namespace {
 
   std::vector<std::string_view> tokenizeLine(std::string_view line) {
     std::vector<std::string_view> tokens;
-
     while (!line.empty()) {
       trimWhitespace(line);
       if (line.empty()) {
         break;
       }
-
-      std::size_t const pos = line.find(' ');
+      std::size_t const pos = line.find_first_of(" \t");
       if (pos == std::string_view::npos) {
         tokens.push_back(line);
         break;
       }
-
       tokens.push_back(line.substr(0, pos));
       line.remove_prefix(pos);
     }
-
     return tokens;
   }
 
-  bool parsedouble(std::string_view token, double & value) {
+  // Une los tokens sobrantes de una línea para mostrarlos en un mensaje de error.
+  std::string join_tokens(std::vector<std::string_view> const & tokens, std::size_t start_index) {
+    if (start_index >= tokens.size()) {
+      return "";
+    }
+    return std::accumulate(
+        std::next(tokens.begin(), static_cast<long>(start_index + 1)), tokens.end(),
+        std::string(tokens[start_index]),
+        [](std::string const & a, std::string_view b) { return a + " " + std::string(b); });
+  }
+
+  // --- Parsers de Tipos Primitivos ---
+
+  // Convierte un string_view a double usando la función más eficiente y segura (std::from_chars).
+  [[nodiscard]] bool parsedouble(std::string_view token, double & value) {
     if (token.empty()) {
       return false;
     }
-
-    char const * const start = token.data();
-    char const * const end   = token.data() + token.size();
-
-    auto const result = std::from_chars(start, end, value);
-    return result.ec == std::errc() and result.ptr == end;
+    // Parche para librerías antiguas donde from_chars no soporta el signo '+'.
+    if (token.front() == '+') {
+      token.remove_prefix(1);
+    }
+    auto const [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), value);
+    if (ec != std::errc() or ptr != token.data() + token.size()) {
+      return false;
+    }
+    // Rechaza explícitamente "nan" e "inf", que son parseados con éxito por la librería.
+    if (std::isnan(value) or std::isinf(value)) {
+      return false;
+    }
+    return true;
   }
 
-  bool parseInt(std::string_view token, int & value) {
+  [[nodiscard]] bool parseInt(std::string_view token, int & value) {
     if (token.empty()) {
       return false;
     }
-
-    char const * const start = token.data();
-    char const * const end   = token.data() + token.size();
-
-    auto const result = std::from_chars(start, end, value);
-    return result.ec == std::errc() and result.ptr == end;
+    auto const [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), value);
+    return ec == std::errc() and ptr == token.data() + token.size();
   }
 
-  bool parseUnsignedLong(std::string_view token, unsigned long & value) {
+  [[nodiscard]] bool parseUnsignedLong(std::string_view token, unsigned long & value) {
     if (token.empty()) {
       return false;
     }
-
-    char const * const start = token.data();
-    char const * const end   = token.data() + token.size();
-
-    auto const result = std::from_chars(start, end, value);
-    return result.ec == std::errc() and result.ptr == end;
+    auto const [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), value);
+    return ec == std::errc() and ptr == token.data() + token.size();
   }
 
-  bool parseUnsignedInt(std::string_view token, unsigned int & value) {
+  [[nodiscard]] bool parseUnsignedInt(std::string_view token, unsigned int & value) {
     if (token.empty()) {
       return false;
     }
-
-    char const * const start = token.data();
-    char const * const end   = token.data() + token.size();
-
-    auto const result = std::from_chars(start, end, value);
-    return result.ec == std::errc() and result.ptr == end;
+    auto const [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), value);
+    return ec == std::errc() and ptr == token.data() + token.size();
   }
 
-  bool validateColorComponents(double r, double g, double b) {
-    return r >= 0.0F and r <= 1.0F and g >= 0.0F and g <= 1.0F and b >= 0.0F and b <= 1.0F;
-  }
+  // --- Funciones de Parseo para cada Clave de Configuración ---
+  // Cada función valida el número exacto de argumentos para su clave.
 
-  bool parseAspectRatio(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 3) {
-      std::cerr << "Error: aspect_ratio requires 2 parameters (width height), got "
-                << tokens.size() - 1 << "\n";
-      return false;
+  ParseResult parseAspectRatio(std::vector<std::string_view> const & tokens,
+                               ConfigSettings & config) {
+    if (tokens.size() < 3) {
+      return ParseResult(ParseError::InvalidValue);
     }
-
-    unsigned int width  = 0;
-    unsigned int height = 0;
-
-    if (!parseUnsignedInt(tokens[1], width) or !parseUnsignedInt(tokens[2], height)) {
-      std::cerr << "Error: invalid aspect ratio values\n";
-      return false;
+    if (tokens.size() > 3) {
+      return {ParseError::ExtraData, join_tokens(tokens, 3)};
     }
-
-    if (width <= 0 or height <= 0) {
-      std::cerr << "Error: aspect ratio values must be positive\n";
-      return false;
+    unsigned int width = 0, height = 0;
+    if (!parseUnsignedInt(tokens[1], width) or
+        !parseUnsignedInt(tokens[2], height) or
+        width == 0 or
+        height == 0)
+    {
+      return ParseResult(ParseError::InvalidValue);
     }
-
     config.aspect_ratio = {width, height};
-    return true;
+    return ParseResult(ParseError::None);
   }
 
-  bool parseImageWidth(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: image_width requires 1 parameter, got " << tokens.size() - 1 << "\n";
-      return false;
+  ParseResult parseImageWidth(std::vector<std::string_view> const & tokens,
+                              ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
     }
-
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
     int width = 0;
-    if (!parseInt(tokens[1], width)) {
-      std::cerr << "Error: invalid image width value\n";
-      return false;
+    if (!parseInt(tokens[1], width) or width <= 0) {
+      return ParseResult(ParseError::InvalidValue);
     }
-
-    if (width <= 0) {
-      std::cerr << "Error: image width must be positive\n";
-      return false;
-    }
-
     config.image_width = width;
-    return true;
+    return ParseResult(ParseError::None);
   }
 
-  bool parseGamma(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: gamma requires 1 parameter, got " << tokens.size() - 1 << "\n";
-      return false;
+  ParseResult parseGamma(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
     }
-
-    double gamma = 0.0F;
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
+    double gamma = 0.0;
     if (!parsedouble(tokens[1], gamma)) {
-      std::cerr << "Error: invalid gamma value\n";
-      return false;
+      return ParseResult(ParseError::InvalidValue);
     }
-
     config.gamma = gamma;
-    return true;
+    return ParseResult(ParseError::None);
   }
 
-  bool parseCameraPosition(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 4) {
-      std::cerr << "Error: camera_position requires 3 parameters (x y z), got " << tokens.size() - 1
-                << "\n";
-      return false;
+  // Helper reutilizable para analizar cualquier clave que represente un vector de 3D.
+  ParseResult parseVec3(std::vector<std::string_view> const & tokens, Vec3 & vec) {
+    if (tokens.size() < 4) {
+      return ParseResult(ParseError::InvalidValue);
     }
-
-    double x = 0.0F, y = 0.0F, z = 0.0F;
+    if (tokens.size() > 4) {
+      return {ParseError::ExtraData, join_tokens(tokens, 4)};
+    }
+    double x = 0.0, y = 0.0, z = 0.0;
     if (!parsedouble(tokens[1], x) or !parsedouble(tokens[2], y) or !parsedouble(tokens[3], z)) {
-      std::cerr << "Error: invalid camera position values\n";
-      return false;
+      return ParseResult(ParseError::InvalidValue);
     }
-
-    config.camera_pos = Point3(x, y, z);
-    return true;
+    vec = Vec3(x, y, z);
+    return ParseResult(ParseError::None);
   }
 
-  bool parseCameraTarget(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 4) {
-      std::cerr << "Error: camera_target requires 3 parameters (x y z), got " << tokens.size() - 1
-                << "\n";
-      return false;
+  // Helper reutilizable para analizar un color, validando que sus componentes estén en [0, 1].
+  ParseResult parseColor(std::vector<std::string_view> const & tokens, Color & color) {
+    if (tokens.size() < 4) {
+      return ParseResult(ParseError::InvalidValue);
     }
-
-    double x = 0.0F, y = 0.0F, z = 0.0F;
-    if (!parsedouble(tokens[1], x) or !parsedouble(tokens[2], y) or !parsedouble(tokens[3], z)) {
-      std::cerr << "Error: invalid camera target values\n";
-      return false;
+    if (tokens.size() > 4) {
+      return {ParseError::ExtraData, join_tokens(tokens, 4)};
     }
-
-    config.camera_target = Point3(x, y, z);
-    return true;
+    double r = 0.0, g = 0.0, b = 0.0;
+    if (!parsedouble(tokens[1], r) or
+        !parsedouble(tokens[2], g) or
+        !parsedouble(tokens[3], b) or
+        r < 0.0 or
+        r > 1.0 or
+        g < 0.0 or
+        g > 1.0 or
+        b < 0.0 or
+        b > 1.0)
+    {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    color = Color(r, g, b);
+    return ParseResult(ParseError::None);
   }
 
-  bool parseCameraNorth(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 4) {
-      std::cerr << "Error: camera_north requires 3 parameters (x y z), got " << tokens.size() - 1
-                << "\n";
-      return false;
-    }
-
-    double x = 0.0F, y = 0.0F, z = 0.0F;
-    if (!parsedouble(tokens[1], x) or !parsedouble(tokens[2], y) or !parsedouble(tokens[3], z)) {
-      std::cerr << "Error: invalid camera north values\n";
-      return false;
-    }
-
-    config.camera_north = Vec3(x, y, z);
-    return true;
+  ParseResult parseCameraPosition(std::vector<std::string_view> const & tokens,
+                                  ConfigSettings & config) {
+    return parseVec3(tokens, config.camera_pos);
   }
 
-  bool parseFieldOfView(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: field_of_view requires 1 parameter, got " << tokens.size() - 1 << "\n";
-      return false;
-    }
-
-    double fov = 0.0F;
-    if (!parsedouble(tokens[1], fov)) {
-      std::cerr << "Error: invalid field of view value\n";
-      return false;
-    }
-
-    if (fov <= 0.0F or fov >= 180.0F) {
-      std::cerr << "Error: field of view must be between 0 and 180 degrees\n";
-      return false;
-    }
-
-    config.field_of_view = fov;
-    return true;
-  }
-
-  bool parseSamplesPerPixel(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: samples_per_pixel requires 1 parameter, got " << tokens.size() - 1
-                << "\n";
-      return false;
-    }
-
-    int samples = 0;
-    if (!parseInt(tokens[1], samples)) {
-      std::cerr << "Error: invalid samples per pixel value\n";
-      return false;
-    }
-
-    if (samples <= 0) {
-      std::cerr << "Error: samples per pixel must be positive\n";
-      return false;
-    }
-
-    config.samples_per_pixel = samples;
-    return true;
-  }
-
-  bool parseMaxDepth(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: max_depth requires 1 parameter, got " << tokens.size() - 1 << "\n";
-      return false;
-    }
-
-    int depth = 0;
-    if (!parseInt(tokens[1], depth)) {
-      std::cerr << "Error: invalid max depth value\n";
-      return false;
-    }
-
-    if (depth <= 0) {
-      std::cerr << "Error: max depth must be positive\n";
-      return false;
-    }
-
-    config.max_depth = depth;
-    return true;
-  }
-
-  bool parseMaterialRngSeed(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: material_rng_seed requires 1 parameter, got " << tokens.size() - 1
-                << "\n";
-      return false;
-    }
-
-    unsigned long seed = 0;
-    if (!parseUnsignedLong(tokens[1], seed)) {
-      std::cerr << "Error: invalid material RNG seed value\n";
-      return false;
-    }
-
-    if (seed <= 0) {
-      std::cerr << "Error: material RNG seed must be positive\n";
-      return false;
-    }
-
-    config.material_rng_seed = seed;
-    return true;
-  }
-
-  bool parseRayRngSeed(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
-    if (tokens.size() != 2) {
-      std::cerr << "Error: ray_rng_seed requires 1 parameter, got " << tokens.size() - 1 << "\n";
-      return false;
-    }
-
-    unsigned long seed = 0;
-    if (!parseUnsignedLong(tokens[1], seed)) {
-      std::cerr << "Error: invalid ray RNG seed value\n";
-      return false;
-    }
-
-    if (seed <= 0) {
-      std::cerr << "Error: ray RNG seed must be positive\n";
-      return false;
-    }
-
-    config.ray_rng_seed = seed;
-    return true;
-  }
-
-  bool parseBackgroundDarkColor(std::vector<std::string_view> const & tokens,
+  ParseResult parseCameraTarget(std::vector<std::string_view> const & tokens,
                                 ConfigSettings & config) {
-    if (tokens.size() != 4) {
-      std::cerr << "Error: background_dark_color requires 3 parameters (r g b), got "
-                << tokens.size() - 1 << "\n";
-      return false;
-    }
-
-    double r = 0.0F, g = 0.0F, b = 0.0F;
-    if (!parsedouble(tokens[1], r) or !parsedouble(tokens[2], g) or !parsedouble(tokens[3], b)) {
-      std::cerr << "Error: invalid background dark color values\n";
-      return false;
-    }
-
-    if (!validateColorComponents(r, g, b)) {
-      std::cerr << "Error: background dark color values must be in range [0, 1]\n";
-      return false;
-    }
-
-    config.background_dark_color = Color(r, g, b);
-    return true;
+    return parseVec3(tokens, config.camera_target);
   }
 
-  bool parseBackgroundLightColor(std::vector<std::string_view> const & tokens,
-                                 ConfigSettings & config) {
-    if (tokens.size() != 4) {
-      std::cerr << "Error: background_light_color requires 3 parameters (r g b), got "
-                << tokens.size() - 1 << "\n";
-      return false;
-    }
-
-    double r = 0.0F, g = 0.0F, b = 0.0F;
-    if (!parsedouble(tokens[1], r) or !parsedouble(tokens[2], g) or !parsedouble(tokens[3], b)) {
-      std::cerr << "Error: invalid background light color values\n";
-      return false;
-    }
-
-    if (!validateColorComponents(r, g, b)) {
-      std::cerr << "Error: background light color values must be in range [0, 1]\n";
-      return false;
-    }
-
-    config.background_light_color = Color(r, g, b);
-    return true;
+  ParseResult parseCameraNorth(std::vector<std::string_view> const & tokens,
+                               ConfigSettings & config) {
+    return parseVec3(tokens, config.camera_north);
   }
 
-  bool processLine(std::string_view line, ConfigSettings & config) {
+  ParseResult parseFieldOfView(std::vector<std::string_view> const & tokens,
+                               ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
+    double fov = 0.0;
+    if (!parsedouble(tokens[1], fov) or fov <= 0.0 or fov >= 180.0) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    config.field_of_view = fov;
+    return ParseResult(ParseError::None);
+  }
+
+  ParseResult parseSamplesPerPixel(std::vector<std::string_view> const & tokens,
+                                   ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
+    int samples = 0;
+    if (!parseInt(tokens[1], samples) or samples <= 0) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    config.samples_per_pixel = samples;
+    return ParseResult(ParseError::None);
+  }
+
+  ParseResult parseMaxDepth(std::vector<std::string_view> const & tokens, ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
+    int depth = 0;
+    if (!parseInt(tokens[1], depth) or depth <= 0) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    config.max_depth = depth;
+    return ParseResult(ParseError::None);
+  }
+
+  ParseResult parseMaterialRngSeed(std::vector<std::string_view> const & tokens,
+                                   ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
+    unsigned long seed = 0;
+    if (!parseUnsignedLong(tokens[1], seed)) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    config.material_rng_seed = seed;
+    return ParseResult(ParseError::None);
+  }
+
+  ParseResult parseRayRngSeed(std::vector<std::string_view> const & tokens,
+                              ConfigSettings & config) {
+    if (tokens.size() < 2) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    if (tokens.size() > 2) {
+      return {ParseError::ExtraData, join_tokens(tokens, 2)};
+    }
+    unsigned long seed = 0;
+    if (!parseUnsignedLong(tokens[1], seed)) {
+      return ParseResult(ParseError::InvalidValue);
+    }
+    config.ray_rng_seed = seed;
+    return ParseResult(ParseError::None);
+  }
+
+  ParseResult parseBackgroundDarkColor(std::vector<std::string_view> const & tokens,
+                                       ConfigSettings & config) {
+    return parseColor(tokens, config.background_dark_color);
+  }
+
+  ParseResult parseBackgroundLightColor(std::vector<std::string_view> const & tokens,
+                                        ConfigSettings & config) {
+    return parseColor(tokens, config.background_light_color);
+  }
+
+  // Tabla de despacho: asocia cada clave de configuración con su función de parseo.
+  // Este diseño hace muy fácil añadir nuevas claves sin modificar la lógica principal.
+  using ParserFunc =
+      std::function<ParseResult(std::vector<std::string_view> const &, ConfigSettings &)>;
+  std::unordered_map<std::string_view, ParserFunc> const COMMANDS = {
+    {          "aspect_ratio:",          parseAspectRatio},
+    {           "image_width:",           parseImageWidth},
+    {                 "gamma:",                parseGamma},
+    {       "camera_position:",       parseCameraPosition},
+    {         "camera_target:",         parseCameraTarget},
+    {          "camera_north:",          parseCameraNorth},
+    {         "field_of_view:",          parseFieldOfView},
+    {     "samples_per_pixel:",      parseSamplesPerPixel},
+    {             "max_depth:",             parseMaxDepth},
+    {     "material_rng_seed:",      parseMaterialRngSeed},
+    {          "ray_rng_seed:",           parseRayRngSeed},
+    { "background_dark_color:",  parseBackgroundDarkColor},
+    {"background_light_color:", parseBackgroundLightColor}
+  };
+
+  // Centraliza la lógica de impresión de errores.
+  bool logParseResult(ParseResult const & result, std::string_view key,
+                      std::string_view original_line) {
+    switch (result.error_code) {
+      case ParseError::None: return true;
+
+      case ParseError::InvalidValue:
+        std::cerr << "Error: Invalid value for key: [" << key << "]\n"
+                  << "Line: \"" << original_line << "\"\n";
+        return false;
+
+      case ParseError::ExtraData:
+        std::cerr << "Error: Extra data after configuration value for key: [" << key << "]\n"
+                  << "Extra: \"" << result.extra_data << "\"\n";
+        return false;
+    }
+    return false;
+  }
+
+  // Orquesta el análisis de una sola línea.
+  bool processLine(std::string_view original_line, ConfigSettings & config) {
+    auto line = original_line;
     trimWhitespace(line);
     if (line.empty() or line.front() == '#') {
-      return true;
+      return true;  // Ignora líneas vacías y comentarios.
     }
 
     std::vector<std::string_view> const tokens = tokenizeLine(line);
@@ -375,39 +374,33 @@ namespace {
       return true;
     }
 
-    static std::unordered_map<std::string_view,
-                              std::function<bool(std::vector<std::string_view> const &,
-                                                 ConfigSettings &)>> const commands = {
-      {          "aspect_ratio:",          parseAspectRatio},
-      {           "image_width:",           parseImageWidth},
-      {                 "gamma:",                parseGamma},
-      {       "camera_position:",       parseCameraPosition},
-      {         "camera_target:",         parseCameraTarget},
-      {          "camera_north:",          parseCameraNorth},
-      {         "field_of_view:",          parseFieldOfView},
-      {     "samples_per_pixel:",      parseSamplesPerPixel},
-      {             "max_depth:",             parseMaxDepth},
-      {     "material_rng_seed:",      parseMaterialRngSeed},
-      {          "ray_rng_seed:",           parseRayRngSeed},
-      { "background_dark_color:",  parseBackgroundDarkColor},
-      {"background_light_color:", parseBackgroundLightColor}
-    };
+    auto const & key = tokens[0];
+    auto it          = COMMANDS.find(key);
 
-    auto it = commands.find(tokens[0]);
-    if (it != commands.end()) {
-      return it->second(tokens, config);
+    if (it == COMMANDS.end()) {
+      std::cerr << "Error: Unknown configuration key: [" << key << "]\n";
+      return false;
     }
 
-    std::cerr << "Error: unknown command '" << tokens[0] << "'\n";
-    return false;
+    // Delega el análisis a la función correspondiente y reporta el resultado.
+    ParseResult const result = it->second(tokens, config);
+    return logParseResult(result, key, original_line);
   }
 
 }  // namespace
 
-ConfigSettings loadConfigFromFile(std::string const & filename) {
-  ConfigSettings config;
+// --- Interfaz Pública ---
 
-  // Default values
+std::optional<ConfigSettings> loadConfigFromFile(std::string const & filename) {
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    std::cerr << "Error: could not open config file '" << filename << "'\n";
+    return std::nullopt;
+  }
+
+  // Se inicializa la configuración con valores por defecto.
+  // Estos valores se mantendrán si no se especifican en el archivo.
+  ConfigSettings config;
   config.aspect_ratio           = Constants::AspectRatio;
   config.image_width            = Constants::ImageWidth;
   config.gamma                  = Constants::Gamma;
@@ -422,19 +415,14 @@ ConfigSettings loadConfigFromFile(std::string const & filename) {
   config.background_dark_color  = Constants::ColorBackgroundDark;
   config.background_light_color = Constants::ColorBackGroundLight;
 
-  std::ifstream file(filename);
-  if (!file.is_open()) {
-    std::cerr << "Error: could not open config file '" << filename << "'\n";
-    return config;
-  }
-
   std::string line;
   std::size_t lineNumber = 0;
-
   while (std::getline(file, line)) {
     ++lineNumber;
     if (!processLine(line, config)) {
-      std::cerr << "Error parsing line " << lineNumber << ": " << line << "\n";
+      // Si cualquier línea falla, se añade el contexto del número de línea y se aborta.
+      std::cerr << "-> Error occurred while parsing line " << lineNumber << "\n";
+      return std::nullopt;
     }
   }
 

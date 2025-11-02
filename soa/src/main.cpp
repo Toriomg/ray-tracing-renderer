@@ -6,6 +6,7 @@
 #include "../../common/include/utilities/random.hpp"
 #include "image_soa.hpp"
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -23,9 +24,15 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-  // Load configuration and scene
-  SceneSettings scene   = loadSceneFromFile(args[1]);
-  ConfigSettings config = loadConfigFromFile(args[2]);
+  std::optional<ConfigSettings> config_opt = loadConfigFromFile(args[2]);
+
+  if (!config_opt) {
+    std::cerr << "Aborting due to configuration file error.\n";
+    return 1;
+  }
+
+  ConfigSettings const & config = *config_opt;
+  SceneSettings scene           = loadSceneFromFile(args[1]);
 
   // Create random generators
   auto rngRay      = RandomGenerator(config.ray_rng_seed);
@@ -39,7 +46,6 @@ int main(int argc, char * argv[]) {
   // Create render context
   RenderContext ctx(&scene, &config, &rngRay, &rngMaterial);
 
-  // Render with ImageSOA
   {
     std::cout << "Rendering with ImageSOA..." << '\n';
     ImageSOA imageSoa(imageWidth, imageHeight);
