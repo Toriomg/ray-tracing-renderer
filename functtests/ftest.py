@@ -7,8 +7,7 @@ import traceback
 
 # --- CONFIGURACIÓN ---
 # ¡IMPORTANTE! Cambia esta ruta para que apunte a tu ejecutable compilado.
-AOS_EXECUTABLE_PATH = "/workspace/out/build/default/aos/Release/render-aos"
-SOA_EXECUTABLE_PATH = "/workspace/out/build/default/soa/Release/render-soa"
+EXECUTABLE_PATH = "/workspace/out/build/default/aos/Release/render-aos"
 
 # --- CONTENIDO DE ARCHIVOS VÁLIDOS (PARA USAR COMO BASE) ---
 VALID_CONFIG_CONTENT = """
@@ -19,12 +18,8 @@ gamma: 2.2
 VALID_SCENE_CONTENT = "matte: default_mat 1 1 1\nsphere: 0 0 0 1 default_mat\n"
 
 # --- FUNCIÓN HELPER PARA EJECUTAR EL PROGRAMA ---
-def run_executable(scene_path, config_path, output_path, mode="aos"):
+def run_executable(scene_path, config_path, output_path):
     """Ejecuta el programa C++ y captura su salida."""
-    if mode == "aos":
-        EXECUTABLE_PATH = AOS_EXECUTABLE_PATH
-    else:
-        EXECUTABLE_PATH = SOA_EXECUTABLE_PATH
     command = [EXECUTABLE_PATH, str(scene_path), str(config_path), str(output_path)]
     if not os.path.exists(EXECUTABLE_PATH):
         raise FileNotFoundError(
@@ -36,7 +31,7 @@ def run_executable(scene_path, config_path, output_path, mode="aos"):
 # --- DEFINICIÓN DE LAS PRUEBAS ---
 # Cada aserción ahora tiene un mensaje de error detallado.
 
-def test_success_valid_aos_files():
+def test_success_valid_files():
     """FICHERO DE ESTUDIO: ambos. OBJETO DE PRUEBA: Escena y configuración validas."""
     with tempfile.TemporaryDirectory() as temp_dir:
         d = Path(temp_dir)
@@ -51,28 +46,7 @@ def test_success_valid_aos_files():
         """.replace(';', '\n')
         config_path.write_text(VALID_CONFIG_CONTENT)
         scene_path.write_text(scene_from_spreadsheet)
-        mode = "aos"
-        stderr, code = run_executable(scene_path, config_path, output_path, mode)
-        assert code == 0, f"El programa falló con archivos válidos (código {code}).\n    STDERR OBTENIDO:\n---\n{stderr.strip()}\n---"
-        assert stderr == "", f"Se esperaba un stderr vacío, pero se obtuvo:\n---\n{stderr.strip()}\n---"
-
-def test_success_valid_soa_files():
-    """FICHERO DE ESTUDIO: ambos. OBJETO DE PRUEBA: Escena y configuración validas."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        d = Path(temp_dir)
-        config_path, scene_path, output_path = d / "c.txt", d / "s.txt", d / "o.ppm"
-        scene_from_spreadsheet = """
-            matte: mat1 1.0 0.3 0.3; matte: mat2 0.3 1.0 0.3; matte: mat3 0.3 0.3 1.0;
-            matte: mat4 0.5 0.5 0.5; metal: metal1 0.9 0.9 0.9 0.05; refractive: ref1 1.3;
-            sphere: 5 5 0 3 mat2; sphere: -5 5 0 3 ref1; sphere: -5 -5 0 3 mat3;
-            sphere: 5 -5 0 3 metal1; sphere: 0 -500 0 490 mat4; sphere: -2 5 4 3 mat1;
-            cylinder: 5 5 0 0.8 0 3 0 mat4; cylinder: -8 6.5 0 0.6 4 0 0 mat1;
-            cylinder: 7 1 0 1.0 -1 5 10 metal1; cylinder: 8 3 -5 0.5 0 0 3 mat2;
-        """.replace(';', '\n')
-        config_path.write_text(VALID_CONFIG_CONTENT)
-        scene_path.write_text(scene_from_spreadsheet)
-        mode = "soa"
-        stderr, code = run_executable(scene_path, config_path, output_path, mode)
+        stderr, code = run_executable(scene_path, config_path, output_path)
         assert code == 0, f"El programa falló con archivos válidos (código {code}).\n    STDERR OBTENIDO:\n---\n{stderr.strip()}\n---"
         assert stderr == "", f"Se esperaba un stderr vacío, pero se obtuvo:\n---\n{stderr.strip()}\n---"
 
@@ -224,8 +198,7 @@ def main():
     # Se eliminó la prueba de valores por defecto de la lista principal
     # ya que no está en la hoja de cálculo y puede ser confusa.
     tests_to_run = [
-        test_success_valid_aos_files,
-        test_success_valid_soa_files,
+        test_success_valid_files,
         test_config_unrecognized_keys,
         test_config_invalid_values,
         test_scene_unrecognized_entity,
