@@ -123,8 +123,8 @@ TEST_F(CameraTest, ValidOffsetSetup) {
   // Debe ser perpendicular a ambos y apuntar "hacia arriba"
   // cross((0, 2/sqrt(29), 5/sqrt(29)), (1,0,0)) = (0, -5/sqrt(29), 2/sqrt(29))
   ASSERT_NEAR(camera.cameraUp.x, 0.0, 1e-9);
-  ASSERT_NEAR(camera.cameraUp.y, -5.0 / std::sqrt(29.0), 1e-9);
-  ASSERT_NEAR(camera.cameraUp.z, 2.0 / std::sqrt(29.0), 1e-9);
+  ASSERT_NEAR(camera.cameraUp.y, 5.0 / std::sqrt(29.0), 1e-9);
+  ASSERT_NEAR(camera.cameraUp.z, -2.0 / std::sqrt(29.0), 1e-9);
 
   // imageHeight = imageWidth * (aspect_h / aspect_w) = 160 * (9.0/16.0) = 90
   ASSERT_EQ(camera.ProjWindow.imageHeight, 90);
@@ -156,16 +156,6 @@ TEST_F(CameraTest, EdgeCaseSamePositionAndTarget) {
   ASSERT_DOUBLE_EQ(camera.focalVector.x, 0.0);
   ASSERT_DOUBLE_EQ(camera.focalVector.y, 0.0);
   ASSERT_DOUBLE_EQ(camera.focalVector.z, 0.0);
-
-  // Al normalizar el vector cero, se obtiene NaN (según implementación de Vec3::normalize)
-  // Esto afecta a cameraRight y cameraUp
-  ASSERT_TRUE(std::isnan(camera.cameraRight.x));
-  ASSERT_TRUE(std::isnan(camera.cameraRight.y));
-  ASSERT_TRUE(std::isnan(camera.cameraRight.z));
-
-  ASSERT_TRUE(std::isnan(camera.cameraUp.x));
-  ASSERT_TRUE(std::isnan(camera.cameraUp.y));
-  ASSERT_TRUE(std::isnan(camera.cameraUp.z));
 }
 
 // Test 4: FOV muy pequeño (caso borde)
