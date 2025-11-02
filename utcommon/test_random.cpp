@@ -202,29 +202,44 @@ TEST_F(RandomTest, DifferentSeedsDifferentSequences) {
 }
 
 // Test 9: Verificar get_vector_in_range con diferentes rangos
+
+namespace {
+
+  // --- FUNCIÓN AUXILIAR DE VERIFICACIÓN ---
+  // Su única responsabilidad es verificar que cada componente de un Vec3
+  // está dentro del rango simétrico esperado [-range, range).
+  void assertVectorInRange(Vec3 const & v, double range) {
+    // Usamos EXPECT en lugar de ASSERT aquí para que si una aserción falla,
+    // la prueba continúe y verifique los otros componentes, dando un reporte más completo.
+    EXPECT_GE(v.x, -range) << "Componente X fuera de rango (demasiado bajo)";
+    EXPECT_LT(v.x, range) << "Componente X fuera de rango (demasiado alto)";
+    EXPECT_GE(v.y, -range) << "Componente Y fuera de rango (demasiado bajo)";
+    EXPECT_LT(v.y, range) << "Componente Y fuera de rango (demasiado alto)";
+    EXPECT_GE(v.z, -range) << "Componente Z fuera de rango (demasiado bajo)";
+    EXPECT_LT(v.z, range) << "Componente Z fuera de rango (demasiado alto)";
+  }
+
+}  // namespace
+
+// --- PRUEBA PRINCIPAL (AHORA SIMPLIFICADA) ---
 TEST_F(RandomTest, GetVectorInRangeDifferentRanges) {
+  // 1. Arrange
   RandomGenerator rng(7);
+
+  // 2. Act & Assert
 
   // Rango pequeño
   for (int i = 0; i < 100; ++i) {
     Vec3 const v = rng.get_vector_in_range(0.1);
-    ASSERT_GE(v.x, -0.1);
-    ASSERT_LT(v.x, 0.1);
-    ASSERT_GE(v.y, -0.1);
-    ASSERT_LT(v.y, 0.1);
-    ASSERT_GE(v.z, -0.1);
-    ASSERT_LT(v.z, 0.1);
+    // La lógica de verificación ahora está en una sola llamada a la función auxiliar.
+    assertVectorInRange(v, 0.1);
   }
 
   // Rango grande
   for (int i = 0; i < 100; ++i) {
     Vec3 const v = rng.get_vector_in_range(100.0);
-    ASSERT_GE(v.x, -100.0);
-    ASSERT_LT(v.x, 100.0);
-    ASSERT_GE(v.y, -100.0);
-    ASSERT_LT(v.y, 100.0);
-    ASSERT_GE(v.z, -100.0);
-    ASSERT_LT(v.z, 100.0);
+    // Se reutiliza la misma función auxiliar con un rango diferente.
+    assertVectorInRange(v, 100.0);
   }
 }
 
