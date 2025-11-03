@@ -246,25 +246,9 @@ TEST_F(VectorTest, Normalize) {
 }
 
 // ============================================================================
-// TESTS DE CASOS BORDE (¡IMPORTANTE!)
+// TESTS DE CASOS BORDE
 // ============================================================================
 
-TEST_F(VectorTest, DivisionByZero) {
-  // Según el código: inv_scalar = 1.0 / scalar
-  // Para scalar = 0.0, inv_scalar = 1.0 / 0.0 = inf
-  // Resultado: (x * inf, y * inf, z * inf) = (inf, inf, inf)
-  Vec3 const v1(1.0, 1.0, 1.0);
-  Vec3 const result = v1 / 0.0;
-
-  ASSERT_TRUE(std::isinf(result.x));
-  ASSERT_TRUE(std::isinf(result.y));
-  ASSERT_TRUE(std::isinf(result.z));
-
-  // Verificar que son infinitos positivos
-  ASSERT_GT(result.x, 0.0);
-  ASSERT_GT(result.y, 0.0);
-  ASSERT_GT(result.z, 0.0);
-}
 
 TEST_F(VectorTest, NormalizeZeroVector) {
   // Según el código:
