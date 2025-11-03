@@ -34,6 +34,17 @@
       "cacheVariables": {
         "ENABLE_CLANG_TIDY": "ON"
       }
+    },
+    {
+      "name": "test",
+      "displayName": "Test Configuration",
+      "description": "Build configuration for unit tests with coverage enabled",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/out/build/test",
+      "cacheVariables": {
+        "ENABLE_COVERAGE": "ON",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
     }
   ],
   "buildPresets": [
@@ -56,6 +67,11 @@
       "name": "clang-tidy-release",
       "configurePreset": "clang-tidy",
       "configuration": "Release"
+    },
+    {
+      "name": "test-debug",
+      "configurePreset": "test",
+      "configuration": "Debug"
     }
   ]
 }
