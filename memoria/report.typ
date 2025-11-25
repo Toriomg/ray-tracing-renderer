@@ -4,7 +4,7 @@
   degree: "Grado en Ingeniería Informática",
   subject: "Arquitectura de Computadores",
   year: (25, 26),
-  project: "Proyecto de programación orientada al rendimiento",
+  project: "Proyecto de programación paralela",
   title: "Aplicación de sintesis de imágenes 3D",
   group: 81,
   team: 10,
@@ -37,9 +37,8 @@
 )
 
 
-#include "content/design.typ"
-#include "content/optim.typ"
-#include "content/test.typ"
+#include "content/modificaciones.typ"
+#include "content/paralelizacion.typ"
 #include "content/eval.typ"
 #include "content/org.typ"
 #include "content/concl.typ"
