@@ -46,3 +46,4 @@ out/**
 *.tar.gz
 
 env.sh
+env.*
