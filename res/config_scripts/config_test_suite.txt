@@ -1,0 +1,63 @@
+# ===================================================================
+# Archivo de Configuración para Probar el Parser
+# ===================================================================
+#
+# Instrucciones:
+# 1. Ejecuta el programa con este archivo tal como está. Debería funcionar
+#    correctamente, ignorando comentarios y tomando el último valor para "gamma".
+# 2. Para probar un caso de error, descomenta UNA de las líneas de la sección
+#    "PRUEBAS DE ERRORES" y vuelve a ejecutar el programa.
+#
+# ===================================================================
+
+
+# --- SECCIÓN 1: VALORES VÁLIDOS Y COMPORTAMIENTOS ESPECIALES ---
+
+# El parser debe ignorar las líneas en blanco como la siguiente:
+
+aspect_ratio: 16 9
+image_width: 800
+
+# Prueba de parámetro repetido: el valor final de gamma debe ser 2.5.
+gamma: 1.8
+gamma: 2.5
+
+camera_position: +0.0 +2.0 -10.0
+camera_target: 0 0 0
+camera_north: 0 1 0
+field_of_view: 60.0
+samples_per_pixel: 20
+max_depth: 5
+
+material_rng_seed: 13
+ray_rng_seed: 19
+
+background_dark_color: 0.25 0.5 1.0
+background_light_color: 1 1 1
+
+
+# ===================================================================
+# --- SECCIÓN 2: PRUEBAS DE ERRORES (DESCOMENTAR UNA LÍNEA A LA VEZ) ---
+# ===================================================================
+
+# --- Error: Etiqueta no reconocida (Unknown configuration key) ---
+#unknown_key: valor_invalido
+
+# --- Error: Información insuficiente (Invalid value for key) ---
+#camera_position: 500 500
+
+# --- Error: Información no esperada/extra (Extra data after configuration value) ---
+#max_depth: 5 datos extra que no deberian estar aqui
+
+# --- Error: Valor inválido (tipo de dato incorrecto) ---
+#image_width: texto_en_lugar_de_numero
+
+# --- Error: Valor inválido (fuera de rango semántico) ---
+#field_of_view: 200.0
+#background_light_color: 0.5 1.5 0.5
+
+# --- Error: Valor inválido (números especiales como NaN) ---
+#camera_target: 0 nan 0
+
+# --- Error: Valor inválido (debe ser positivo) ---
+#samples_per_pixel: -10
