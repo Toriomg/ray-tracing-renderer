@@ -1,4 +1,4 @@
-#include "../soa/include/image_soa.hpp"
+#include "../par/include/image_par.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -8,13 +8,13 @@
 #include <vector>
 
 // Tests para verificar que los arrays se generan del tamaño correcto
-TEST(test_image_soa, numero_pixeles) {
-  ImageSOA const img(10, 10);
+TEST(test_image_par, numero_pixeles) {
+  ImagePar const img(10, 10);
   EXPECT_EQ(img.total_pixels(), 10 * 10);
 }
 
-TEST(test_image_soa, calculo_indice) {
-  ImageSOA const img(10, 10);
+TEST(test_image_par, calculo_indice) {
+  ImagePar const img(10, 10);
   EXPECT_EQ(img.indice(0, 0), 0);
   EXPECT_EQ(img.indice(0, 1), 1);
   EXPECT_EQ(img.indice(1, 0), 10);
@@ -26,8 +26,8 @@ TEST(test_image_soa, calculo_indice) {
 // ============================================================================
 
 // Test: fill_from_double con datos válidos
-TEST(test_image_soa, fill_from_double_valid_data) {
-  ImageSOA image(1, 2);  // 2 píxeles
+TEST(test_image_par, fill_from_double_valid_data) {
+  ImagePar image(1, 2);  // 2 píxeles
   double const gamma               = 2.0;
   std::vector<double> const r_data = {0.25, 0.5};
   std::vector<double> const g_data = {0.5, 0.75};
@@ -55,8 +55,8 @@ TEST(test_image_soa, fill_from_double_valid_data) {
 }
 
 // Test: fill_from_double con gamma por defecto
-TEST(test_image_soa, fill_from_double_default_gamma) {
-  ImageSOA image(1, 1);
+TEST(test_image_par, fill_from_double_default_gamma) {
+  ImagePar image(1, 1);
   std::vector<double> const r = {0.5};
   std::vector<double> const g = {0.5};
   std::vector<double> const b = {0.5};
@@ -71,8 +71,8 @@ TEST(test_image_soa, fill_from_double_default_gamma) {
 }
 
 // Test: fill_from_double con valores extremos
-TEST(test_image_soa, fill_from_double_extreme_values) {
-  ImageSOA image(3, 1);  // 3 píxeles
+TEST(test_image_par, fill_from_double_extreme_values) {
+  ImagePar image(3, 1);  // 3 píxeles
   double const gamma = 2.0;
 
   std::vector<double> const r_data = {0.0, 1.0, 0.5};
@@ -94,8 +94,8 @@ TEST(test_image_soa, fill_from_double_extreme_values) {
 }
 
 // Test: fill_from_double sobrescribe datos anteriores
-TEST(test_image_soa, fill_from_double_overwrites_previous_data) {
-  ImageSOA image(2, 1);  // 2 píxeles
+TEST(test_image_par, fill_from_double_overwrites_previous_data) {
+  ImagePar image(2, 1);  // 2 píxeles
 
   // Establecer píxeles manualmente
   image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
@@ -123,9 +123,9 @@ TEST(test_image_soa, fill_from_double_overwrites_previous_data) {
 }
 
 // Test: fill_from_double con imagen grande
-TEST(test_image_soa, fill_from_double_large_image) {
+TEST(test_image_par, fill_from_double_large_image) {
   size_t const size = 100;
-  ImageSOA image(10, 10);  // 100 píxeles
+  ImagePar image(10, 10);  // 100 píxeles
 
   std::vector<double> const r_data(size, 0.5);
   std::vector<double> const g_data(size, 0.5);
@@ -153,7 +153,7 @@ TEST(test_image_soa, fill_from_double_large_image) {
 // FIXTURE PARA write_to_ppm
 // ============================================================================
 
-class ImageSOAIOTest : public ::testing::Test {
+class ImageParIOTest : public ::testing::Test {
 protected:
   void SetUp() override {
     // Inicialización si es necesaria
@@ -161,8 +161,8 @@ protected:
 
   void TearDown() override {
     // Limpieza de archivos temporales creados durante los tests
-    static_cast<void>(std::remove("test_soa.ppm"));
-    static_cast<void>(std::remove("test_error_soa.ppm"));
+    static_cast<void>(std::remove("test_par.ppm"));
+    static_cast<void>(std::remove("test_error_par.ppm"));
   }
 };
 
@@ -171,9 +171,9 @@ protected:
 // ============================================================================
 
 // Test: write_to_ppm con imagen válida
-TEST_F(ImageSOAIOTest, WriteToPPMValidImage) {
+TEST_F(ImageParIOTest, WriteToPPMValidImage) {
   // Configuración: imagen de 2x1 (2 píxeles)
-  ImageSOA image(2, 1);
+  ImagePar image(2, 1);
 
   // Establecer píxeles con valores conocidos usando setters individuales
   // Píxel 0: Rojo (255, 0, 0)
@@ -191,7 +191,7 @@ TEST_F(ImageSOAIOTest, WriteToPPMValidImage) {
   image.set_blue(1, 0.0);
 
   // Definir nombre de archivo temporal
-  std::string const filename = "test_soa.ppm";
+  std::string const filename = "test_par.ppm";
 
   // Llamar a write_to_ppm
   bool const result = image.write_to_ppm(filename);
@@ -243,9 +243,9 @@ TEST_F(ImageSOAIOTest, WriteToPPMValidImage) {
 }
 
 // Test: write_to_ppm con ruta inválida
-TEST_F(ImageSOAIOTest, WriteToPPMInvalidPath) {
+TEST_F(ImageParIOTest, WriteToPPMInvalidPath) {
   // Configuración: imagen de 1x1
-  ImageSOA image(1, 1);
+  ImagePar image(1, 1);
 
   // Establecer píxel con valores conocidos
   image.set_red(0, 0.0039215);    // ~1 en uint8_t
@@ -253,7 +253,7 @@ TEST_F(ImageSOAIOTest, WriteToPPMInvalidPath) {
   image.set_blue(0, 0.0117647);   // ~3 en uint8_t
 
   // Intentar escribir a un directorio que no existe
-  std::string const filename = "invalid_dir/test_error_soa.ppm";
+  std::string const filename = "invalid_dir/test_error_par.ppm";
 
   // Llamar a write_to_ppm
   bool const result = image.write_to_ppm(filename);
@@ -297,9 +297,9 @@ namespace {
 }  // namespace
 
 // --- PRUEBA PRINCIPAL (AHORA SIMPLIFICADA) ---
-TEST_F(ImageSOAIOTest, WriteToPPMComplexImage) {
+TEST_F(ImageParIOTest, WriteToPPMComplexImage) {
   // 1. Arrange (Preparar)
-  ImageSOA image(3, 2);
+  ImagePar image(3, 2);
   image.set_pixel(0, Color(1.0, 0.0, 0.0));
   image.set_pixel(1, Color(0.0, 1.0, 0.0));
   image.set_pixel(2, Color(0.0, 0.0, 1.0));
@@ -307,7 +307,7 @@ TEST_F(ImageSOAIOTest, WriteToPPMComplexImage) {
   image.set_pixel(4, Color(1.0, 0.0, 1.0));
   image.set_pixel(5, Color(0.0, 1.0, 1.0));
 
-  std::string const filename = "test_soa.ppm";
+  std::string const filename = "test_par.ppm";
 
   // 2. Act (Actuar)
   bool const result = image.write_to_ppm(filename);
@@ -342,9 +342,9 @@ TEST_F(ImageSOAIOTest, WriteToPPMComplexImage) {
 }
 
 // Test: write_to_ppm preserva el estado interno de la imagen
-TEST_F(ImageSOAIOTest, WriteToPPMPreservesImageState) {
+TEST_F(ImageParIOTest, WriteToPPMPreservesImageState) {
   // Configuración: imagen de 2x1
-  ImageSOA image(2, 1);
+  ImagePar image(2, 1);
 
   // Establecer píxeles
   image.set_pixel(0, Color(1.0, 0.0, 0.0));  // Rojo
@@ -359,7 +359,7 @@ TEST_F(ImageSOAIOTest, WriteToPPMPreservesImageState) {
   uint8_t const b1_before = image.get_blue(1);
 
   // Definir nombre de archivo temporal
-  std::string const filename = "test_soa.ppm";
+  std::string const filename = "test_par.ppm";
 
   // Llamar a write_to_ppm
   bool const result = image.write_to_ppm(filename);
@@ -375,14 +375,14 @@ TEST_F(ImageSOAIOTest, WriteToPPMPreservesImageState) {
 }
 
 // Test: write_to_ppm múltiples veces al mismo archivo
-TEST_F(ImageSOAIOTest, WriteToPPMMultipleTimes) {
+TEST_F(ImageParIOTest, WriteToPPMMultipleTimes) {
   // Configuración: imagen de 1x1
-  ImageSOA image(1, 1);
+  ImagePar image(1, 1);
 
   // Primera escritura: píxel rojo
   image.set_pixel(0, Color(1.0, 0.0, 0.0));
 
-  std::string const filename = "test_soa.ppm";
+  std::string const filename = "test_par.ppm";
 
   // Primera llamada a write_to_ppm
   bool const result1 = image.write_to_ppm(filename);

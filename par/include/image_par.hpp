@@ -1,5 +1,5 @@
-#ifndef IMAGE_SOA_HPP
-#define IMAGE_SOA_HPP
+#ifndef IMAGE_Par_HPP
+#define IMAGE_Par_HPP
 
 #include <../../common/include/constants.hpp>
 #include <../../common/include/utilities/vec3.hpp>
@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-class ImageSOA {
+class ImagePar {
 private:
   std::vector<uint8_t>
       r_channel_;  // Array que almacena el valor de rojo para todos los píxeles de la imagen
@@ -20,7 +20,7 @@ private:
 
 public:
   // Constructor: crea los 3 arrays del tamaño adecuado
-  ImageSOA(size_t width, size_t height);
+  ImagePar(size_t width, size_t height);
 
   // Función para calcular el índice de un pixel en los arrays de colores
   [[nodiscard]] size_t indice(size_t row, size_t col) const { return row * width_ + col; }

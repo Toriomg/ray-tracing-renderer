@@ -1,6 +1,6 @@
 // no hacemos comprobaciones porque la mayoría ya se incluyen en el parser y en la configuración
 
-#include "../include/image_soa.hpp"
+#include "../include/image_par.hpp"
 #include "../../common/include/ppm_writer.hpp"
 #include "../../common/include/utilities/color_utils.hpp"
 #include <../../common/include/utilities/vec3.hpp>
@@ -11,45 +11,45 @@
 #include <vector>
 
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
-ImageSOA::ImageSOA(size_t width, size_t height)
+ImagePar::ImagePar(size_t width, size_t height)
     : r_channel_(width * height, 0),  // Inicializamos todos con ceros
       g_channel_(width * height, 0), b_channel_(width * height, 0), width_(width), height_(height) {
 }
 
 // Métodos para comprobar los valores de un pixel concreto
-uint8_t ImageSOA::get_red(size_t index) const {
+uint8_t ImagePar::get_red(size_t index) const {
   return r_channel_[index];
 }
 
-uint8_t ImageSOA::get_green(size_t index) const {
+uint8_t ImagePar::get_green(size_t index) const {
   return g_channel_[index];
 }
 
-uint8_t ImageSOA::get_blue(size_t index) const {
+uint8_t ImagePar::get_blue(size_t index) const {
   return b_channel_[index];
 }
 
 // Métodos para modificar el valor de un pixel dentro de los arrays de colores
-void ImageSOA::set_red(size_t index, double value, double gamma) {
+void ImagePar::set_red(size_t index, double value, double gamma) {
   r_channel_[index] = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageSOA::set_green(size_t index, double value, double gamma) {
+void ImagePar::set_green(size_t index, double value, double gamma) {
   g_channel_[index] = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
-void ImageSOA::set_blue(size_t index, double value, double gamma) {
+void ImagePar::set_blue(size_t index, double value, double gamma) {
   b_channel_[index] = color_utils::double_to_uint8(color_utils::apply_gamma(value, gamma));
 }
 
 // Método para definir un color completo en un pixel concreto de una sola vez
-void ImageSOA::set_pixel(size_t index, Color const & color, double gamma) {
+void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_red(index, color.x, gamma);
   set_green(index, color.y, gamma);
   set_blue(index, color.z, gamma);
 }
 
-void ImageSOA::fill_from_double(std::vector<double> const & r_data,
+void ImagePar::fill_from_double(std::vector<double> const & r_data,
                                 std::vector<double> const & g_data,
                                 std::vector<double> const & b_data, double gamma) {
   // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
@@ -64,7 +64,7 @@ void ImageSOA::fill_from_double(std::vector<double> const & r_data,
 }
 
 // Escritura a archivo PPM usando la clase PPMWriter
-bool ImageSOA::write_to_ppm(std::string const & filename) const {
+bool ImagePar::write_to_ppm(std::string const & filename) const {
   auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
 
   return PPMWriter::write_ppm(filename, pixels, width_, height_);
