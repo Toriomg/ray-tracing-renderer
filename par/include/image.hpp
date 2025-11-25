@@ -1,5 +1,5 @@
-#ifndef SOA_INCLUDE_IMAGE_HPP
-#define SOA_INCLUDE_IMAGE_HPP
+#ifndef PAR_INCLUDE_IMAGE_HPP
+#define PAR_INCLUDE_IMAGE_HPP
 
 #include <cstdint>
 #include <vector>
