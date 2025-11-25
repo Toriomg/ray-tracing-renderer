@@ -6,9 +6,7 @@ Architecture course at Universidad Carlos III de Madrid.
 
 
 # How to use the scripts
-Aquí tienes un `README.md` listo para copiar y pegar en la raíz de tu proyecto. Está diseñado para que cualquier miembro del equipo entienda cómo trabajar con el nuevo flujo automatizado.
 
----
 
 # 🚀 Manual de Automatización y Despliegue (Makefile)
 
@@ -18,7 +16,7 @@ Este proyecto utiliza un sistema automatizado basado en `Make` para gestionar la
 
 Antes de usar los comandos, necesitas definir tus credenciales y rutas.
 
-1.  Crea un archivo llamado **`env.sh`** en la raíz del proyecto.
+1.  Edita el archivo llamado **`env.sh`** en la raíz del proyecto.
 2.  Copia el siguiente contenido y edita los valores con tu usuario:
 
 ```bash

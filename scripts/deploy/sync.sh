@@ -7,6 +7,8 @@ rsync -avz --delete \
     --exclude '.git' \
     --exclude 'out/build' \
     --exclude '__pycache__' \
+    --exclude 'out' \
+    --exclude '*.ppm' \
     --exclude '.vscode' \
     ./ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR
 
