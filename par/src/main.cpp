@@ -4,7 +4,7 @@
 #include "../../common/include/rendering_engine.hpp"
 #include "../../common/include/scene_parser.hpp"
 #include "../../common/include/utilities/random.hpp"
-#include "image_soa.hpp"
+#include "image_par.hpp"
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -14,7 +14,7 @@
 /*
 std::string const FilepathScene  = "/workspace/res/scene_scripts/scene3example.txt";
 std::string const FilepathConfig = "/workspace/res/config_scripts/config3example.txt";
-std::string const FilepathOut    = "/workspace/outputImageSOA.ppm";
+std::string const FilepathOut    = "/workspace/outputImagePar.ppm";
 */
 
 int main(int argc, char * argv[]) {
@@ -49,11 +49,11 @@ int main(int argc, char * argv[]) {
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
   RenderContext ctx(&scene, &config, &rngRay, &rngMaterial);
   {
-    std::cout << "Rendering with ImageSOA..." << '\n';
-    ImageSOA imageSoa(imageWidth, imageHeight);
+    std::cout << "Rendering with ImagePar..." << '\n';
+    ImagePar imageSoa(imageWidth, imageHeight);
     renderImage(imageSoa, camera, ctx);
     if (!imageSoa.write_to_ppm(args[3])) {
-      std::cerr << "Error writing ImageSOA to .ppm file\n";
+      std::cerr << "Error writing ImagePar to .ppm file\n";
     }
   }
   return 0;
