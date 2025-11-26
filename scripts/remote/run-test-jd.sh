@@ -5,7 +5,7 @@
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-for i in {4..4}
+for i in {1..4}
 do
 echo "[ $i ] Iniciando ejecución $i en $(hostname)"
 

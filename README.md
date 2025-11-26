@@ -21,28 +21,27 @@ Antes de usar los comandos, necesitas definir tus credenciales y rutas.
 
 ```bash
 # env.sh
-export PROJECT_NAME="render-par"
-
 # Tu usuario de la universidad (ej: a052XXXX)
-export REMOTE_USER="a052XXXX"
-
-# Dirección del servidor
-export REMOTE_HOST="avignon.lab.inf.uc3m.es"
-
+REMOTE_USER=a0522253
+REMOTE_HOST=avignon.lab.inf.uc3m.es
 # Directorio en el servidor donde se guardará el proyecto
-# (Asegúrate de que esta carpeta exista o deja que el script la cree)
-export REMOTE_DIR="~/rtx"
+# (deja que el script la cree)
+REMOTE_DIR=rtx
 ```
 
 > **Nota:** El archivo `env.sh` suele añadirse al `.gitignore` para no subir credenciales al repositorio.
 
-### 🔑 Configuración de SSH (Recomendado)
-Para no tener que escribir tu contraseña cada vez que ejecutes un comando `make`, configura una clave SSH:
+### Archivo de Contraseña (`.password`)
+Para evitar escribir la contraseña constantemente, el sistema usa `sshpass`, instálalo.
+1. Crea un archivo llamado `.password` en la raíz.
+2. Escribe tu contraseña de la Avignon dentro (solo la contraseña, sin espacios extra).
+3. **Importante:** Asegúrate de que `.password` está en tu archivo `.gitignore`.
 
 ```bash
-# En tu terminal local (dentro del contenedor o linux)
-ssh-keygen -t rsa -b 4096
-ssh-copy-id $REMOTE_USER@$REMOTE_HOST
+# Mejor hazlo en el IDE porque con la terminal se queda en su historial
+echo "tu_contraseña_aqui" > .password
+# Ya está incluido pero compruebalo por si acaso.
+echo ".password" >> .gitignore
 ```
 
 ---
@@ -51,27 +50,28 @@ ssh-copy-id $REMOTE_USER@$REMOTE_HOST
 
 Ejecuta estos comandos desde la terminal en la raíz del proyecto.
 
-### 📡 Sincronización y Compilación Remota
+#### 📡 Conexión y Compilación
 
 | Comando | Descripción |
 | :--- | :--- |
-| **`make deploy`** | Sube los archivos modificados al servidor usando `rsync`. Es incremental (solo sube lo nuevo) y muy rápido. |
-| **`make remote-build`** | Sube los cambios (`deploy`) y lanza un trabajo a la cola de **Slurm** para compilar el proyecto en el servidor. |
+| **`make deploy`** | Empaqueta y sube el proyecto al servidor usando `tar` sobre `ssh` (no requiere rsync). |
+| **`make remote-build`** | Sube cambios (`deploy`) y lanza la compilación en el clúster con Slurm. |
 
-### 🧪 Ejecución de Pruebas
-
-| Comando | Descripción |
-| :--- | :--- |
-| **`make gen-tests`** | Ejecuta el script de Python local para generar/actualizar los scripts `.sh` de pruebas en `tests_de_config/` y `tests_de_escenas/`. |
-| **`make remote-run-all`** | Sube los scripts generados y **lanza todos los trabajos** a la cola del clúster (`sbatch`) de una sola vez. |
-| **`make all-remote`** | El "Botón Mágico": Hace `deploy` -> `remote-build` -> `remote-run-all`. Úsalo cuando hayas hecho cambios en el código C++ y quieras testear todo. |
-
-### 📥 Recopilación de Resultados
+#### 🧪 Ejecución de Tests (JD Tests)
 
 | Comando | Descripción |
 | :--- | :--- |
-| **`make fetch`** | Descarga del servidor el CSV consolidado de resultados y las imágenes `.ppm` generadas a tu carpeta local `out/`. |
-| **`make clean-remote`** | (Opcional) Limpia la carpeta de construcción en el servidor por si hay errores de caché corrupta. |
+| **`make run-jd`** | Sube el script `run-test-jd.sh` y lo lanza a la cola de Slurm (partición `stan`). |
+| **`make tail-jd`** | Muestra en tiempo real el log de salida del test JD (`tail -f`). Usa `Ctrl+C` para salir. |
+| **`make all-jd`** | Ejecuta `run-jd` e inmediatamente se pone a mostrar el log (`tail-jd`). |
+
+#### 📥 Descarga de Resultados (Fetch)
+
+| Comando | Descripción |
+| :--- | :--- |
+| **`make fetch-ppm`** | Descarga solo las imágenes generadas a la carpeta local `logs/img/`. |
+| **`make fetch-txt`** | Descarga los logs de texto y reportes de Slurm a la carpeta local `logs/txt/`. |
+| **`make fetch-all`** | Ejecuta ambos comandos anteriores (descarga todo). |
 
 ---
 
@@ -87,18 +87,18 @@ Imagina que has modificado el código C++ para mejorar el rendimiento. Los pasos
 
 2.  **Lanzar Batería de Pruebas:**
     ```bash
-    make remote-run-all
+    make run-jd
     ```
 
 3.  **Esperar resultados...** (Tómate un café mientras Slurm trabaja).
 
 4.  **Descargar Datos:**
     ```bash
-    make fetch
+    make fetch-all
     ```
 
 5.  **Analizar en Local:**
-    Ahora tienes los archivos en `out/`. Puedes abrir el CSV en Excel o usar los scripts de Python locales para comparar imágenes.
+    Ahora tienes los archivos en `./logs/`.
 
 ---
 
@@ -106,7 +106,8 @@ Imagina que has modificado el código C++ para mejorar el rendimiento. Los pasos
 
 Para mantener el orden, no modifiques el `Makefile` directamente si no es necesario. Edita los scripts correspondientes:
 
-*   **`scripts/deploy/sync.sh`**: Controla qué archivos se suben (y cuáles se ignoran como `.git` o `build`).
+*   **`scripts/deploy/sync.sh`**: Controla qué archivos se suben (y cuáles se ignoran como `.git`, `.password` `env.sh` o `build`).
 *   **`scripts/remote/build.sh`**: Comandos que ejecuta Slurm para compilar (CMake settings).
+*   **`scripts/remote/run-test-jd.sh`**: Script que ejecuta los casos de prueba.
 *   **`scripts/generation/genTests.py`**: Script que crea los tests. Si quieres cambiar parámetros (más rayos, resolución, etc.), edita esto y corre `make gen-tests`.
 *   **`scripts/analysis/`**: Scripts para comparar imágenes o generar gráficas en local.
