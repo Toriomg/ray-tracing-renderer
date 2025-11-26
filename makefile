@@ -2,7 +2,7 @@ include env.sh
 
 # 1. Subir código (Sincronización inteligente, no borra carpeta 'out' remota innecesariamente)
 deploy:
-	bash scripts/deploy/sync.sh
+	bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
 
 # 2. Compilar en Avignon (Manda el comando ssh)
 remote-build: deploy
