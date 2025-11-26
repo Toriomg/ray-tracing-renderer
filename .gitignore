@@ -1,8 +1,10 @@
 out/**
+logs/**
 # PPM files
 *.ppm
 # Prerequisites
 *.d
+*.out
 
 # Compiled Object files
 *.slo
