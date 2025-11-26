@@ -1,12 +1,16 @@
 include env.sh
 
+PASSFILE=.password
+
 # 1. Subir código (Sincronización inteligente, no borra carpeta 'out' remota innecesariamente)
 deploy:
 	bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
 
 # 2. Compilar en Avignon (Manda el comando ssh)
 remote-build: deploy
-	ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait scripts/remote/build.sh"
+	@echo ">>> Enviando compilación a la cola..."
+	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait scripts/remote/build.sh"
+
 
 # 3. Generar tests (Ejecuta tu python localmente para crear los .sh)
 gen-tests:
@@ -23,3 +27,7 @@ fetch:
 
 # Atajo completo: Sube -> Compila -> Lanza Tests
 all-remote: remote-build remote-run-all
+
+tail:
+	@echo ">>> Leyendo log del trabajo $(ID)..."
+	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "tail -n 20 -f $(REMOTE_DIR)/slurm-$(ID).out"
