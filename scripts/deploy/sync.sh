@@ -27,6 +27,10 @@ sshpass -f "$PASSFILE" ssh -o StrictHostKeyChecking=no "${USER}@${HOST}" "mkdir 
 echo ">>> Subiendo archivos..."
 tar --exclude='./out' \
     --exclude='./.git' \
+    --exclude='./.password' \
+    --exclude='./env.sh' \
+    --exclude='./memoria' \
+    --exclude='./docs' \
     --exclude='./.vscode' \
     --exclude='./__pycache__' \
     --exclude='*.tar.gz' \
