@@ -7,11 +7,11 @@
 class RandomGenerator {
 public:
   explicit RandomGenerator(std::uint64_t seed);
-  [[nodiscard]]double get_double();
-  [[nodiscard]]double get_double(double min, double max);
-  [[nodiscard]]Vec3 get_vector_minus1_to_1();
-  [[nodiscard]]Vec3 get_vector_in_range(double range);
-  [[nodiscard]]Vec3 get_unit_sphere();
+  [[nodiscard]] double get_double();
+  [[nodiscard]] double get_double(double min, double max);
+  [[nodiscard]] Vec3 get_vector_minus1_to_1();
+  [[nodiscard]] Vec3 get_vector_in_range(double range);
+  [[nodiscard]] Vec3 get_unit_sphere();
 
 private:
   std::mt19937_64 m_engine;

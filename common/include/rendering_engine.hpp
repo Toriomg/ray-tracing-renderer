@@ -5,17 +5,23 @@
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/renderer.hpp"
 #include "../../common/include/utilities/random.hpp"
+#include "../../common/include/utilities/random_par.hpp"
 
 // RenderContext struct
 struct RenderContext {
   SceneSettings * scene;
   ConfigSettings const * config;
-  RandomGenerator * rngRay;
-  RandomGenerator * rngMaterial;
+  ParallelRNGManager * rng_manager;
 
-  RenderContext(SceneSettings * scn, ConfigSettings const * cfg, RandomGenerator * rngR,
-                RandomGenerator * rngM)
-      : scene(scn), config(cfg), rngRay(rngR), rngMaterial(rngM) { }
+  RenderContext(SceneSettings * scn, ConfigSettings const * cfg, ParallelRNGManager * rng_mgr)
+      : scene(scn), config(cfg), rng_manager(rng_mgr) { }
+
+  // Métodos NUEVOS de conveniencia:
+  [[nodiscard]] RandomGenerator & get_ray_rng() const { return rng_manager->get_ray_rng(); }
+
+  [[nodiscard]] RandomGenerator & get_material_rng() const {
+    return rng_manager->get_material_rng();
+  }
 };
 
 // EN rendering_engine.hpp
@@ -32,6 +38,9 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
 
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
+  auto & ray_rng      = ctx.get_ray_rng();  // Generadores paralelos
+  auto & material_rng = ctx.get_material_rng();
+
   for (size_t row = 0; row < imageHeight; row++) {
     for (size_t col = 0; col < imageWidth; col++) {
       Color accumulated_color(0.0, 0.0, 0.0);
@@ -41,14 +50,16 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
                                   (static_cast<double>(row) * pixel_delta_v);
       for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {
         // Genera un punto aleatorio DENTRO del cuadrado del píxel
-        double const px = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
-        double const py = ctx.rngRay->get_double() - 0.5;  // [-0.5, 0.5)
+        double const px = ray_rng.get_double() - 0.5;
+        double const py = ray_rng.get_double() - 0.5;
 
         Point3 const pixel_sample_point =
             pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
         Ray const ray(camera.cameraPos, pixel_sample_point - camera.cameraPos,
                       ctx.config->max_depth);
-        accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, *ctx.rngMaterial);
+
+        // Pasar material_rng por referencia
+        accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, material_rng);
       }
       Color const final_pixel_color = accumulated_color * static_cast<double>(scale);
 
