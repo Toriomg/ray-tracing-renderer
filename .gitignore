@@ -1,8 +1,10 @@
 out/**
+logs/**
 # PPM files
 *.ppm
 # Prerequisites
 *.d
+*.out
 
 # Compiled Object files
 *.slo
@@ -44,3 +46,7 @@ out/**
 *.dwo
 
 *.tar.gz
+
+env.sh
+env.*
+.password
