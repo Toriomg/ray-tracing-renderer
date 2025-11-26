@@ -16,6 +16,10 @@ remote-build: deploy
 gen-tests:
 	python3 scripts/generation/gen_tests.py
 
+run-jd: deploy
+	@echo ">>> Enviando run-test-jd.sh a la cola de Slurm..."
+	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch scripts/remote/run-test-jd.sh"
+
 # 4. Enviar TODOS los tests generados a la cola de Avignon
 remote-run-all: deploy
 	ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && find tests_de_config tests_de_escenas -name '*.sh' -exec sbatch {} \;"
