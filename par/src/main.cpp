@@ -3,7 +3,7 @@
 #include "../../common/include/dataStructs/settings_structs.hpp"
 #include "../../common/include/rendering_engine.hpp"
 #include "../../common/include/scene_parser.hpp"
-#include "../../common/include/utilities/random.hpp"
+#include "../../common/include/utilities/random_par.hpp"
 #include "image_par.hpp"
 #include <cstddef>
 #include <iostream>
@@ -39,15 +39,15 @@ int main(int argc, char * argv[]) {
   }
   SceneSettings & scene = *scene_opt;
 
-  // Create random generators
-  auto rngRay      = RandomGenerator(config.ray_rng_seed);
-  auto rngMaterial = RandomGenerator(config.material_rng_seed);
+  // Creamos el generador random paralelizable
+  ParallelRNGManager rng_manager(static_cast<unsigned int>(config.ray_rng_seed),
+                                 static_cast<unsigned int>(config.material_rng_seed));
 
   // Create camera
   auto camera      = Camera(config);
   auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
-  RenderContext ctx(&scene, &config, &rngRay, &rngMaterial);
+  RenderContext ctx(&scene, &config, &rng_manager);
   {
     std::cout << "Rendering with ImagePar..." << '\n';
     ImagePar imageSoa(imageWidth, imageHeight);
