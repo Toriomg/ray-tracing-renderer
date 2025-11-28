@@ -29,7 +29,7 @@ struct SceneSettings {
   CylinderData cylinders;
   std::vector<MaterialID> materialTable;
   std::vector<std::string> materialNames;  // Just for debugging
-  std::shared_ptr<BVH> bvh;
+  BVH bvh;
 
   // tiene los SOA de los materiales
   MatteMaterials matte;

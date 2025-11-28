@@ -1,7 +1,8 @@
 add_library(common STATIC)
 
 target_sources(common 
-    PRIVATE 
+    PRIVATE
+        src/dataStructs/bvh.cpp
         src/utilities/random.cpp
         src/camera.cpp
         src/renderer.cpp
