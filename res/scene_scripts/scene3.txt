@@ -1,54 +1,12 @@
-matte: mat1 1.0 0.3 0.3
-matte: mat2 0.3 1.0 0.3
-matte: mat3 0.3 0.3 1.0
-matte: mat4 0.5 0.5 0.5
-matte: sun 0.3 0.3 0.3
-matte: skin 0.9882 0.7156 0.6058
-metal: metal1 0.9 0.9 0.9 0.05
-metal: metal2 0.2 0.0 0.3 0.95
-metal: metal3 0.1 0.05 0.1 0.5
-metal: metal4 0.9 0.3 1.0 0.25
-metal: yellow 1.0 1.0 0.0 0.05
+matte: mat1 0.75 0.25 0
+metal: metal1 0.9 0 0 2.0
+metal: metal2 0.8 0.8 0 1.5
+metal: metal3 0 0 0.8 2.0
 refractive: ref1 1.3
-refractive: ref2 1.7
-
-sphere:  5  5 0 3 mat2
-sphere: -5  5 0 3 ref1
-sphere: -5 -5 0 3 mat3
-sphere:  5 -5 0 3 metal1
-sphere:  0 -500 0 490 mat4
-sphere:  -2 5 4 3 mat1
-cylinder: 5 5 0 0.8 0 3 0 mat4
-cylinder: -8 6.5 0 0.6 4 0 0 mat1
-cylinder: 7 1 0 1.0 -1 5 10 metal1
-cylinder: 8 3 5 0.5 0 0 3 mat2
-cylinder: 2 -4 10 1 0 1 5 metal2
-cylinder: -2 -4 10 1 0 0 5 metal3
-cylinder: 4 3 0 0.5 0 0.25 6 metal4
-
-sphere: -10 0 0 2 ref2
-cylinder: -10 0 0 0.5 9 0 0 metal1
-cylinder: -10 0 0 0.5 0 9 0 metal1
-sphere: -10 1 2 1.6 mat1
-
-sphere: 1300 400 1000 300 metal1
-sphere: -1300 400 1000 300 metal1
-
-cylinder:  4980.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder:  3980.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder:  2980.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder:  1980.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder:   980.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder:   -20.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder: -1020.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder: -2020.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder: -3020.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder: -4020.0 50 100 20 -50000000 -50000000 0 metal3
-cylinder: -5020.0 50 100 20 -50000000 -50000000 0 metal3
-
-
-sphere:  0.5 -1 -3 0.5 skin
-sphere: -0.5 -1 -3 0.5 skin
-cylinder: 0 -2 -3 0.3 0 2 0 skin
-sphere:   0 -3 -3 0.3 skin
-cylinder: 0 -8 -3 0.15 0 10 0 yellow
+refractive: ref2 0.5
+sphere: 0 0 0 2 ref1
+sphere: 0 2 0 1 metal2
+sphere: 0 -2 0 1 metal3
+sphere: 3 2 0 0.25 mat1
+cylinder: 5 -3 0 0.5 4 2.5 -1.25 ref1
+cylinder: 3 0 -3 0.5 -4 2.5 1.25 metal1

@@ -1,4 +1,3 @@
-
 image_width: 1800
 gamma: 2.2
 

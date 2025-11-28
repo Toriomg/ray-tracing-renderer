@@ -5,13 +5,13 @@
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-for i in {1..4}
+for i in {5..5}
 do
 echo "[ $i ] Iniciando ejecución $i en $(hostname)"
 
 # Rutas a los archivos de entrada y salida
-CONFIG_FILE="res/config_scripts/config${i}example.txt"  
-SCENE_FILE="res/scene_scripts/scene${i}example.txt"    
+CONFIG_FILE="res/config_scripts/config${i}.txt"  
+SCENE_FILE="res/scene_scripts/scene${i}.txt"    
 OUTPUT_FILE="out${i}.ppm"
 
 # Ruta a los ejecutables compilados
