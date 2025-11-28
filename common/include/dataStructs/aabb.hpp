@@ -75,6 +75,61 @@ public:
     t_max = t1 < t_max ? t1 : t_max;
     return t_max > t_min;
   }
+
+
+  [[nodiscard]] Point3 centroid() const {
+        return Point3(
+            (min_point.x + max_point.x) * 0.5,
+            (min_point.y + max_point.y) * 0.5,
+            (min_point.z + max_point.z) * 0.5
+        );
+    }
+
+    // Find the longest axis (0=x, 1=y, 2=z)
+    [[nodiscard]] int longest_axis() const {
+        double dx = max_point.x - min_point.x;
+        double dy = max_point.y - min_point.y;
+        double dz = max_point.z - min_point.z;
+        
+        if (dx > dy && dx > dz) return 0;
+        if (dy > dz) return 1;
+        return 2;
+    }
+
+    // Calculate surface area of the AABB
+    [[nodiscard]] double surface_area() const {
+        double dx = max_point.x - min_point.x;
+        double dy = max_point.y - min_point.y;
+        double dz = max_point.z - min_point.z;
+        return 2.0 * (dx * dy + dx * dz + dy * dz);
+    }
+
+    // Expand this AABB to include another AABB
+    void expand_to_include(const AABB& other) {
+        min_point.x = std::min(min_point.x, other.min_point.x);
+        min_point.y = std::min(min_point.y, other.min_point.y);
+        min_point.z = std::min(min_point.z, other.min_point.z);
+        
+        max_point.x = std::max(max_point.x, other.max_point.x);
+        max_point.y = std::max(max_point.y, other.max_point.y);
+        max_point.z = std::max(max_point.z, other.max_point.z);
+    }
+
+    // Combine two AABBs into one that contains both
+    static AABB combine(const AABB& box1, const AABB& box2) {
+        Point3 new_min(
+            std::min(box1.min_point.x, box2.min_point.x),
+            std::min(box1.min_point.y, box2.min_point.y),
+            std::min(box1.min_point.z, box2.min_point.z)
+        );
+        Point3 new_max(
+            std::max(box1.max_point.x, box2.max_point.x),
+            std::max(box1.max_point.y, box2.max_point.y),
+            std::max(box1.max_point.z, box2.max_point.z)
+        );
+        return AABB(new_min, new_max);
+      }
 };
+
 
 #endif
