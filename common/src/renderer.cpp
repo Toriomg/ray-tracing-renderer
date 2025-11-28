@@ -20,24 +20,25 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
   double closest_t = std::numeric_limits<double>::infinity();
   std::optional<HitRecord> hit_rec;
   std::vector<BVHObject> intersected_objects;
-  scene.bvh->get_intersected_objects(ray, 0.001, closest_t, intersected_objects);
+
+  scene.bvh.get_intersected_objects(ray, Interval(0.001, closest_t), intersected_objects);
+
   for (auto const & obj : intersected_objects) {
     std::optional<HitRecord> new_hit;
-
     switch (obj.type) {
       case BVHObject::SPHERE:
-        new_hit = Renderer::RenderSpheres(scene, obj.index, ray, closest_t);
+        new_hit = Renderer::RenderSpheres(scene, obj.original_index, ray, closest_t);
         break;
       case BVHObject::CYLINDER:
-        new_hit = Renderer::RenderCylinders(scene, obj.index, ray, closest_t);
+        new_hit = Renderer::RenderCylinders(scene, obj.original_index, ray, closest_t);
         break;
     }
-
     if (new_hit) {
       closest_t = new_hit->t;
       hit_rec   = new_hit;
     }
   }
+
   if (hit_rec) {
     MaterialID const material_id = scene.materialTable[hit_rec->material_global_id];
     MaterialContext const ctx(&scene, &config, &materialRng);

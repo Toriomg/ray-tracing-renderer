@@ -1,138 +1,169 @@
-// bvh.cpp
 #include "../include/dataStructs/bvh.hpp"
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <vector>
 
-void BVH::build(SphereData const & spheres, CylinderData const & cylinders) {
-  std::vector<BVHObject> all_objects;
-
-  // Add spheres to BVH objects
-  all_objects.reserve(spheres.x.size());
-  for (size_t i = 0; i < spheres.x.size(); ++i) {
-    all_objects.emplace_back(BVHObject::SPHERE, i, spheres.aabbs[i]);
+// Initializes the flat object list from separate Sphere and Cylinder arrays.
+void BVH::init_build_data(SphereData const & s, CylinderData const & c) {
+  nodes.clear();
+  bvh_objects.clear();
+  bvh_objects.reserve(s.x.size() + c.x.size());
+  for (size_t i = 0; i < s.x.size(); ++i) {
+    bvh_objects.push_back({BVHObject::SPHERE, i, s.aabbs.at(i)});
   }
-
-  // Add cylinders to BVH objects
-  for (size_t i = 0; i < cylinders.x.size(); ++i) {
-    all_objects.emplace_back(BVHObject::CYLINDER, i, cylinders.aabbs[i]);
+  for (size_t i = 0; i < c.x.size(); ++i) {
+    bvh_objects.push_back({BVHObject::CYLINDER, i, c.aabbs.at(i)});
   }
-
-  total_objects = all_objects.size();
-
-  std::cout << "Building BVH with " << total_objects << " objects (" << spheres.x.size()
-            << " spheres, " << cylinders.x.size() << " cylinders)\n";
-
-  // Reset statistics
-  node_count = 0;
-  leaf_count = 0;
-  max_depth  = 0;
-
-  // Build the tree recursively
-  if (!all_objects.empty()) {
-    root = build_recursive(all_objects, 0, static_cast<int>(all_objects.size()), 0);
-  }
-
-  std::cout << "BVH built: " << node_count << " nodes, " << leaf_count << " leaves, max depth "
-            << max_depth << "\n";
 }
 
-std::shared_ptr<BVHNode> BVH::build_recursive(std::vector<BVHObject> & objects, int start, int end,
-                                              int depth) {
-  if (start >= end) {
-    return nullptr;
-  }
+// Splits a node's objects into two halves based on the centroid median.
+void BVH::partition_node(BuildTask const & task, int axis, std::vector<BuildTask> & stack) {
+  size_t mid = task.start + (task.end - task.start) / 2;
 
-  node_count++;
-  max_depth = std::max(max_depth, static_cast<size_t>(depth));
-  auto node = std::make_shared<BVHNode>();
+  // Comparator for sorting objects along the longest axis
+  auto cmp = [axis](BVHObject const & a, BVHObject const & b) {
+    return a.bbox.centroid()[static_cast<size_t>(axis)] <
+           b.bbox.centroid()[static_cast<size_t>(axis)];
+  };
 
+  auto start_itr = bvh_objects.begin() + static_cast<std::ptrdiff_t>(task.start);
+  auto mid_itr   = bvh_objects.begin() + static_cast<std::ptrdiff_t>(mid);
+  auto end_itr   = bvh_objects.begin() + static_cast<std::ptrdiff_t>(task.end);
+
+  // Partially sort so elements < mid are on the left (Linear time split)
+  std::nth_element(start_itr, mid_itr, end_itr, cmp);
+
+  size_t left_idx = nodes.size();
+  nodes.emplace_back();  // Create Left Child
+  nodes.emplace_back();  // Create Right Child
+
+  nodes.at(task.node_idx).left_first = static_cast<uint32_t>(left_idx);
+
+  // Push children to stack (Right first, so Left is processed first)
+  stack.push_back({left_idx + 1, mid, task.end});
+  stack.push_back({left_idx, task.start, mid});
+}
+
+// Computes bounds and decides whether to make a leaf or split further.
+void BVH::process_node(BuildTask const & task, std::vector<BuildTask> & stack) {
   AABB node_bounds;
-  for (int i = start; i < end; ++i) {
-    node_bounds.expand_to_include(objects[static_cast<size_t>(i)].bbox);
+  for (size_t i = task.start; i < task.end; ++i) {
+    node_bounds.expand_to_include(bvh_objects.at(i).bbox);
   }
-  node->bounding_box = node_bounds;
+  nodes.at(task.node_idx).bounding_box = node_bounds;
 
-  int object_count = end - start;
-  if (object_count <= 4) {  // hoja con pocos objetos
-    node->objects.assign(objects.begin() + start, objects.begin() + end);
-    leaf_count++;
-    return node;
-  }
-
-  int axis = node_bounds.longest_axis();
-  std::sort(objects.begin() + start, objects.begin() + end,
-            [axis](BVHObject const & a, BVHObject const & b) {
-              return a.bbox.centroid()[static_cast<size_t>(axis)] <
-                     b.bbox.centroid()[static_cast<size_t>(axis)];
-            });  // dividir por la mediana para equilibrio
-
-  int mid = start + object_count / 2;
-  if (mid == start or mid == end) {  // ningun nodo puede estar vacio
-    node->objects.assign(objects.begin() + start, objects.begin() + end);
-    leaf_count++;
-    return node;
+  size_t count = task.end - task.start;
+  // Leaf condition: 4 or fewer primitives
+  if (count <= 4) {
+    nodes.at(task.node_idx).left_first = static_cast<uint32_t>(task.start);
+    nodes.at(task.node_idx).prim_count = static_cast<uint16_t>(count);
+    return;
   }
 
-  node->left  = build_recursive(objects, start, mid, depth + 1);
-  node->right = build_recursive(objects, mid, end, depth + 1);
-  return node;
+  // Internal node setup
+  nodes.at(task.node_idx).prim_count = 0;
+  int axis                           = node_bounds.longest_axis();
+  nodes.at(task.node_idx).axis       = static_cast<uint8_t>(axis);
+  partition_node(task, axis, stack);
 }
 
-bool BVH::intersect(Ray const & ray, double t_min, double t_max) const {
-  if (!root) {
-    return false;
+// Iteratively processes the build stack until all nodes are created.
+void BVH::process_build_queue(std::vector<BuildTask> & stack) {
+  while (!stack.empty()) {
+    BuildTask task = stack.back();
+    stack.pop_back();
+    process_node(task, stack);
   }
-  return intersect_recursive(root, ray, t_min, t_max);
 }
 
-bool BVH::intersect_recursive(std::shared_ptr<BVHNode> const & node, Ray const & ray, double t_min,
-                              double t_max) const {
-  if (!node) {
-    return false;
+// Main entry point for building the BVH tree.
+void BVH::build(SphereData const & spheres, CylinderData const & cylinders) {
+  init_build_data(spheres, cylinders);
+  if (bvh_objects.empty()) {
+    return;
   }
 
-  if (!AABB::intersect(ray, node->bounding_box, t_min, t_max)) {
-    return false;
-  }
+  std::cout << "Building BVH: " << bvh_objects.size() << " objects.\n";
+  nodes.reserve(bvh_objects.size() * 2);
+  nodes.emplace_back();  // Create Root
 
-  if (node->is_leaf()) {
-    return std::ranges::any_of(node->objects, [&](BVHObject const & obj) {
-      return AABB::intersect(ray, obj.bbox, t_min, t_max);
-    });
-  }
+  std::vector<BuildTask> stack;
+  stack.reserve(64);
+  stack.push_back({0, 0, bvh_objects.size()});
+  process_build_queue(stack);
 
-  bool hit_left  = intersect_recursive(node->left, ray, t_min, t_max);
-  bool hit_right = intersect_recursive(node->right, ray, t_min, t_max);
-
-  return hit_left or hit_right;
+  std::cout << "BVH built: " << nodes.size() << " nodes.\n";
 }
 
-void BVH::get_intersected_objects(Ray const & ray, double t_min, double t_max,
+// Helper: Checks AABB intersection for all objects inside a leaf node.
+bool BVH::check_leaf(LinearBVHNode const & node, Point3 const & orig, Vec3 const & inv_dir,
+                     Interval const & t) const {
+  for (uint16_t i = 0; i < node.prim_count; ++i) {
+    auto const & obj = bvh_objects.at(static_cast<size_t>(node.left_first) + i);
+    if (AABB::intersect(orig, inv_dir, obj.bbox, t)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Fast boolean intersection test (e.g., for shadows).
+bool BVH::intersect(Ray const & ray, Interval const & t) const {
+  if (nodes.empty()) {
+    return false;
+  }
+  Vec3 const inv_dir = {1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z};
+  std::array<size_t, 64> stack{};
+  size_t ptr      = 0;
+  stack.at(ptr++) = 0;
+
+  while (ptr > 0) {
+    auto const & node = nodes.at(stack.at(--ptr));
+    if (!AABB::intersect(ray.point, inv_dir, node.bounding_box, t)) {
+      continue;
+    }
+
+    if (node.prim_count > 0) {
+      if (check_leaf(node, ray.point, inv_dir, t)) {
+        return true;
+      }
+    } else {
+      // Internal node: push children to stack
+      stack.at(ptr++) = static_cast<size_t>(node.left_first) + 1;
+      stack.at(ptr++) = static_cast<size_t>(node.left_first);
+    }
+  }
+  return false;
+}
+
+// Fills a buffer with potential object candidates for the narrow-phase check.
+void BVH::get_intersected_objects(Ray const & ray, Interval const & t,
                                   std::vector<BVHObject> & result) const {
-  if (!root) {
+  if (nodes.empty()) {
     return;
   }
   result.clear();
-  IntersectionQuery query{ray, t_min, t_max, result};
-  get_intersected_objects_recursive(root, query);
-}
+  Vec3 const inv_dir = {1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z};
+  std::array<size_t, 64> stack{};
+  size_t ptr      = 0;
+  stack.at(ptr++) = 0;
 
-void BVH::get_intersected_objects_recursive(std::shared_ptr<BVHNode> const & node,
-                                            IntersectionQuery & query) const {
-  if (!node) {
-    return;
-  }
-
-  if (!AABB::intersect(query.ray, node->bounding_box, query.t_min, query.t_max)) {
-    return;
-  }
-
-  if (node->is_leaf()) {
-    for (auto const & obj : node->objects) {
-      query.result.push_back(obj);
+  while (ptr > 0) {
+    auto const & node = nodes.at(stack.at(--ptr));
+    if (!AABB::intersect(ray.point, inv_dir, node.bounding_box, t)) {
+      continue;
     }
-    return;
-  }
 
-  get_intersected_objects_recursive(node->left, query);
-  get_intersected_objects_recursive(node->right, query);
+    if (node.prim_count > 0) {
+      for (uint16_t i = 0; i < node.prim_count; ++i) {
+        result.push_back(bvh_objects.at(static_cast<size_t>(node.left_first) + i));
+      }
+    } else {
+      // Internal node: push children to stack
+      stack.at(ptr++) = static_cast<size_t>(node.left_first) + 1;
+      stack.at(ptr++) = static_cast<size_t>(node.left_first);
+    }
+  }
 }
