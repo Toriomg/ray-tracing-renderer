@@ -17,12 +17,14 @@ remote-build: deploy
 #	python3 scripts/generation/gen_tests.py
 
 run-jd: deploy
+	@echo ">>> Limpiando logs antiguos..."
+	-sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "rm -f $(REMOTE_DIR)/logs/run-test-jd.out"
 	@echo ">>> Enviando run-test-jd.sh a la cola de Slurm..."
 	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch -p stan scripts/remote/run-test-jd.sh"
 
 tail-jd:
 	@echo ">>> Leyendo log del trabajo $(ID)..."
-	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "tail -n 20 -f $(REMOTE_DIR)/logs/run-test-jd.txt"
+	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "tail -n 20 -f $(REMOTE_DIR)/logs/run-test-jd.out"
 
 all-jd: run-jd tail-jd
 
