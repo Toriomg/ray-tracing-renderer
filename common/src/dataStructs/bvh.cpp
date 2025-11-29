@@ -1,6 +1,5 @@
 #include "../include/dataStructs/bvh.hpp"
 #include "../include/renderer.hpp"
-#include "../include/dataStructs/settings_structs.hpp"
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -99,73 +98,70 @@ void BVH::build(SphereData const & spheres, CylinderData const & cylinders) {
   std::cout << "BVH built: " << nodes.size() << " nodes.\n";
 }
 
-// Helper: Checks AABB intersection for all objects inside a leaf node.
-bool BVH::check_leaf(LinearBVHNode const & node, Point3 const & orig, Vec3 const & inv_dir,
-                     Interval const & t) const {
-  for (uint16_t i = 0; i < node.prim_count; ++i) {
-    auto const & obj = bvh_objects.at(static_cast<size_t>(node.left_first) + i);
-    if (AABB::intersect(orig, inv_dir, obj.bbox, t)) {
-      return true;
-    }
-  }
-  return false;
-}
+// Función auxiliar estática para procesar los objetos dentro de un nodo hoja.
+// Devuelve true si alguno de los objetos fue golpeado.
+namespace {
 
-// Fast boolean intersection test (e.g., for shadows).
-bool BVH::intersect(Ray const & ray, Interval const & t) const {
+  bool process_leaf(LinearBVHNode const & node, std::vector<BVHObject> const & objects,
+                    TraversalData & data) {
+    bool hit_any = false;
+    for (uint16_t i = 0; i < node.prim_count; ++i) {
+      auto const & obj = objects[static_cast<size_t>(node.left_first) + i];
+
+      bool hit = false;
+      if (obj.type == BVHObject::SPHERE) {
+        hit = Renderer::hit_sphere(obj.original_index, data);
+      } else {
+        hit = Renderer::hit_cylinder(obj.original_index, data);
+      }
+
+      if (hit) {
+        hit_any = true;
+      }
+    }
+    return hit_any;
+  }
+
+}  // namespace
+
+bool BVH::hit(TraversalData & data) const {
   if (nodes.empty()) {
     return false;
   }
-  Vec3 const inv_dir = {1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z};
+  Vec3 const inv_dir(1.0 / data.ray.get().direction.x, 1.0 / data.ray.get().direction.y,
+                     1.0 / data.ray.get().direction.z);
   std::array<size_t, 64> stack{};
-  size_t ptr      = 0;
-  stack.at(ptr++) = 0;
+  size_t ptr        = 0;
+  stack.at(ptr++)   = 0;  // Push root
+  bool hit_anything = false;
 
   while (ptr > 0) {
-    auto const & node = nodes.at(stack.at(--ptr));
-    if (!AABB::intersect(ray.point, inv_dir, node.bounding_box, t)) {
+    size_t const node_idx = stack.at(--ptr);  // Pop
+    auto const & node     = nodes.at(node_idx);
+    if (!node.bounding_box.intersect_fast(data.ray.get().point, inv_dir, data.t_min,
+                                          data.closest_t))
+    {
+      continue;
+    }
+    if (node.prim_count > 0) {
+      if (process_leaf(node, bvh_objects, data)) {
+        hit_anything = true;
+      }
       continue;
     }
 
-    if (node.prim_count > 0) {
-      if (check_leaf(node, ray.point, inv_dir, t)) {
-        return true;
-      }
+    size_t const left_idx  = node.left_first;
+    size_t const right_idx = left_idx + 1;
+
+    bool const ray_neg = data.ray.get().direction[node.axis] < 0;
+    if (ray_neg) {
+      stack.at(ptr++) = left_idx;
+      stack.at(ptr++) = right_idx;
     } else {
-      // Internal node: push children to stack
-      stack.at(ptr++) = static_cast<size_t>(node.left_first) + 1;
-      stack.at(ptr++) = static_cast<size_t>(node.left_first);
+      stack.at(ptr++) = right_idx;
+      stack.at(ptr++) = left_idx;
     }
   }
-  return false;
-}
 
-// Fills a buffer with potential object candidates for the narrow-phase check.
-void BVH::get_intersected_objects(Ray const & ray, Interval const & t,
-                                  std::vector<BVHObject> & result) const {
-  if (nodes.empty()) {
-    return;
-  }
-  result.clear();
-  Vec3 const inv_dir = {1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z};
-  std::array<size_t, 64> stack{};
-  size_t ptr      = 0;
-  stack.at(ptr++) = 0;
-
-  while (ptr > 0) {
-    auto const & node = nodes.at(stack.at(--ptr));
-    if (!AABB::intersect(ray.point, inv_dir, node.bounding_box, t)) {
-      continue;
-    }
-
-    if (node.prim_count > 0) {
-      for (uint16_t i = 0; i < node.prim_count; ++i) {
-        result.push_back(bvh_objects.at(static_cast<size_t>(node.left_first) + i));
-      }
-    } else {
-      // Internal node: push children to stack
-      stack.at(ptr++) = static_cast<size_t>(node.left_first) + 1;
-      stack.at(ptr++) = static_cast<size_t>(node.left_first);
-    }
-  }
+  return hit_anything;
 }
