@@ -8,6 +8,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 #include <vector>
 
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
@@ -55,12 +57,15 @@ void ImagePar::fill_from_double(std::vector<double> const & r_data,
   // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
   size_t const expected_size = width_ * height_;
 
-  // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
-  for (size_t i = 0; i < expected_size; ++i) {
-    r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-    g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-    b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
-  }
+  // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t en paralelo
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, expected_size), [&](tbb::blocked_range<size_t> const & range) {
+        for (size_t i = range.begin(); i != range.end(); ++i) {
+          r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
+          g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
+          b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
+        }
+      });
 }
 
 // Escritura a archivo PPM usando la clase PPMWriter
