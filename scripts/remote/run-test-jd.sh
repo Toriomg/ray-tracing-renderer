@@ -5,23 +5,22 @@
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-for i in {5..5}
-do
-echo "[ $i ] Iniciando ejecución $i en $(hostname)"
+# Configuración SOLO para el Escenario 5
+i=5
+echo "[ $i ] Iniciando ejecución CRÍTICA Escenario $i en $(hostname)"
 
-# Rutas a los archivos de entrada y salida
 CONFIG_FILE="res/config_scripts/config${i}.txt"  
 SCENE_FILE="res/scene_scripts/scene${i}.txt"    
-OUTPUT_FILE="out${i}.ppm"
+OUTPUT_FILE="out${i}_par.ppm"
 
-# Ruta a los ejecutables compilados
+# Ejecutable
 RENDER_EXE="./out/build/default/par/Release/render-par"
-echo ""
-echo "========================================="
-echo ">>> Midiendo"
-echo "========================================="
-perf stat -r 5 ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
 
-echo "[ $i ] Mediciones finalizadas."
-done
-echo "--- Ejecución finalizada ---"
+echo ">>> Ejecutando Escenario $i (Objetivo < 175s)..."
+
+# Usamos perf para medir tiempo y energía
+# -r 1: Solo una ejecución para no bloquear la cola (si quieres más precisión, pon 3 o 5)
+perf stat -r 1 -e power/energy-pkg/ ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
+
+echo "--------------------------------------------------"
+echo "--- Prueba S5 Finalizada ---"
