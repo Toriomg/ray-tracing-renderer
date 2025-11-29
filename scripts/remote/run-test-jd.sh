@@ -1,8 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=run-s5-only
-#SBATCH --output=./logs/run-s5.out
-#SBATCH --partition=stan
-#SBATCH --exclusive
+#SBATCH --job-name=run-test-jd-${TIMESTAMP}
+#SBATCH --output=./logs/run-test-jd.out
 
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

@@ -2,6 +2,8 @@
 #define RENDERER_HPP
 
 #include "../../common/include/ray.hpp"
+#include "dataStructs/bvh.hpp"
+#include "dataStructs/hit_record.hpp"
 #include "dataStructs/settings_structs.hpp"
 #include "utilities/random.hpp"
 #include <optional>
@@ -26,23 +28,10 @@ public:
   static Color rayColor(Ray const & ray, SceneSettings const & scene, ConfigSettings const & config,
                         RandomGenerator & materialRng);
 
+  static bool hit_sphere(size_t index, TraversalData & data);
+  static bool hit_cylinder(size_t index, TraversalData & data);
+
 private:
-  struct HitRecord {
-    Point3 p;
-    Vec3 normal;
-    double t = 0.0F;
-    Ray prev_ray;
-    unsigned int material_global_id = 0;
-    bool front_face                 = false;
-
-    HitRecord() = default;
-
-    void set_face_normal(Ray const & r, Vec3 const & outward_normal) {
-      front_face = dot(r.direction, outward_normal) < 0;  // Actualizamos el miembro de la clase
-      normal     = front_face ? outward_normal : -outward_normal;
-    }
-  };
-
   struct CylinderGeometry {
     Point3 center;
     Vec3 unit_axis;
@@ -52,11 +41,11 @@ private:
 
   static std::optional<Intersection> intersectCap(Ray const & r, Point3 const & center,
                                                   Vec3 const & normal, double radius_sq);
-  static std::optional<Intersection> intersectLateralSurface(
-      Ray const & r, CylinderGeometry const & cyl, double & t_max,
-      std::optional<Intersection> & best_hit);
-  static void updateBestHit(std::optional<Intersection> & best, double & closest,
-                            std::optional<Intersection> const & new_hit);
+  static std::optional<Renderer::Intersection> intersectLateralSurface(Ray const & r,
+                                                                CylinderGeometry const & cyl,
+                                                                double t_min, double & t_max_limit);
+  static void updateBestHit(std::optional<Intersection> & best, double & closest_limit,
+                            std::optional<Intersection> const & new_hit, double t_min);
 
   static std::optional<HitRecord> RenderSpheres(SceneSettings const & scene, size_t sphere_index,
                                                 Ray const & r, double closest_t);
