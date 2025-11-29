@@ -1,7 +1,7 @@
 echo "Iniciando runs"
-for i in $(seq 1 4);
-do
-    echo "--- Iniciando ejecución ${i} en $(hostname) ---"
-    valgrind --tool=cachegrind /workspace/out/build/default/soa/Debug/render-soa /workspace/res/scene_scripts/scene${i}example.txt /workspace/res/config_scripts/config${i}example.txt /workspace/outImagSOA${i}.ppm
-done
+#for i in $(seq 1 4);
+#do
+#    echo "--- Iniciando ejecución 5 en $(hostname) ---"
+    valgrind ./out/build/default/par/Release/render-par ./res/scene_scripts/scene5.txt ./res/config_scripts/config5.txt ./outImagSOA5.ppm > valgrind-text.out
+#done
 echo "FIN espero que hayan salido bien"

@@ -29,6 +29,30 @@ public:
 
   AABB(Point3 const & a, Point3 const & b) : min_point(a), max_point(b) { }
 
+  [[nodiscard]] bool intersect_fast(Point3 const & origin, Vec3 const & inv_dir,
+                                    double t_min, double t_max_limit) const {
+    double tx1 = (min_point.x - origin.x) * inv_dir.x;
+    double tx2 = (max_point.x - origin.x) * inv_dir.x;
+
+    // tmin empieza siendo el t_min que pasamos por parámetro (arregla el warning)
+    double tmin = std::max(t_min, std::min(tx1, tx2));
+    double tmax = std::min(t_max_limit, std::max(tx1, tx2));
+
+    double const ty1 = (min_point.y - origin.y) * inv_dir.y;
+    double const ty2 = (max_point.y - origin.y) * inv_dir.y;
+
+    tmin = std::max(tmin, std::min(ty1, ty2));
+    tmax = std::min(tmax, std::max(ty1, ty2));
+
+    double const tz1 = (min_point.z - origin.z) * inv_dir.z;
+    double const tz2 = (max_point.z - origin.z) * inv_dir.z;
+
+    tmin = std::max(tmin, std::min(tz1, tz2));
+    tmax = std::min(tmax, std::max(tz1, tz2));
+
+    return tmax >= tmin;
+  }
+
   [[nodiscard]] static bool intersect(Point3 const & origin, Vec3 const & inv_d, AABB const & box,
                                       Interval const & t) {
     double t_min = t.min;

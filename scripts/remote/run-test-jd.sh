@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=run-test-jd
+#SBATCH --job-name=run-test-jd-${TIMESTAMP}
 #SBATCH --output=./logs/run-test-jd.out
 
 set -Eeuo pipefail
