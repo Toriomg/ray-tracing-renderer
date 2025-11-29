@@ -1,4 +1,6 @@
 #include "../include/dataStructs/bvh.hpp"
+#include "../include/renderer.hpp"
+#include "../include/dataStructs/settings_structs.hpp"
 #include <algorithm>
 #include <array>
 #include <cstddef>
