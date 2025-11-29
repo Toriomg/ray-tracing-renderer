@@ -3,9 +3,13 @@
 
 #include "dataStructs/aabb.hpp"
 #include "dataStructs/object.hpp"
+#include "dataStructs/hit_record.hpp"
 #include "ray.hpp"
 #include <cstdint>
 #include <vector>
+#include <functional>
+
+struct SceneSettings; 
 
 struct BVHObject {
   enum Type { SPHERE, CYLINDER };
@@ -23,6 +27,14 @@ struct alignas(8) LinearBVHNode {
   uint8_t pad         = 0;
 };
 
+struct TraversalData {
+    std::reference_wrapper<const Ray> ray;
+    std::reference_wrapper<const SceneSettings> scene;
+    std::reference_wrapper<HitRecord> rec;
+    double t_min = 0;
+    double closest_t = 0;
+};
+
 // Defined here so it can be used in private member signatures
 struct BuildTask {
   size_t node_idx;
@@ -35,6 +47,8 @@ public:
   BVH() = default;
 
   void build(SphereData const & spheres, CylinderData const & cylinders);
+
+  [[nodiscard]] bool hit(TraversalData & data) const;
 
   [[nodiscard]] bool intersect(Ray const & ray, Interval const & t) const;
 
