@@ -2,6 +2,7 @@
 #define SETTINGS_STRUCTS_HPP
 
 #include "../utilities/vec3.hpp"
+#include "bvh.hpp"
 #include "constants.hpp"
 #include "material.hpp"
 #include "object.hpp"
@@ -28,6 +29,7 @@ struct SceneSettings {
   CylinderData cylinders;
   std::vector<MaterialID> materialTable;
   std::vector<std::string> materialNames;  // Just for debugging
+  BVH bvh;
 
   // tiene los SOA de los materiales
   MatteMaterials matte;

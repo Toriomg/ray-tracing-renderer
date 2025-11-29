@@ -1,10 +1,12 @@
 #include "renderer.hpp"
-#include "dataStructs/aabb.hpp"
+#include "dataStructs/bvh.hpp"
+#include "dataStructs/hit_record.hpp"
 #include "dataStructs/material.hpp"
 #include "dataStructs/settings_structs.hpp"
 #include "ray.hpp"
 #include "utilities/random.hpp"
 #include "utilities/vec3.hpp"
+#include <../include/dataStructs/bvh.hpp>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -16,84 +18,120 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
   if (ray.depth <= 0) {
     return {0.0, 0.0, 0.0};
   }
-  double closest_t = std::numeric_limits<double>::infinity();
-  std::optional<HitRecord> hit_rec;
-  size_t const num_spheres = scene.spheres.x.size();  // Filtro AABB para esferas
-  for (size_t i = 0; i < num_spheres; ++i) {
-    if (AABB::intersect(ray, scene.spheres.aabbs[i], 0.001, closest_t))
-    {  // comprobamos que está dentro de la caja, si no no hace falta calcular la intersección
-      if (auto new_hit = Renderer::RenderSpheres(scene, i, ray, closest_t)) {
-        closest_t = new_hit->t;
-        hit_rec   = new_hit;
-      }
-    }
-  }
-  size_t const num_cylinders = scene.cylinders.x.size();  // gestion de AABB para cilindros
-  for (size_t i = 0; i < num_cylinders; ++i)
-  {  // comprobamos que está dentro de la caja y si no, no se calcula la intersección
-    if (AABB::intersect(ray, scene.cylinders.aabbs[i], 0.001, closest_t)) {
-      if (auto new_hit = Renderer::RenderCylinders(scene, i, ray, closest_t)) {
-        closest_t = new_hit->t;
-        hit_rec   = new_hit;
-      }
-    }
-  }
-  if (hit_rec) {
-    MaterialID const material_id = scene.materialTable[hit_rec->material_global_id];
-    MaterialContext const ctx(
-        &scene, &config,
-        &materialRng);  // Creamos el contexto de material usando punteros en lugar de referencias
+
+  // 1. Objeto donde guardaremos el resultado final (si hay golpe)
+  HitRecord rec;
+
+  // 2. Preparamos el paquete de datos para la travesía
+  // closest_t empieza en infinito porque aún no hemos golpeado nada.
+  TraversalData trav_data{
+    std::ref(ray),                           // Envolvemos const Ray&
+    std::ref(scene),                         // Envolvemos const SceneSettings&
+    std::ref(rec),                           // Envolvemos HitRecord& (mutable)
+    0.001,                                   // t_min (evitar acne propio)
+    std::numeric_limits<double>::infinity()  // closest_t inicial
+  };
+
+  // 3. Disparamos la búsqueda en el BVH
+  // Si devuelve true, 'rec' contiene el objeto más cercano y 'trav_data.closest_t' la distancia.
+  if (scene.bvh.hit(trav_data)) {
+    // Recuperamos el material usando el ID que 'hit_sphere'/'hit_cylinder' escribieron en 'rec'
+    MaterialID const material_id = scene.materialTable[rec.material_global_id];
+    MaterialContext const ctx(&scene, &config, &materialRng);
+
+    // Calculamos el color (esto no cambia respecto a tu código original)
     switch (material_id.type) {
-      case MATTE:      return Renderer::matteColor(material_id, ctx, *hit_rec);
-      case METAL:      return Renderer::metalColor(material_id, ctx, *hit_rec);
-      case REFRACTIVE: return Renderer::refractiveColor(material_id, ctx, *hit_rec);
+      case MATTE:      return Renderer::matteColor(material_id, ctx, rec);
+      case METAL:      return Renderer::metalColor(material_id, ctx, rec);
+      case REFRACTIVE: return Renderer::refractiveColor(material_id, ctx, rec);
       default:         break;
     }
   }
+
+  // Si bvh.hit devuelve false, pintamos el fondo
   return Renderer::backgroundColor(ray, config);
 }
 
-std::optional<Renderer::HitRecord> Renderer::RenderSpheres(SceneSettings const & scene,
-                                                           size_t sphere_index, Ray const & r,
-                                                           double closest_t) {
-  // Extraemos los datos de la esfera 'i' de la estructura SoA
-  Point3 const sphere_center(scene.spheres.x[sphere_index], scene.spheres.y[sphere_index],
-                             scene.spheres.z[sphere_index]);
-  double const sphere_radius = scene.spheres.r[sphere_index];
+bool Renderer::hit_sphere(size_t index, TraversalData & data) {
+  auto const & spheres = data.scene.get().spheres;
+  Ray const & r        = data.ray.get();
 
-  // ----- Matemática de la intersección Rayo-Esfera -----
-  Vec3 const oc     = r.point - sphere_center;
-  auto a            = r.direction.length_squared();
-  auto half_b       = dot(oc, r.direction);
-  auto c            = oc.length_squared() - sphere_radius * sphere_radius;
-  auto discriminant = half_b * half_b - a * c;
+  Point3 const center(spheres.x[index], spheres.y[index], spheres.z[index]);
+  double const radius = spheres.r[index];
 
-  // Si el discriminante es negativo, el rayo no toca la esfera. Pasamos a la siguiente.
+  Vec3 const oc             = r.point - center;
+  double const a            = r.direction.length_squared();
+  double const half_b       = dot(oc, r.direction);
+  double const c            = oc.length_squared() - radius * radius;
+  double const discriminant = half_b * half_b - a * c;
+
   if (discriminant < 0) {
-    return std::nullopt;
-  }
+    return false;
+  };
 
-  // Calculamos la raíz de la ecuación cuadrática para encontrar el punto de impacto 't'
-  auto sqrtd = std::sqrt(discriminant);
-  auto root  = (-half_b - sqrtd) / a;
-
-  // Si la primera raíz no es válida (detrás del rayo o no es más cercana), prueba la segunda.
-  if (root <= 0.001 or root >= closest_t) {
+  double const sqrtd = std::sqrt(discriminant);
+  double root        = (-half_b - sqrtd) / a;
+  // Comprobamos contra data.closest_t. Si la esfera está a 10m y closest_t es 5m,
+  // data.closest_t descarta esta intersección inmediatamente.
+  if (root <= data.t_min or root >= data.closest_t) {
     root = (-half_b + sqrtd) / a;
-    // Si la segunda raíz tampoco es válida, no hay colisión útil.
-    if (root <= 0.001 or root >= closest_t) {
-      return std::nullopt;
+    if (root <= data.t_min or root >= data.closest_t) {
+      return false;
     }
   }
-  // Hemos encontrado una colisión válida y más cercana. Llenamos el registro.
-  HitRecord rec;
+  data.closest_t = root;  // <--- ESTO permite al BVH podar ramas futuras
+
+  // Escribimos en el HitRecord compartido
+  HitRecord & rec           = data.rec.get();
   rec.t                     = root;
   rec.p                     = r.at(root);
-  rec.prev_ray              = r;
-  Vec3 const outward_normal = (rec.p - sphere_center) / sphere_radius;
+  Vec3 const outward_normal = (rec.p - center) / radius;
   rec.set_face_normal(r, outward_normal);
-  rec.material_global_id = scene.spheres.materialIndex[sphere_index];
-  return rec;
+  rec.material_global_id = spheres.materialIndex[index];
+  rec.prev_ray           = r;
+  return true;
+}
+
+bool Renderer::hit_cylinder(size_t index, TraversalData & data) {
+  auto const & cyls = data.scene.get().cylinders;
+  Ray const & r     = data.ray.get();
+  Point3 const center(cyls.x[index], cyls.y[index], cyls.z[index]);
+  Vec3 const raw_axis(cyls.vx[index], cyls.vy[index], cyls.vz[index]);
+  double const radius  = cyls.r[index];
+  double const inv_len = cyls.invAxisLen[index];
+  double const height  = 1.0 / inv_len;
+  Vec3 const unit_axis = raw_axis * inv_len;  // Asumiendo que guardaste raw axis
+
+  CylinderGeometry const geo{center, unit_axis, radius, height};
+  double const radius_sq                     = radius * radius;
+  double const half_height                   = height * 0.5;
+  double t_limit                             = data.closest_t;
+  std::optional<Intersection> best_local_hit = std::nullopt;
+
+  auto lat_hit = intersectLateralSurface(r, geo, data.t_min, t_limit);
+  if (lat_hit) {
+    best_local_hit = lat_hit;  // t_limit ya fue actualizado dentro de intersectLateralSurface
+  }
+
+  Point3 const top_center = center + unit_axis * half_height;
+  auto top_hit            = intersectCap(r, top_center, unit_axis, radius_sq);
+  updateBestHit(best_local_hit, t_limit, top_hit, data.t_min);
+  Point3 const bot_center = center - unit_axis * half_height;
+  auto bot_hit            = intersectCap(r, bot_center, -unit_axis, radius_sq);
+  updateBestHit(best_local_hit, t_limit, bot_hit, data.t_min);
+
+  if (best_local_hit) {
+    data.closest_t  = best_local_hit->t;  // Actualizamos Global
+    HitRecord & rec = data.rec.get();
+    rec.t           = best_local_hit->t;
+    rec.p           = best_local_hit->p;
+    rec.set_face_normal(r, best_local_hit->normal);
+    rec.material_global_id = static_cast<unsigned int>(cyls.materialIndex[index]);
+    rec.prev_ray           = r;
+
+    return true;
+  }
+  return false;
 }
 
 std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Point3 const & center,
@@ -117,101 +155,80 @@ std::optional<Renderer::Intersection> Renderer::intersectCap(Ray const & r, Poin
   return Intersection{t, p, normal};
 }
 
-void Renderer::updateBestHit(std::optional<Intersection> & best, double & closest,
-                             std::optional<Intersection> const & new_hit) {
-  if (new_hit and new_hit->t < closest) {
-    best    = new_hit;
-    closest = new_hit->t;
+void Renderer::updateBestHit(std::optional<Intersection> & best, double & closest_limit,
+                             std::optional<Intersection> const & new_hit, double t_min) {
+  if (new_hit) {
+    // Solo nos interesa si está en el rango válido [t_min, closest_limit)
+    if (new_hit->t > t_min and new_hit->t < closest_limit) {
+      closest_limit = new_hit->t;  // <--- CULLING: Reducimos el límite localmente
+      best          = new_hit;
+    }
   }
 }
 
 std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
-    Ray const & r, CylinderGeometry const & cyl, double & t_max,
-    std::optional<Intersection> & best_hit) {
-  double const half_height = cyl.height * 0.5;
-  double const radius_sq   = cyl.radius * cyl.radius;
-  Vec3 const oc            = r.point - cyl.center;  // intersección lateral
-  Vec3 const dr_perp       = component_perpendicular(r.direction, cyl.unit_axis);
-  Vec3 const oc_perp       = component_perpendicular(oc, cyl.unit_axis);
-  double const a           = dr_perp.length_squared();
-
-  if (std::fabs(a) > 1e-8) {
-    double const b     = 2.0 * dot(oc_perp, dr_perp);
-    double const c     = oc_perp.length_squared() - radius_sq;
-    double const discr = b * b - 4 * a * c;
-
-    if (discr >= 0) {
-      double const sqrt_discr = std::sqrt(discr);
-      double const inv_2a     = 1.0 / (2.0 * a);
-      double t                = (-b - sqrt_discr) * inv_2a;  // Raíz más cercana
-
-      if (t > 0.001 and t < t_max) {
-        Point3 const p = r.at(t);
-        if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
-          Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
-          best_hit          = Intersection{t, p, normal};
-          t_max             = t;
-        }
-      }
-      if (!best_hit) {  // segunda raiz
-        t = (-b + sqrt_discr) * inv_2a;
-        if (t > 0.001 and t < t_max) {
-          Point3 const p = r.at(t);
-          if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
-            Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
-            best_hit          = Intersection{t, p, normal};
-            t_max             = t;
-          }
-        }
-      }
-    }
-  }
-  return best_hit;
-}
-
-std::optional<Renderer::HitRecord> Renderer::RenderCylinders(SceneSettings const & scene,
-                                                             size_t idx, Ray const & r,
-                                                             double closest_t) {
-  Point3 const center = {scene.cylinders.x[idx], scene.cylinders.y[idx], scene.cylinders.z[idx]};
-  Vec3 const raw_axis = {scene.cylinders.vx[idx], scene.cylinders.vy[idx], scene.cylinders.vz[idx]};
-  double const radius = scene.cylinders.r[idx];
-  double const inv_len     = scene.cylinders.invAxisLen[idx];
-  double const height      = 1.0 / inv_len;
-  Vec3 const unit_axis     = raw_axis * inv_len;
-  double const half_height = height * 0.5;
-  double const radius_sq   = radius * radius;
-  std::optional<Intersection> best_hit;
-  double t_max = closest_t;
-
-  CylinderGeometry const cyl_geo = {center, unit_axis, radius, height};  // intersección lateral
-  intersectLateralSurface(r, cyl_geo, t_max, best_hit);
-
-  Point3 const top_center = center + unit_axis * half_height;  // tapa superior
-  if (auto cap_hit = intersectCap(r, top_center, unit_axis, radius_sq)) {
-    if (cap_hit->t < t_max) {
-      best_hit = cap_hit;
-      t_max    = cap_hit->t;
-    }
-  }
-  Point3 const bottom_center = center - unit_axis * half_height;  // Tapa inferior
-  if (auto cap_hit = intersectCap(r, bottom_center, -unit_axis, radius_sq)) {
-    if (cap_hit->t < t_max) {
-      best_hit = cap_hit;
-      t_max    = cap_hit->t;
-    }
-  }
-
-  if (!best_hit) {  // hitrecord final
+    Ray const & r, CylinderGeometry const & cyl, double t_min, double & t_max_limit) {
+  double const radius_sq = cyl.radius * cyl.radius;
+  Vec3 const oc          = r.point - cyl.center;  // intersección lateral
+  Vec3 const dr_perp     = component_perpendicular(r.direction, cyl.unit_axis);
+  Vec3 const oc_perp     = component_perpendicular(oc, cyl.unit_axis);
+  double const a         = dr_perp.length_squared();
+  if (std::fabs(a) < 1e-8) {
     return std::nullopt;
   }
-  HitRecord rec;
-  rec.t                  = best_hit->t;
-  rec.p                  = best_hit->p;
-  rec.prev_ray           = r;
-  rec.material_global_id = static_cast<unsigned int>(scene.cylinders.materialIndex[idx]);
-  rec.set_face_normal(r, best_hit->normal);
-  return rec;
+  double const b     = 2.0 * dot(oc_perp, dr_perp);
+  double const c     = oc_perp.length_squared() - radius_sq;
+  double const discr = b * b - 4 * a * c;
+
+  double const sqrt_discr = std::sqrt(discr);
+  double const inv_2a     = 1.0 / (2.0 * a);
+  double t                = (-b - sqrt_discr) * inv_2a;
+
+  auto check_height = [&](double val_t) -> bool {
+    if (val_t <= t_min or val_t >= t_max_limit) {
+      return false;
+    }
+    Point3 const p           = r.at(val_t);
+    double const height_proj = dot(p - cyl.center, cyl.unit_axis);
+    return std::fabs(height_proj) <= (cyl.height * 0.5);
+  };
+
+  if (!check_height(t)) {
+    t = (-b + sqrt_discr) * inv_2a;
+    if (!check_height(t)) {
+      return std::nullopt;
+    }
+  }
+
+  t_max_limit       = t;
+  Point3 const p    = r.at(t);
+  Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
+  return Intersection{t, p, normal};
 }
+
+/*
+if (t > 0.001 and t < t_max) {
+  Point3 const p = r.at(t);
+  if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
+    Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
+    best_hit          = Intersection{t, p, normal};
+    t_max             = t;
+  }
+}
+if (!best_hit) {  // segunda raiz
+t = (-b + sqrt_discr) * inv_2a;
+if (t > 0.001 and t < t_max) {
+  Point3 const p = r.at(t);
+  if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
+    Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
+    best_hit          = Intersection{t, p, normal};
+    t_max             = t;
+  }
+}
+}
+return best_hit;
+}
+*/
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------*/
 /*-----------------------------------------------------COLORES----------------------------------------------------------------------------------------*/
