@@ -5,7 +5,7 @@
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-for i in {5..5}
+for i in {1..5}
 do
 echo "[ $i ] Iniciando ejecución $i en $(hostname)"
 
@@ -20,7 +20,7 @@ echo ""
 echo "========================================="
 echo ">>> Midiendo"
 echo "========================================="
-perf stat -r 5 ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
+perf stat -r 1 ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
 
 echo "[ $i ] Mediciones finalizadas."
 done

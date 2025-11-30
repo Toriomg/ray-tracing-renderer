@@ -67,21 +67,19 @@ bool Renderer::hit_sphere(size_t index, TraversalData & data) {
 
   if (discriminant < 0) {
     return false;
-  };
+  }
 
   double const sqrtd = std::sqrt(discriminant);
   double root        = (-half_b - sqrtd) / a;
-  // Comprobamos contra data.closest_t. Si la esfera está a 10m y closest_t es 5m,
-  // data.closest_t descarta esta intersección inmediatamente.
+
   if (root <= data.t_min or root >= data.closest_t) {
     root = (-half_b + sqrtd) / a;
     if (root <= data.t_min or root >= data.closest_t) {
       return false;
     }
   }
-  data.closest_t = root;  // <--- ESTO permite al BVH podar ramas futuras
+  data.closest_t = root;
 
-  // Escribimos en el HitRecord compartido
   HitRecord & rec           = data.rec.get();
   rec.t                     = root;
   rec.p                     = r.at(root);
@@ -89,6 +87,7 @@ bool Renderer::hit_sphere(size_t index, TraversalData & data) {
   rec.set_face_normal(r, outward_normal);
   rec.material_global_id = spheres.materialIndex[index];
   rec.prev_ray           = r;
+
   return true;
 }
 
@@ -100,17 +99,16 @@ bool Renderer::hit_cylinder(size_t index, TraversalData & data) {
   double const radius  = cyls.r[index];
   double const inv_len = cyls.invAxisLen[index];
   double const height  = 1.0 / inv_len;
-  Vec3 const unit_axis = raw_axis * inv_len;  // Asumiendo que guardaste raw axis
-
+  Vec3 const unit_axis = raw_axis * inv_len;
   CylinderGeometry const geo{center, unit_axis, radius, height};
-  double const radius_sq                     = radius * radius;
-  double const half_height                   = height * 0.5;
+  double const radius_sq   = radius * radius;
+  double const half_height = height * 0.5;
+
   double t_limit                             = data.closest_t;
   std::optional<Intersection> best_local_hit = std::nullopt;
-
-  auto lat_hit = intersectLateralSurface(r, geo, data.t_min, t_limit);
+  auto lat_hit                               = intersectLateralSurface(r, geo, data.t_min, t_limit);
   if (lat_hit) {
-    best_local_hit = lat_hit;  // t_limit ya fue actualizado dentro de intersectLateralSurface
+    best_local_hit = lat_hit;
   }
 
   Point3 const top_center = center + unit_axis * half_height;
@@ -121,16 +119,16 @@ bool Renderer::hit_cylinder(size_t index, TraversalData & data) {
   updateBestHit(best_local_hit, t_limit, bot_hit, data.t_min);
 
   if (best_local_hit) {
-    data.closest_t  = best_local_hit->t;  // Actualizamos Global
+    data.closest_t  = best_local_hit->t;
     HitRecord & rec = data.rec.get();
     rec.t           = best_local_hit->t;
     rec.p           = best_local_hit->p;
     rec.set_face_normal(r, best_local_hit->normal);
     rec.material_global_id = static_cast<unsigned int>(cyls.materialIndex[index]);
     rec.prev_ray           = r;
-
     return true;
   }
+
   return false;
 }
 
@@ -169,41 +167,43 @@ void Renderer::updateBestHit(std::optional<Intersection> & best, double & closes
 std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
     Ray const & r, CylinderGeometry const & cyl, double t_min, double & t_max_limit) {
   double const radius_sq = cyl.radius * cyl.radius;
-  Vec3 const oc          = r.point - cyl.center;  // intersección lateral
+  Vec3 const oc          = r.point - cyl.center;
   Vec3 const dr_perp     = component_perpendicular(r.direction, cyl.unit_axis);
   Vec3 const oc_perp     = component_perpendicular(oc, cyl.unit_axis);
   double const a         = dr_perp.length_squared();
+
   if (std::fabs(a) < 1e-8) {
     return std::nullopt;
   }
+
   double const b     = 2.0 * dot(oc_perp, dr_perp);
   double const c     = oc_perp.length_squared() - radius_sq;
   double const discr = b * b - 4 * a * c;
 
+  if (discr < 0) {
+    return std::nullopt;
+  }
   double const sqrt_discr = std::sqrt(discr);
   double const inv_2a     = 1.0 / (2.0 * a);
   double t                = (-b - sqrt_discr) * inv_2a;
-
-  auto check_height = [&](double val_t) -> bool {
-    if (val_t <= t_min or val_t >= t_max_limit) {
-      return false;
-    }
-    Point3 const p           = r.at(val_t);
-    double const height_proj = dot(p - cyl.center, cyl.unit_axis);
-    return std::fabs(height_proj) <= (cyl.height * 0.5);
-  };
-
-  if (!check_height(t)) {
-    t = (-b + sqrt_discr) * inv_2a;
-    if (!check_height(t)) {
-      return std::nullopt;
+  if (t > t_min and t < t_max_limit) {
+    Point3 const p = r.at(t);
+    if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= (cyl.height * 0.5)) {
+      t_max_limit       = t;
+      Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
+      return Intersection{t, p, normal};
     }
   }
-
-  t_max_limit       = t;
-  Point3 const p    = r.at(t);
-  Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
-  return Intersection{t, p, normal};
+  t = (-b + sqrt_discr) * inv_2a;
+  if (t > t_min and t < t_max_limit) {
+    Point3 const p = r.at(t);
+    if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= (cyl.height * 0.5)) {
+      t_max_limit       = t;  // Actualizamos límite
+      Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
+      return Intersection{t, p, normal};
+    }
+  }
+  return std::nullopt;
 }
 
 /*
