@@ -2,7 +2,10 @@
 #include <cstddef>
 #include <fstream>
 #include <iostream>
+#include <oneapi/tbb/partitioner.h>
 #include <string>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 #include <vector>
 
 // Escribe una imágen en formato PPM P3 recibiendo los 3 arrays de colores y las dimensiones de la
@@ -14,31 +17,38 @@ bool PPMWriter::write_ppm(std::string const & filename, Pixels const & pixels, s
   if (pixels.r_channel.size() != total_pixels or
       pixels.g_channel.size() != total_pixels or
       pixels.b_channel.size() != total_pixels)
-  {
-    // Es mejor no lanzar excepciones aquí si la función devuelve bool.
-    // Imprime un error y devuelve false.
+  {  // evitamos lanzar excepciones, solo imprimimos el error
     std::cerr << "Error: El tamaño de los canales no coincide con las dimensiones de la imagen.\n";
     return false;
   }
-
-  // Abre un archivo para escribir
   std::ofstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open()) {  // abrimos archivo a escribir
     std::cerr << "Error: No se pudo abrir el archivo para escritura: " << filename << "\n";
     return false;
   }
 
-  // Cabecera para PPM P6 (binario)
-  file << "P3\n";
+  file << "P3\n";  // Cabecera para PPM P6 (binario)
   file << width << " " << height << "\n";
   file << "255\n";
 
-  for (size_t i = 0; i < total_pixels; ++i) {
-    // Escribe los valores numéricos como texto, separados por espacios
-    file << static_cast<int>(pixels.r_channel[i]) << " " << static_cast<int>(pixels.g_channel[i])
-         << " " << static_cast<int>(pixels.b_channel[i]) << "\n";
+  tbb::static_partitioner sp;
+  std::vector<std::string> output_lines(total_pixels);
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, total_pixels),
+      [&](tbb::blocked_range<size_t> const & range) {
+        for (size_t i = range.begin(); i != range.end(); ++i) {
+          output_lines[i] = std::to_string(static_cast<int>(pixels.r_channel[i])) +
+                            " " +
+                            std::to_string(static_cast<int>(pixels.g_channel[i])) +
+                            " " +
+                            std::to_string(static_cast<int>(pixels.b_channel[i])) +
+                            "\n";
+        }
+      },
+      sp);                                  // procesamos en paralelo
+  for (auto const & line : output_lines) {  // escribimos en secuencial
+    file << line;
   }
-
   file.close();
   return true;
 }
