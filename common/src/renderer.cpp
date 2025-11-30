@@ -206,30 +206,6 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
   return Intersection{t, p, normal};
 }
 
-/*
-if (t > 0.001 and t < t_max) {
-  Point3 const p = r.at(t);
-  if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
-    Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
-    best_hit          = Intersection{t, p, normal};
-    t_max             = t;
-  }
-}
-if (!best_hit) {  // segunda raiz
-t = (-b + sqrt_discr) * inv_2a;
-if (t > 0.001 and t < t_max) {
-  Point3 const p = r.at(t);
-  if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= half_height) {
-    Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
-    best_hit          = Intersection{t, p, normal};
-    t_max             = t;
-  }
-}
-}
-return best_hit;
-}
-*/
-
 /*----------------------------------------------------------------------------------------------------------------------------------------------------*/
 /*-----------------------------------------------------COLORES----------------------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------------------------------------------------------------------------------*/
