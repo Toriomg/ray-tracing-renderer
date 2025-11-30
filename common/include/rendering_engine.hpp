@@ -41,17 +41,17 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
   tbb::parallel_for(
       tbb::blocked_range2d<size_t>(0, imageHeight, 0, imageWidth),
       [&](tbb::blocked_range2d<size_t> const & r) {
-        auto & ray_rng      = ctx.get_ray_rng();  // generadores locales
+        // Cada hilo obtiene sus propios generadores locales
+        auto & ray_rng      = ctx.get_ray_rng();
         auto & material_rng = ctx.get_material_rng();
 
         for (size_t row = r.rows().begin(); row != r.rows().end(); ++row) {
           for (size_t col = r.cols().begin(); col != r.cols().end(); ++col) {
             Color accumulated_color(0.0, 0.0, 0.0);
-
             Point3 const pixel_corner = pixel00_loc +  // LOC pixel actual
                                         (static_cast<double>(col) * pixel_delta_u) +
                                         (static_cast<double>(row) * pixel_delta_v);
-            for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {
+            for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {  // punto aleatorio dentro
               double const px = ray_rng.get_double() - 0.5;
               double const py = ray_rng.get_double() - 0.5;
 
@@ -59,7 +59,6 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
                   pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
               Ray const ray(camera.cameraPos, pixel_sample_point - camera.cameraPos,
                             ctx.config->max_depth);
-
               accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, material_rng);
             }
             Color const final_pixel_color = accumulated_color * static_cast<double>(scale);

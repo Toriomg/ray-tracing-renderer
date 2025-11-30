@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <oneapi/tbb/partitioner.h>
 #include <string>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
