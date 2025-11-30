@@ -34,17 +34,14 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
   auto imageHeight   = static_cast<size_t>(camera.ProjWindow.imageHeight);
   auto pixel_delta_u = camera.ProjWindow.viewportHorizontal / static_cast<double>(imageWidth);
   auto pixel_delta_v = camera.ProjWindow.viewportVertical / static_cast<double>(imageHeight);
-
-  // Origen de la ventana de proyección (esquina superior izquierda del píxel 0,0)
-  auto pixel00_loc = camera.ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v);
+  auto pixel00_loc   = camera.ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v);
 
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
   tbb::parallel_for(
       tbb::blocked_range2d<size_t>(0, imageHeight, 0, imageWidth),
       [&](tbb::blocked_range2d<size_t> const & r) {
-        // Cada hilo obtiene sus propios generadores locales
-        auto & ray_rng      = ctx.get_ray_rng();
+        auto & ray_rng      = ctx.get_ray_rng();  // generadores locales
         auto & material_rng = ctx.get_material_rng();
 
         for (size_t row = r.rows().begin(); row != r.rows().end(); ++row) {
@@ -55,7 +52,6 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
                                         (static_cast<double>(col) * pixel_delta_u) +
                                         (static_cast<double>(row) * pixel_delta_v);
             for (int s = 0; s < ctx.config->samples_per_pixel; ++s) {
-              // Genera un punto aleatorio DENTRO del cuadrado del píxel
               double const px = ray_rng.get_double() - 0.5;
               double const py = ray_rng.get_double() - 0.5;
 
@@ -64,7 +60,6 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
               Ray const ray(camera.cameraPos, pixel_sample_point - camera.cameraPos,
                             ctx.config->max_depth);
 
-              // Pasar material_rng por referencia
               accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, material_rng);
             }
             Color const final_pixel_color = accumulated_color * static_cast<double>(scale);
