@@ -190,7 +190,7 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
     Point3 const p = r.at(t);
     if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= (cyl.height * 0.5)) {
       t_max_limit       = t;
-      Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
+      Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
       return Intersection{t, p, normal};
     }
   }
@@ -199,7 +199,7 @@ std::optional<Renderer::Intersection> Renderer::intersectLateralSurface(
     Point3 const p = r.at(t);
     if (std::fabs(dot(p - cyl.center, cyl.unit_axis)) <= (cyl.height * 0.5)) {
       t_max_limit       = t;  // Actualizamos límite
-      Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis).normalize();
+      Vec3 const normal = component_perpendicular(p - cyl.center, cyl.unit_axis);
       return Intersection{t, p, normal};
     }
   }
