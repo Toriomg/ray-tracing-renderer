@@ -1,1 +1,1 @@
-= Uso de herramientas de ia
+= Uso de herramientas de IA
