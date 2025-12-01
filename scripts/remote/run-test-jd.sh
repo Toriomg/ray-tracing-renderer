@@ -1,18 +1,23 @@
 #!/bin/bash
-#SBATCH --job-name=run-test-jd-${TIMESTAMP}
-#SBATCH --output=./logs/run-test-jd.out
+#SBATCH --job-name=run-test-jd
+#SBATCH --output=./logs/txt/run-test-jd.out
 
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# Ensure directories exist (in case they weren't created by make)
+mkdir -p logs/images logs/txt
 
 for i in {1..5}
 do
 echo "[ $i ] Iniciando ejecución $i en $(hostname)"
 
-# Rutas a los archivos de entrada y salida
+# Rutas a los archivos de entrada
 CONFIG_FILE="res/config_scripts/config${i}.txt"  
 SCENE_FILE="res/scene_scripts/scene${i}.txt"    
-OUTPUT_FILE="out${i}.ppm"
+
+# --- CHANGE: Output image directly to logs/images/ ---
+OUTPUT_FILE="logs/images/out${i}.ppm"
 
 # Ruta a los ejecutables compilados
 RENDER_EXE="./out/build/default/par/Release/render-par"
