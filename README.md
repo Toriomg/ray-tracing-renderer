@@ -48,59 +48,39 @@ echo ".password" >> .gitignore
 
 ## ⚡ 2. Comandos Principales (Workflow)
 
-Ejecuta estos comandos desde la terminal en la raíz del proyecto.
-
-#### 📡 Conexión y Compilación
+#### 🤖 Ejecución Automática (Recomendado)
 
 | Comando | Descripción |
 | :--- | :--- |
-| **`make deploy`** | Empaqueta y sube el proyecto al servidor usando `tar` sobre `ssh` (no requiere rsync). |
-| **`make remote-build`** | Sube cambios (`deploy`) y lanza la compilación en el clúster con Slurm. |
+| **`make auto-jd`** | **Flujo completo "Zero-Touch":** <br>1. Sube y **Compila** el código (espera a terminar).<br>2. Limpia logs y **Ejecuta** los tests (espera a terminar).<br>3. **Descarga** resultados.<br>4. **Valida** y genera el CSV. |
 
-#### 🧪 Ejecución de Tests (JD Tests)
-
-| Comando | Descripción |
-| :--- | :--- |
-| **`make run-jd`** | Sube el script `run-test-jd.sh` y lo lanza a la cola de Slurm (partición `stan`). |
-| **`make tail-jd`** | Muestra en tiempo real el log de salida del test JD (`tail -f`). Usa `Ctrl+C` para salir. |
-| **`make all-jd`** | Ejecuta `run-jd` e inmediatamente se pone a mostrar el log (`tail-jd`). |
-
-#### 📥 Descarga de Resultados (Fetch)
+#### 📡 Conexión y Compilación (Manual)
 
 | Comando | Descripción |
 | :--- | :--- |
-| **`make fetch-ppm`** | Descarga solo las imágenes generadas a la carpeta local `logs/img/`. |
-| **`make fetch-txt`** | Descarga los logs de texto y reportes de Slurm a la carpeta local `logs/txt/`. |
-| **`make fetch-all`** | Ejecuta ambos comandos anteriores (descarga todo). |
+| **`make deploy`** | Empaqueta y sube el código al servidor. |
+| **`make remote-build`** | Sube cambios y manda compilar en el clúster (Slurm). |
 
----
+#### 🧪 Ejecución Manual
 
-## 🔄 Flujo de Trabajo Típico
+| Comando | Descripción |
+| :--- | :--- |
+| **`make run-jd`** | Lanza el test a la cola de Slurm y devuelve el control inmediatamente (no espera). |
+| **`make tail-jd`** | Muestra en tiempo real el log de salida del test (`tail -f`). |
+| **`make run-jd-wait`** | Lanza el test y bloquea la terminal hasta que Slurm termine la ejecución. |
 
-Imagina que has modificado el código C++ para mejorar el rendimiento. Los pasos serían:
+#### 📥 Descarga y Análisis
 
-1.  **Subir y Compilar:**
-    ```bash
-    make remote-build
-    ```
-    *(Verás en la terminal si se envió el trabajo. Puedes usar `squeue -u tu_usuario` en una terminal SSH para ver si terminó).*
+| Comando | Descripción |
+| :--- | :--- |
+| **`make fetch-all`** | Descarga todo (`ppm` + `txt`) y **ejecuta el pipeline de validación**. |
+| **`make pipeline`** | Ejecuta la comparación de imágenes y extracción de tiempos localmente. |
 
-2.  **Lanzar Batería de Pruebas:**
-    ```bash
-    make run-jd
-    ```
-
-3.  **Esperar resultados...** (Tómate un café mientras Slurm trabaja).
-
-4.  **Descargar Datos:**
-    ```bash
-    make fetch-all
-    ```
-
-5.  **Analizar en Local:**
-    Ahora tienes los archivos en `./logs/`.
-
----
+#### Resultados
+Si la validación de imágenes es correcta ("VÁLIDO"), el script generará automáticamente un CSV con los tiempos:
+*   **Archivo:** `memoria/graphs/[NOMBRE-RAMA-GIT].csv`
+*   **Logs:** `logs/txt/run-test-jd.out`
+*   **Imágenes:** `logs/images/`
 
 ## 📂 Estructura de Scripts
 
