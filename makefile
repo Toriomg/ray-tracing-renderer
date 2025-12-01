@@ -2,55 +2,64 @@ include env.sh
 
 PASSFILE=.password
 
-# 1. Subir código (Sincronización inteligente, no borra carpeta 'out' remota innecesariamente)
+# 1. Subir código
 deploy:
-	bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
+	@bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
 
-# 2. Compilar en Avignon (Manda el comando ssh)
+# 2. Compilar
 remote-build: deploy
 	@echo ">>> Enviando compilación a la cola..."
-	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait scripts/remote/build.sh"
-
-
-# 3. Generar tests (Ejecuta tu python localmente para crear los .sh)
-#gen-tests:
-#	python3 scripts/generation/gen_tests.py
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait scripts/remote/build.sh"
 
 run-jd: deploy
-	@echo ">>> Limpiando logs antiguos..."
-	-sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "rm -f $(REMOTE_DIR)/logs/run-test-jd.out"
+	@echo ">>> Limpiando y preparando directorios..."
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "rm -rf $(REMOTE_DIR)/logs/txt $(REMOTE_DIR)/logs/images && mkdir -p $(REMOTE_DIR)/logs/txt $(REMOTE_DIR)/logs/images"
+	
 	@echo ">>> Enviando run-test-jd.sh a la cola de Slurm..."
-	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch -p stan scripts/remote/run-test-jd.sh"
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch -p stan scripts/remote/run-test-jd.sh"
 
 tail-jd:
-	@echo ">>> Leyendo log del trabajo $(ID)..."
-	sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "tail -n 20 -f $(REMOTE_DIR)/logs/run-test-jd.out"
+	@echo ">>> Leyendo log (esperando creación)..."
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "tail -n 20 -F $(REMOTE_DIR)/logs/txt/run-test-jd.out"
 
 all-jd: run-jd tail-jd
-
-#remote-run-all: deploy 
-# ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && find tests_de_config tests_de_escenas -name '*.sh' -exec sbatch {} \;"
-
 
 
 # --- DESCARGA DE RESULTADOS ---
 
-# 1. Descargar solo imágenes (.ppm)
 fetch-ppm:
-	@echo ">>> Creando carpeta logs y descargando imágenes..."
+	@echo ">>> Descargando directorio de imágenes..."
 	@mkdir -p logs
-	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img
+	@sshpass -f $(PASSFILE) scp -r -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/images ./logs/ || true
 
-# 2. Descargar logs de texto (.txt y .out de slurm)
 fetch-txt:
-	@echo ">>> Descargando logs de texto..."
+	@echo ">>> Descargando directorio de logs de texto..."
 	@mkdir -p logs
-	# Descargamos .txt y también .out (que son los logs de Slurm)
-	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):"$(REMOTE_DIR)/logs/*.txt" ./logs/txt
-	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):"$(REMOTE_DIR)/logs/*.out" ./logs/txt
+	@sshpass -f $(PASSFILE) scp -r -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/txt ./logs/ || true
 
-# 3. Descargar TODO (Junta los dos anteriores)
-fetch-all: fetch-ppm fetch-txt
-	@echo ">>> ✅ Descarga completa en ./logs/"
+compare:
+	@for img in $$(ls logs/images/out*.ppm 2>/dev/null | grep -E 'out[0-9]+\.ppm$$'); do \
+		ID=$$(echo $$img | grep -o -E '[0-9]+'); \
+		REF="compare-images/s$${ID}-par.ppm"; \
+		if [ -f "$$REF" ]; then \
+			echo "Checking Scene $$ID:"; \
+			python3 scripts/analysis/compare.py "$$REF" "$$img"; \
+		else \
+			echo "Checking Scene $$ID: ... Reference not found (SKIPPING)"; \
+		fi; \
+	done
 
+pipeline:
+	@$(MAKE) compare 2>&1 | python3 scripts/analysis/validate_pipeline.py --log-file logs/txt/run-test-jd.out
 
+fetch-all: fetch-ppm fetch-txt pipeline
+
+run-jd-wait: deploy
+	@echo ">>> Limpiando y preparando directorios..."
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "rm -rf $(REMOTE_DIR)/logs/txt $(REMOTE_DIR)/logs/images && mkdir -p $(REMOTE_DIR)/logs/txt $(REMOTE_DIR)/logs/images"
+	
+	@echo ">>> Enviando trabajo y esperando a que termine..."
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait -p stan scripts/remote/run-test-jd.sh"
+
+auto-jd: remote-build run-jd-wait fetch-all
+	@echo "AUTO JD COMPLETADO"
