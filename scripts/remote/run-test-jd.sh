@@ -1,26 +1,39 @@
 #!/bin/bash
-#SBATCH --job-name=run-test-jd-${TIMESTAMP}
-#SBATCH --output=./logs/run-test-jd.out
+#SBATCH --job-name=run-test-jd
+#SBATCH --output=./logs/txt/run-test-jd.out
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
 
 set -Eeuo pipefail
+
+# Exportar librerías
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-# Configuración SOLO para el Escenario 5
-i=5
-echo "[ $i ] Iniciando ejecución CRÍTICA Escenario $i en $(hostname)"
+# Ensure directories exist (in case they weren't created by make)
+mkdir -p logs/images logs/txt
 
-CONFIG_FILE="res/config_scripts/config${i}.txt"  
-SCENE_FILE="res/scene_scripts/scene${i}.txt"    
-OUTPUT_FILE="out${i}_par.ppm"
+for i in {1..5}
+do
+    echo "[ $i ] Iniciando ejecución $i en $(hostname)"
 
-# Ejecutable
-RENDER_EXE="./out/build/default/par/Release/render-par"
+    # Rutas a los archivos de entrada
+    CONFIG_FILE="res/config_scripts/config${i}.txt"  
+    SCENE_FILE="res/scene_scripts/scene${i}.txt"    
 
-echo ">>> Ejecutando Escenario $i (Objetivo < 175s)..."
+    # Output image directly to logs/images/
+    OUTPUT_FILE="logs/images/out${i}.ppm"
 
-# Usamos perf para medir tiempo y energía
-# -r 1: Solo una ejecución para no bloquear la cola (si quieres más precisión, pon 3 o 5)
-perf stat -r 1 -e power/energy-pkg/ ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
+    # Ruta al ejecutable
+    RENDER_EXE="./out/build/default/par/Release/render-par"
 
-echo "--------------------------------------------------"
-echo "--- Prueba S5 Finalizada ---"
+    echo "========================================="
+    echo ">>> Midiendo Escena $i"
+    echo "========================================="
+    
+    # Ejecutar medición
+    perf stat -r 1 ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
+
+    echo "[ $i ] Mediciones finalizadas."
+done
+
+echo "--- Ejecución finalizada ---"
