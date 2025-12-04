@@ -78,3 +78,11 @@ sweep-scale:
 fetch-results:
 	@echo ">>> Descargando resultados CSV..."
 	sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/*.csv ./logs/
+
+# Scripts sweep2
+run-custom:
+	@echo ">>> Enviando prueba personalizada a la cola..."
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/test_custom.sh"
+
+tail-custom:
+	$(SSH_CMD) "tail -f \`ls -t $(REMOTE_DIR)/logs/custom_*.out | head -n1\`"
