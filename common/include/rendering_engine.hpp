@@ -34,7 +34,7 @@ struct RenderContext {
 template <typename ImageType> class PixelRenderer {
 public:
   PixelRenderer(ImageType & img, Camera & cam, RenderContext & context)
-      : image_(img), camera_(cam), ctx_(context),
+      : image_(&img), camera_(&cam), ctx_(&context),
         image_width_(static_cast<size_t>(cam.ProjWindow.imageWidth)),
         image_height_(static_cast<size_t>(cam.ProjWindow.imageHeight)),
         pixel_delta_u_(cam.ProjWindow.viewportHorizontal / static_cast<double>(image_width_)),
@@ -44,8 +44,8 @@ public:
 
   void operator()(tbb::blocked_range2d<size_t> const & r) const {
     // Each thread gets its own local RNG generators
-    auto & ray_rng      = ctx_.get_ray_rng();
-    auto & material_rng = ctx_.get_material_rng();
+    auto & ray_rng      = ctx_->get_ray_rng();
+    auto & material_rng = ctx_->get_material_rng();
 
     for (size_t row = r.rows().begin(); row != r.rows().end(); ++row) {
       for (size_t col = r.cols().begin(); col != r.cols().end(); ++col) {
@@ -54,34 +54,34 @@ public:
                                     (static_cast<double>(col) * pixel_delta_u_) +
                                     (static_cast<double>(row) * pixel_delta_v_);
 
-        for (int s = 0; s < ctx_.config->samples_per_pixel; ++s) {
+        for (int s = 0; s < ctx_->config->samples_per_pixel; ++s) {
           double const px = ray_rng.get_double() - 0.5;
           double const py = ray_rng.get_double() - 0.5;
 
           Point3 const pixel_sample_point =
               pixel_corner + (px * pixel_delta_u_) + (py * pixel_delta_v_);
-          Ray const ray(camera_.cameraPos, pixel_sample_point - camera_.cameraPos,
-                        ctx_.config->max_depth);
-          accumulated_color += Renderer::rayColor(ray, *ctx_.scene, *ctx_.config, material_rng);
+          Ray const ray(camera_->cameraPos, pixel_sample_point - camera_->cameraPos,
+                        ctx_->config->max_depth);
+          accumulated_color += Renderer::rayColor(ray, *ctx_->scene, *ctx_->config, material_rng);
         }
 
         Color const final_pixel_color = accumulated_color * scale_;
-        size_t const index            = image_.indice(row, col);
-        image_.set_pixel(index, final_pixel_color, ctx_.config->gamma);
+        size_t const index            = image_->indice(row, col);
+        image_->set_pixel(index, final_pixel_color, ctx_->config->gamma);
       }
     }
   }
 
 private:
-  ImageType & image_;
-  Camera & camera_;
-  RenderContext & ctx_;
-  size_t const image_width_;
-  size_t const image_height_;
-  Vec3 const pixel_delta_u_;
-  Vec3 const pixel_delta_v_;
-  Point3 const pixel00_loc_;
-  double const scale_;
+  ImageType * image_;
+  Camera * camera_;
+  RenderContext * ctx_;
+  size_t image_width_;
+  size_t image_height_;
+  Vec3 pixel_delta_u_;
+  Vec3 pixel_delta_v_;
+  Point3 pixel00_loc_;
+  double scale_;
 };
 
 // Main rendering function
