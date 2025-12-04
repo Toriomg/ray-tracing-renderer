@@ -2,6 +2,10 @@ include env.sh
 
 PASSFILE=.password
 
+# Para los scripts sweep
+SSH_CMD=sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST)
+SCP_PREFIX=sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no
+
 # 1. Subir código
 deploy:
 	@bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
@@ -28,9 +32,9 @@ all-jd: run-jd tail-jd
 # --- DESCARGA DE RESULTADOS ---
 
 fetch-ppm:
-	@echo ">>> Descargando directorio de imágenes..."
-	@mkdir -p logs
-	@sshpass -f $(PASSFILE) scp -r -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/images ./logs/ || true
+	@echo ">>> Creando carpeta logs y descargando imágenes..."
+	@mkdir -p logs/img
+	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img/
 
 fetch-txt:
 	@echo ">>> Descargando directorio de logs de texto..."
@@ -63,3 +67,35 @@ run-jd-wait: deploy
 
 auto-jd: remote-build run-jd-wait fetch-all
 	@echo "AUTO JD COMPLETADO"
+
+# Scripts sweep
+sweep-opt:
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_optimization.sh"
+
+sweep-scale:
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN)"
+
+fetch-results:
+	@echo ">>> Descargando resultados CSV..."
+	sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/*.csv ./logs/
+
+# Scripts sweep2
+run-custom:
+	@echo ">>> Enviando prueba personalizada a la cola..."
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/test_custom.sh"
+
+tail-custom:
+	$(SSH_CMD) "tail -f \`ls -t $(REMOTE_DIR)/logs/custom_*.out | head -n1\`"
+
+
+# --- VALIDACIÓN Y COMPARACIÓN ---
+
+# Define dónde guardaste las referencias del profesor
+REF_DIR=res/references_par
+
+# Compara la salida de run-custom con la referencia oficial (Escenario 5)
+compare-custom: fetch-ppm
+	@echo ">>> 🔍 Comparando out_custom.ppm con la referencia s5-par.ppm..."
+	# Asegúrate de que tienes la referencia en res/references_par/
+	python3 scripts/analysis/compare.py $(REF_DIR)/s5-par.ppm logs/img/out_custom.ppm
+	@echo ">>> ✅ Si hay diferencias, se ha generado una imagen en logs/img/out_custom.ppmdiferencias.ppm"
