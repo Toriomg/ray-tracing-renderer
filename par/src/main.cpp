@@ -27,37 +27,92 @@ namespace {
               << " <scene_file> <config_file> <output_file> [options]\n";
     std::cerr << "Example: " << program_name << " res/scene.txt res/config.txt output.ppm\n";
     std::cerr << "Options:\n";
-    std::cerr << "  --partitioner <auto|simple|static|affinity>  Select TBB partitioner type\n";
-    std::cerr
-        << "  --grain <size>                                Set grain size for partitioning\n";
-    std::cerr << "  --threads <num>                               Limit number of TBB threads\n";
+    std::cerr << "  Global:\n";
+    std::cerr << "    --threads <num>                             Limit number of TBB threads\n";
+    std::cerr << "  Rendering (legacy - applies to both):\n";
+    std::cerr << "    --partitioner <auto|simple|static|affinity> Set partitioner for both\n";
+    std::cerr << "    --grain <size>                              Set grain size for both\n";
+    std::cerr << "  Rendering (specific):\n";
+    std::cerr << "    --render-part <auto|simple|static|affinity> Set render partitioner\n";
+    std::cerr << "    --render-grain <size>                       Set render grain size\n";
+    std::cerr << "  Image Processing (specific):\n";
+    std::cerr << "    --image-part <auto|simple|static|affinity>  Set image partitioner\n";
+    std::cerr << "    --image-grain <size>                        Set image grain size\n";
   }
 
-  void parseParallelSettings(std::vector<std::string> const & args, ParallelSettings & settings) {
+  PartitionerType parsePartitionerType(std::string const & part_type) {
+    if (part_type == "auto") {
+      return PartitionerType::Auto;
+    }
+    if (part_type == "simple") {
+      return PartitionerType::Simple;
+    }
+    if (part_type == "static") {
+      return PartitionerType::Static;
+    }
+    if (part_type == "affinity") {
+      return PartitionerType::Affinity;
+    }
+    std::cerr << "Unknown partitioner type: " << part_type << "\n";
+    std::exit(1);
+  }
+
+  bool parseSingleArg(size_t & i, std::vector<std::string> const & args,
+                      ParallelSettings & renderSettings, ParallelSettings & imageSettings) {
+    std::string const & arg = args[i];
+
+    // Legacy flags (apply to both)
+    if (arg == "--partitioner" and i + 1 < args.size()) {
+      PartitionerType const type = parsePartitionerType(args[++i]);
+      renderSettings.type        = type;
+      imageSettings.type         = type;
+      return true;
+    }
+    if (arg == "--grain" and i + 1 < args.size()) {
+      size_t const grain       = std::stoull(args[++i]);
+      renderSettings.grainSize = grain;
+      imageSettings.grainSize  = grain;
+      return true;
+    }
+
+    // Render-specific flags
+    if (arg == "--render-part" and i + 1 < args.size()) {
+      renderSettings.type = parsePartitionerType(args[++i]);
+      return true;
+    }
+    if (arg == "--render-grain" and i + 1 < args.size()) {
+      renderSettings.grainSize = std::stoull(args[++i]);
+      return true;
+    }
+
+    // Image-specific flags
+    if (arg == "--image-part" and i + 1 < args.size()) {
+      imageSettings.type = parsePartitionerType(args[++i]);
+      return true;
+    }
+    if (arg == "--image-grain" and i + 1 < args.size()) {
+      imageSettings.grainSize = std::stoull(args[++i]);
+      return true;
+    }
+
+    // Thread control (applies to both)
+    if (arg == "--threads" and i + 1 < args.size()) {
+      int const threads         = std::stoi(args[++i]);
+      renderSettings.maxThreads = threads;
+      imageSettings.maxThreads  = threads;
+      return true;
+    }
+
+    // Unknown argument
+    std::cerr << "Unknown argument: " << arg << "\n";
+    std::exit(1);
+  }
+
+  void parseParallelSettings(std::vector<std::string> const & args,
+                             ParallelSettings & renderSettings, ParallelSettings & imageSettings) {
     // Parse optional arguments starting from index 4 (after mandatory args)
     for (size_t i = 4; i < args.size(); ++i) {
-      if (args[i] == "--partitioner" and i + 1 < args.size()) {
-        std::string const & part_type = args[++i];
-        if (part_type == "auto") {
-          settings.type = PartitionerType::Auto;
-        } else if (part_type == "simple") {
-          settings.type = PartitionerType::Simple;
-        } else if (part_type == "static") {
-          settings.type = PartitionerType::Static;
-        } else if (part_type == "affinity") {
-          settings.type = PartitionerType::Affinity;
-        } else {
-          std::cerr << "Unknown partitioner type: " << part_type << "\n";
-          std::exit(1);
-        }
-      } else if (args[i] == "--grain" and i + 1 < args.size()) {
-        settings.grainSize = std::stoull(args[++i]);
-      } else if (args[i] == "--threads" and i + 1 < args.size()) {
-        settings.maxThreads = std::stoi(args[++i]);
-      } else {
-        std::cerr << "Unknown argument: " << args[i] << "\n";
-        std::exit(1);
-      }
+      parseSingleArg(i, args, renderSettings, imageSettings);
     }
   }
 
@@ -87,21 +142,25 @@ namespace {
     return resources;
   }
 
-  void runRenderPipeline(AppResources & resources, ParallelSettings const & par_settings,
-                         std::string const & output_file) {
+  void runRenderPipeline(AppResources & resources, ParallelSettings const & renderSettings,
+                         ParallelSettings const & imageSettings, std::string const & output_file) {
     // Create camera and determine image dimensions
     auto camera      = Camera(resources.config);
     auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
     auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
-    // Create render context with parallel settings
+    // Create render context with render-specific settings
     RenderContext ctx(&resources.scene, &resources.config, resources.rng_manager.get(),
-                      &par_settings);
+                      &renderSettings);
 
     // Render and write output
     std::cout << "Rendering with ImagePar...\n";
     ImagePar image(imageWidth, imageHeight);
     renderImage(image, camera, ctx);
+
+    // Note: imageSettings is available for future use with fill_from_double or other
+    // image processing operations that may benefit from different parallel configuration
+    (void) imageSettings;  // Suppress unused parameter warning
 
     if (!image.write_to_ppm(output_file)) {
       std::cerr << "Error writing image to .ppm file\n";
@@ -121,16 +180,18 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-  // Parse parallel settings
-  ParallelSettings par_settings;
-  parseParallelSettings(args, par_settings);
+  // Parse parallel settings for rendering and image processing
+  ParallelSettings render_settings;
+  ParallelSettings image_settings;
+  parseParallelSettings(args, render_settings, image_settings);
 
   // Initialize TBB thread limit if specified
   std::unique_ptr<tbb::global_control> global_control;
-  if (par_settings.maxThreads > 0) {
-    global_control = std::make_unique<tbb::global_control>(
-        tbb::global_control::max_allowed_parallelism, static_cast<size_t>(par_settings.maxThreads));
-    std::cout << "Limiting TBB to " << par_settings.maxThreads << " threads\n";
+  if (render_settings.maxThreads > 0) {
+    global_control =
+        std::make_unique<tbb::global_control>(tbb::global_control::max_allowed_parallelism,
+                                              static_cast<size_t>(render_settings.maxThreads));
+    std::cout << "Limiting TBB to " << render_settings.maxThreads << " threads\n";
   }
 
   // Load application resources
@@ -139,8 +200,8 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-  // Run the render pipeline
-  runRenderPipeline(*resources, par_settings, args[3]);
+  // Run the render pipeline with separate settings
+  runRenderPipeline(*resources, render_settings, image_settings, args[3]);
 
   return 0;
 }
