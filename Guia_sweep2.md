@@ -123,8 +123,6 @@ make fetch-results
 python3 scripts/analysis/analyze_best.py logs/results_optimization.csv
 ```
 
-**Salida esperada:** _"Ganador: Static, Grano 64"_.
-
 ---
 
 ### Paso 2: Análisis Profundo (Fase Matriz - Opcional)
