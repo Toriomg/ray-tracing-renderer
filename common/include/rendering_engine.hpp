@@ -14,9 +14,11 @@ struct RenderContext {
   SceneSettings * scene;
   ConfigSettings const * config;
   ParallelRNGManager * rng_manager;
+  ParallelSettings const * parallel_settings;
 
-  RenderContext(SceneSettings * scn, ConfigSettings const * cfg, ParallelRNGManager * rng_mgr)
-      : scene(scn), config(cfg), rng_manager(rng_mgr) { }
+  RenderContext(SceneSettings * scn, ConfigSettings const * cfg, ParallelRNGManager * rng_mgr,
+                ParallelSettings const * par_settings = nullptr)
+      : scene(scn), config(cfg), rng_manager(rng_mgr), parallel_settings(par_settings) { }
 
   // Métodos NUEVOS de conveniencia:
   [[nodiscard]] RandomGenerator & get_ray_rng() const { return rng_manager->get_ray_rng(); }
