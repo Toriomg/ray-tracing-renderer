@@ -1,6 +1,6 @@
-# Manual de Experimentación Avanzada y Optimización (Proyecto TBB)
+# Manual de Experimentación Avanzada y Optimización (Versión 2.0)
 
-Este documento detalla la infraestructura de pruebas científicas que hemos implementado para el proyecto. El objetivo es cumplir con los requisitos de "El Jefe" (Profesor): **encontrar los parámetros óptimos justificándolos con datos**, y **analizar la escalabilidad del sistema**.
+Este documento detalla la infraestructura completa de pruebas científicas para el proyecto. Cubre desde la optimización básica hasta la combinación total de parámetros y la experimentación manual segura en el clúster.
 
 ---
 
@@ -8,9 +8,7 @@ Este documento detalla la infraestructura de pruebas científicas que hemos impl
 
 Hemos modificado el código C++ (`main.cpp`, `rendering_engine.hpp`, `image_par.cpp`) para que deje de ser estático. Ahora el programa es **totalmente configurable desde la línea de comandos**.
 
-### Nuevos Argumentos del Ejecutable
-
-Ahora podemos lanzar el programa así:
+### Argumentos del Ejecutable
 
 ```bash
 ./render-par scene.txt config.txt out.ppm \
@@ -19,24 +17,32 @@ Ahora podemos lanzar el programa así:
     --threads 56
 ```
 
-**Argumentos clave:**
+### Tabla de Argumentos
 
-- `--render-part`: Define el algoritmo de reparto para el trazado de rayos (la parte pesada).
-  - **Opciones:** `auto`, `simple`, `static`, `affinity`.
-- `--render-grain`: Define cuántas filas/bloques procesa un hilo antes de soltar el control.
-- `--threads`: Limita artificialmente cuántos núcleos usa TBB (Vital para medir escalabilidad).
+| Argumento | Descripción |
+|-----------|-------------|
+| `--render-part <tipo>` | Algoritmo para el trazado de rayos (la parte pesada). Opciones: `auto`, `simple`, `static`, `affinity`. |
+| `--render-grain <n>` | Tamaño de grano para el trazado de rayos. |
+| `--image-part <tipo>` | Algoritmo para el post-procesado de imagen (ligero). Opciones: `auto`, `simple`, `static`, `affinity`. |
+| `--image-grain <n>` | Tamaño de grano para la imagen. |
+| `--threads <n>` | Límite global de hilos (TBB). Vital para medir escalabilidad. |
+
+> **Nota:** Los antiguos `--partitioner` y `--grain` siguen funcionando y aplican el valor a ambos sistemas a la vez (backward compatibility).
 
 ---
 
-## 2. Los Scripts de Automatización (Los "Robots")
+## 2. Los Scripts de Automatización (La Flota)
+
+Tenemos **4 scripts** en `scripts/remote/` para diferentes necesidades:
 
 En lugar de lanzar comandos a mano, tenemos **3 scripts** en `scripts/remote/` que automatizan el trabajo sucio en el clúster Avignon.
 
 ### A. `sweep_optimization.sh` (El Buscador de la Mejor Configuración)
+**Objetivo:** Encontrar la mejor configuración para el **Motor** (fijando hilos al máximo).
 
-**Objetivo:** Encontrar qué combinación de **Particionador** y **Grano** hace que el renderizado sea más rápido.
+**Qué hace:** Fija los hilos a 112 y prueba todas las combinaciones de particionador y grano.
 
-**Qué hace:** Fija los hilos al máximo (112) y prueba todas las combinaciones.
+**Uso:** Ideal para una primera pasada rápida.
 
 **Variables que podéis tocar (dentro del script):**
 
@@ -49,9 +55,11 @@ En lugar de lanzar comandos a mano, tenemos **3 scripts** en `scripts/remote/` q
 
 ### B. `sweep_scalability.sh` (La Curva de Speedup)
 
-**Objetivo:** Demostrar cómo mejora el rendimiento al añadir más CPUs. Es fundamental para la **gráfica de Speedup**.
+**Objetivo:** Analizar cómo escala el rendimiento al subir hilos (**Speedup**).
 
 **Qué hace:** Usa la **"Mejor Configuración"** (que hayáis encontrado en el paso A) y varía los hilos desde 1 hasta 112.
+
+**Uso:** Una vez sabes que (ej) `static/64` es lo mejor, lanzas este para ver la curva de 1 a 112 hilos.
 
 **Qué tocar:**
 
@@ -64,11 +72,32 @@ En lugar de lanzar comandos a mano, tenemos **3 scripts** en `scripts/remote/` q
 
 ### C. `sweep_matrix.sh` (La Opción Nuclear ☢️)
 
-**Objetivo:** Probar **TODO contra TODO**. Ideal si sospecháis que la configuración de la Imagen afecta a la del Motor, o queréis una tabla gigante de datos.
+**Objetivo:** Probar **TODO contra TODO** (Producto Cartesiano).
 
-**Qué hace:** 5 bucles anidados. Prueba combinaciones de `(Render Part/Grain)` × `(Image Part/Grain)` × `(Hilos)`.
+**Qué hace:** 5 bucles anidados. Prueba combinaciones cruzadas: `Render[static]` × `Image[auto]`, `Render[static]` × `Image[simple]`, etc.
 
-**⚠️ Advertencia:** Este script tarda mucho. Usadlo seleccionando rangos pequeños en las variables `RENDER_PARTS`, `THREAD_LIST`, etc.
+**Por qué usarlo:** Para demostrar exhaustividad en la memoria (_"Hemos verificado que la configuración de imagen no interfiere negativamente con la del motor"_).
+
+**⚠️ Advertencia:** Este script tarda mucho. Configura rangos pequeños dentro del script antes de lanzar.
+
+**Salida:** `logs/results_matrix.csv`.
+
+---
+
+### D. `test_custom.sh` (El Laboratorio Manual)
+
+**Objetivo:** Probar una combinación específica sin líos de librerías ni colas largas.
+
+**Qué hace:** Ejecuta una sola vez la combinación que tú escribas en la variable `ARGS` dentro del script.
+
+**Por qué usarlo:** Para "tocar y ver" si una idea funciona rápido.
+
+**Ejemplo de uso:**
+1. Edita `scripts/remote/test_custom.sh`
+2. Cambia la línea `ARGS="..."` con tus parámetros personalizados
+3. Ejecuta: `make run-custom`
+
+**Salida:** `logs/custom_*.out`.
 
 ---
 
@@ -76,50 +105,78 @@ En lugar de lanzar comandos a mano, tenemos **3 scripts** en `scripts/remote/` q
 
 Para rellenar la memoria de forma eficiente, seguid este orden:
 
-### Paso 1: Preparación
+### Paso 0: Preparación
 
 ```bash
-make remote-build  # Sube el código y compila en Avignon
+make remote-build  # Sube código y compila (Siempre tras cambiar algo)
 ```
 
-### Paso 2: Encontrar el Óptimo (Fase de Optimización)
+### Paso 1: Encontrar el Óptimo (Fase de Optimización)
 
-Lanzamos el barrido de parámetros.
+Lanzamos el barrido de parámetros del motor.
 
 ```bash
 make sweep-opt
-```
-
-- **Esperad a que termine** (mirad con `squeue -u <usuario>`).
-- **Bajad los datos:** `make fetch-results`.
-- **Ejecutad el analista automático:**
-
-```bash
+make fetch-results
 python3 scripts/analysis/analyze_best.py logs/results_optimization.csv
 ```
 
-Esto os dirá: **"El ganador es Static con Grano 64"**.
+**Salida esperada:** _"Ganador: Static, Grano 64"_.
+
+---
+
+### Paso 2: Análisis Profundo (Fase Matriz - Opcional)
+
+Si queréis aseguraros de que la imagen no molesta, lanzad la matriz.
+
+```bash
+# Editar scripts/remote/sweep_matrix.sh para poner rangos interesantes
+sbatch scripts/remote/sweep_matrix.sh
+make fetch-results
+```
+
+**Nota:** Este paso es opcional pero demuestra exhaustividad científica en la memoria.
+
+---
 
 ### Paso 3: Medir la Escalabilidad (Fase de Análisis)
 
-Usando los datos del ganador (ej: `static`, `64`), lanzamos la curva de hilos.
+Usando el ganador del Paso 1, lanzamos la curva.
 
 ```bash
 make sweep-scale PART=static GRAIN=64
+make fetch-results
 ```
 
-- **Esperad a que termine.**
-- **Bajad los datos:** `make fetch-results`.
+---
 
-### Paso 4: Generar Gráficas (Fase de Memoria)
+### Paso 4: Pruebas Manuales (Debug/Curiosidad)
 
-Generamos las imágenes PNG automáticamente.
+Si queréis probar algo raro (ej: ¿Qué pasa con 200 hilos?):
+
+1. Editad `scripts/remote/test_custom.sh`.
+2. Cambiad la línea `ARGS="..."`.
+3. Ejecutad:
+
+```bash
+make remote-build
+make run-custom
+make tail-custom
+```
+
+---
+
+### Paso 5: Generar Gráficas (Fase de Memoria)
+
+Una vez tengáis `results_scalability.csv`:
 
 ```bash
 python3 scripts/analysis/plot_results.py
 ```
 
-Tendréis `logs/grafica_speedup.png` lista para pegar en el PDF.
+Esto generará en `logs/`:
+- `grafica_speedup.png`: Curva de aceleración.
+- `grafica_tiempo.png`: Tiempo vs Hilos.
 
 ---
 
@@ -150,14 +207,16 @@ De **56 a 112** (HyperThreading), la mejora será mínima o incluso empeorará.
 
 ---
 
-## 5. Comandos Rápidos (Makefile)
+## 5. Resumen de Comandos (Makefile)
 
 | Comando | Acción |
 |---------|--------|
-| `make remote-build` | Sube código y compila. |
-| `make sweep-opt` | Lanza el test de optimización. |
-| `make sweep-scale` | Lanza el test de hilos (usa `PART` y `GRAIN`). |
-| `make fetch-results` | Descarga todos los CSVs y Logs a tu PC. |
+| `make remote-build` | Sube y compila todo. |
+| `make sweep-opt` | Lanza búsqueda de mejor motor. |
+| `make sweep-scale` | Lanza curva de hilos (usa `PART` y `GRAIN`). |
+| `make run-custom` | Lanza tu prueba manual (`test_custom.sh`). |
+| `make tail-custom` | Ve el resultado de tu prueba manual en vivo. |
+| `make fetch-results` | Descarga todos los datos a tu PC. |
 | `python3 scripts/analysis/plot_results.py` | Crea las gráficas. |
 
 ---
@@ -199,5 +258,3 @@ graph TD
 - **Interpretad los resultados:** No basta con pegar gráficas, explicad por qué Static ganó, por qué el grano óptimo es X, etc.
 
 ---
-
-_Última actualización: 2025-12-04_
