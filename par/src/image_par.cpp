@@ -52,21 +52,45 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
-void ImagePar::fill_from_double(std::vector<double> const & r_data,
-                                std::vector<double> const & g_data,
-                                std::vector<double> const & b_data, double gamma) {
+void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
+                                ParallelSettings const * par_settings) {
   // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
   size_t const expected_size = width_ * height_;
 
-  // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t en paralelo
-  tbb::parallel_for(
-      tbb::blocked_range<size_t>(0, expected_size), [&](tbb::blocked_range<size_t> const & range) {
-        for (size_t i = range.begin(); i != range.end(); ++i) {
-          r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-          g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-          b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
-        }
-      });
+  // Use default settings if none provided
+  ParallelSettings const settings = par_settings != nullptr ? *par_settings : ParallelSettings{};
+
+  // Create 1D range with custom grain size if specified
+  tbb::blocked_range<size_t> range =
+      (settings.grainSize > 0) ? tbb::blocked_range<size_t>(0, expected_size, settings.grainSize)
+                               : tbb::blocked_range<size_t>(0, expected_size);
+
+  // Lambda for pixel conversion
+  auto convert_lambda = [&](tbb::blocked_range<size_t> const & r) {
+    for (size_t i = r.begin(); i != r.end(); ++i) {
+      r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.r)[i], gamma));
+      g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.g)[i], gamma));
+      b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.b)[i], gamma));
+    }
+  };
+
+  // Select partitioner based on settings
+  switch (settings.type) {
+    case PartitionerType::Simple:
+      tbb::parallel_for(range, convert_lambda, tbb::simple_partitioner());
+      break;
+    case PartitionerType::Static:
+      tbb::parallel_for(range, convert_lambda, tbb::static_partitioner());
+      break;
+    case PartitionerType::Affinity:
+    {
+      static tbb::affinity_partitioner affinity_part;
+      tbb::parallel_for(range, convert_lambda, affinity_part);
+      break;
+    }
+    case PartitionerType::Auto:
+    default:                    tbb::parallel_for(range, convert_lambda, tbb::auto_partitioner()); break;
+  }
 }
 
 // Escritura a archivo PPM usando la clase PPMWriter

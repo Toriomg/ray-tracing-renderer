@@ -2,10 +2,18 @@
 #define IMAGE_Par_HPP
 
 #include <../../common/include/constants.hpp>
+#include <../../common/include/dataStructs/settings_structs.hpp>
 #include <../../common/include/utilities/vec3.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>
+
+// Structure to group RGB input data
+struct RGBInputData {
+  std::vector<double> const * r;
+  std::vector<double> const * g;
+  std::vector<double> const * b;
+};
 
 class ImagePar {
 private:
@@ -41,8 +49,8 @@ public:
 
   // Permite llenar todos los arrays a partir de datos en double con valores de 0 a 1 a valores
   // válidos del 0 al 255
-  void fill_from_double(std::vector<double> const & r_data, std::vector<double> const & g_data,
-                        std::vector<double> const & b_data, double gamma = Constants::Gamma);
+  void fill_from_double(RGBInputData const & input, double gamma = Constants::Gamma,
+                        ParallelSettings const * par_settings = nullptr);
 
   // Métodos para recibir las dimensiones de la imagen
   [[nodiscard]] size_t width() const { return width_; }
