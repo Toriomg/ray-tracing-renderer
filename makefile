@@ -2,6 +2,10 @@ include env.sh
 
 PASSFILE=.password
 
+# Para los scripts sweep
+SSH_CMD=sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST)
+SCP_PREFIX=sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no
+
 # 1. Subir código
 deploy:
 	@bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
@@ -63,3 +67,14 @@ run-jd-wait: deploy
 
 auto-jd: remote-build run-jd-wait fetch-all
 	@echo "AUTO JD COMPLETADO"
+
+# Scripts sweep
+sweep-opt:
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_optimization.sh"
+
+sweep-scale:
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN)"
+
+fetch-results:
+	@echo ">>> Descargando resultados CSV..."
+	sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/*.csv ./logs/
