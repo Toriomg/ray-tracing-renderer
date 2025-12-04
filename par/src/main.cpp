@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <string>
 #include <tbb/global_control.h>
@@ -19,6 +18,38 @@ std::string const FilepathScene  = "/workspace/res/scene_scripts/scene3example.t
 std::string const FilepathConfig = "/workspace/res/config_scripts/config3example.txt";
 std::string const FilepathOut    = "/workspace/outputImagePar.ppm";
 */
+
+namespace {
+
+  void parseParallelSettings(std::vector<std::string> const & args, ParallelSettings & settings) {
+    // Parse optional arguments starting from index 4 (after mandatory args)
+    for (size_t i = 4; i < args.size(); ++i) {
+      if (args[i] == "--partitioner" and i + 1 < args.size()) {
+        std::string const & part_type = args[++i];
+        if (part_type == "auto") {
+          settings.type = PartitionerType::Auto;
+        } else if (part_type == "simple") {
+          settings.type = PartitionerType::Simple;
+        } else if (part_type == "static") {
+          settings.type = PartitionerType::Static;
+        } else if (part_type == "affinity") {
+          settings.type = PartitionerType::Affinity;
+        } else {
+          std::cerr << "Unknown partitioner type: " << part_type << "\n";
+          std::exit(1);
+        }
+      } else if (args[i] == "--grain" and i + 1 < args.size()) {
+        settings.grainSize = std::stoull(args[++i]);
+      } else if (args[i] == "--threads" and i + 1 < args.size()) {
+        settings.maxThreads = std::stoi(args[++i]);
+      } else {
+        std::cerr << "Unknown argument: " << args[i] << "\n";
+        std::exit(1);
+      }
+    }
+  }
+
+}  // namespace
 
 int main(int argc, char * argv[]) {
   std::vector<std::string> const args(argv, argv + argc);
@@ -41,37 +72,14 @@ int main(int argc, char * argv[]) {
 
   // Parse parallel settings from CLI arguments
   ParallelSettings par_settings;
-  std::unique_ptr<tbb::global_control> thread_control;
+  parseParallelSettings(args, par_settings);
 
-  for (size_t i = 4; i < args.size(); ++i) {
-    if (args[i] == "--partitioner" and i + 1 < args.size()) {
-      std::string const & part_type = args[++i];
-      if (part_type == "auto") {
-        par_settings.type = PartitionerType::Auto;
-      } else if (part_type == "simple") {
-        par_settings.type = PartitionerType::Simple;
-      } else if (part_type == "static") {
-        par_settings.type = PartitionerType::Static;
-      } else if (part_type == "affinity") {
-        par_settings.type = PartitionerType::Affinity;
-      } else {
-        std::cerr << "Unknown partitioner type: " << part_type << "\n";
-        return 1;
-      }
-    } else if (args[i] == "--grain" and i + 1 < args.size()) {
-      par_settings.grainSize = std::stoul(args[++i]);
-    } else if (args[i] == "--threads" and i + 1 < args.size()) {
-      par_settings.maxThreads = std::stoi(args[++i]);
-      if (par_settings.maxThreads > 0) {
-        thread_control =
-            std::make_unique<tbb::global_control>(tbb::global_control::max_allowed_parallelism,
-                                                  static_cast<size_t>(par_settings.maxThreads));
-        std::cout << "Limiting TBB to " << par_settings.maxThreads << " threads\n";
-      }
-    } else {
-      std::cerr << "Unknown argument: " << args[i] << "\n";
-      return 1;
-    }
+  // Initialize TBB thread limit if specified
+  std::optional<tbb::global_control> global_control;
+  if (par_settings.maxThreads > 0) {
+    global_control.emplace(tbb::global_control::max_allowed_parallelism,
+                           static_cast<size_t>(par_settings.maxThreads));
+    std::cout << "Limiting TBB to " << par_settings.maxThreads << " threads\n";
   }
 
   std::optional<SceneSettings> scene_opt = loadSceneFromFile(args[1]);
