@@ -32,9 +32,9 @@ all-jd: run-jd tail-jd
 # --- DESCARGA DE RESULTADOS ---
 
 fetch-ppm:
-	@echo ">>> Descargando directorio de imágenes..."
-	@mkdir -p logs
-	@sshpass -f $(PASSFILE) scp -r -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/images ./logs/ || true
+	@echo ">>> Creando carpeta logs y descargando imágenes..."
+	@mkdir -p logs/img
+	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img/
 
 fetch-txt:
 	@echo ">>> Descargando directorio de logs de texto..."
@@ -86,3 +86,16 @@ run-custom:
 
 tail-custom:
 	$(SSH_CMD) "tail -f \`ls -t $(REMOTE_DIR)/logs/custom_*.out | head -n1\`"
+
+
+# --- VALIDACIÓN Y COMPARACIÓN ---
+
+# Define dónde guardaste las referencias del profesor
+REF_DIR=res/references_par
+
+# Compara la salida de run-custom con la referencia oficial (Escenario 5)
+compare-custom: fetch-ppm
+	@echo ">>> 🔍 Comparando out_custom.ppm con la referencia s5-par.ppm..."
+	# Asegúrate de que tienes la referencia en res/references_par/
+	python3 scripts/analysis/compare.py $(REF_DIR)/s5-par.ppm logs/img/out_custom.ppm
+	@echo ">>> ✅ Si hay diferencias, se ha generado una imagen en logs/img/out_custom.ppmdiferencias.ppm"

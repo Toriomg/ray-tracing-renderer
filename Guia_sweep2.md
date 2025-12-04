@@ -96,6 +96,8 @@ En lugar de lanzar comandos a mano, tenemos **3 scripts** en `scripts/remote/` q
 1. Edita `scripts/remote/test_custom.sh`
 2. Cambia la línea `ARGS="..."` con tus parámetros personalizados
 3. Ejecuta: `make run-custom`
+4. Ejecuta: `make tail-custom`
+5. Compara para ver si es válido: `make compare-custom`
 
 **Salida:** `logs/custom_*.out`.
 
