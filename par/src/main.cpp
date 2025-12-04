@@ -57,11 +57,10 @@ namespace {
     std::exit(1);
   }
 
-  bool parseSingleArg(size_t & i, std::vector<std::string> const & args,
-                      ParallelSettings & renderSettings, ParallelSettings & imageSettings) {
+  bool tryParseLegacyArgs(size_t & i, std::vector<std::string> const & args,
+                          ParallelSettings & renderSettings, ParallelSettings & imageSettings) {
     std::string const & arg = args[i];
 
-    // Legacy flags (apply to both)
     if (arg == "--partitioner" and i + 1 < args.size()) {
       PartitionerType const type = parsePartitionerType(args[++i]);
       renderSettings.type        = type;
@@ -74,8 +73,13 @@ namespace {
       imageSettings.grainSize  = grain;
       return true;
     }
+    return false;
+  }
 
-    // Render-specific flags
+  bool tryParseRenderArgs(size_t & i, std::vector<std::string> const & args,
+                          ParallelSettings & renderSettings) {
+    std::string const & arg = args[i];
+
     if (arg == "--render-part" and i + 1 < args.size()) {
       renderSettings.type = parsePartitionerType(args[++i]);
       return true;
@@ -84,8 +88,13 @@ namespace {
       renderSettings.grainSize = std::stoull(args[++i]);
       return true;
     }
+    return false;
+  }
 
-    // Image-specific flags
+  bool tryParseImageArgs(size_t & i, std::vector<std::string> const & args,
+                         ParallelSettings & imageSettings) {
+    std::string const & arg = args[i];
+
     if (arg == "--image-part" and i + 1 < args.size()) {
       imageSettings.type = parsePartitionerType(args[++i]);
       return true;
@@ -94,17 +103,38 @@ namespace {
       imageSettings.grainSize = std::stoull(args[++i]);
       return true;
     }
+    return false;
+  }
 
-    // Thread control (applies to both)
+  bool tryParseGlobalArgs(size_t & i, std::vector<std::string> const & args,
+                          ParallelSettings & renderSettings, ParallelSettings & imageSettings) {
+    std::string const & arg = args[i];
+
     if (arg == "--threads" and i + 1 < args.size()) {
       int const threads         = std::stoi(args[++i]);
       renderSettings.maxThreads = threads;
       imageSettings.maxThreads  = threads;
       return true;
     }
+    return false;
+  }
 
-    // Unknown argument
-    std::cerr << "Unknown argument: " << arg << "\n";
+  bool parseSingleArg(size_t & i, std::vector<std::string> const & args,
+                      ParallelSettings & renderSettings, ParallelSettings & imageSettings) {
+    if (tryParseLegacyArgs(i, args, renderSettings, imageSettings)) {
+      return true;
+    }
+    if (tryParseRenderArgs(i, args, renderSettings)) {
+      return true;
+    }
+    if (tryParseImageArgs(i, args, imageSettings)) {
+      return true;
+    }
+    if (tryParseGlobalArgs(i, args, renderSettings, imageSettings)) {
+      return true;
+    }
+
+    std::cerr << "Unknown argument: " << args[i] << "\n";
     std::exit(1);
   }
 
