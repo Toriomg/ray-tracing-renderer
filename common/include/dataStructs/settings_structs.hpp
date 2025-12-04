@@ -37,4 +37,14 @@ struct SceneSettings {
   RefractiveMaterials refractive;
 };
 
+// Enum para tipos de particionadores TBB
+enum class PartitionerType { Auto, Simple, Static, Affinity };
+
+// Estructura para configuración de paralelización
+struct ParallelSettings {
+  PartitionerType type = PartitionerType::Auto;
+  size_t grainSize     = 0;   // 0 = automático
+  int maxThreads       = -1;  // -1 = usar todos los disponibles
+};
+
 #endif
