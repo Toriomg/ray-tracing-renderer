@@ -31,8 +31,7 @@ struct RenderContext {
 };
 
 // Functor for parallel rendering (Rama analysis/rendering: RENDERING PARALELO con TBB)
-template <typename ImageType>
-struct RenderFunctor {
+template <typename ImageType> struct RenderFunctor {
   ImageType * image;
   Camera * camera;
   RenderContext * ctx;
@@ -42,15 +41,13 @@ struct RenderFunctor {
   double scale;
 
   RenderFunctor(ImageType * img, Camera * cam, RenderContext * context)
-      : image(img), camera(cam), ctx(context) {
-    auto const imageWidth  = static_cast<size_t>(camera->ProjWindow.imageWidth);
-    auto const imageHeight = static_cast<size_t>(camera->ProjWindow.imageHeight);
-
-    pixel_delta_u = camera->ProjWindow.viewportHorizontal / static_cast<double>(imageWidth);
-    pixel_delta_v = camera->ProjWindow.viewportVertical / static_cast<double>(imageHeight);
-    pixel00_loc   = camera->ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v);
-    scale         = 1.0 / static_cast<double>(ctx->config->samples_per_pixel);
-  }
+      : image(img), camera(cam), ctx(context),
+        pixel_delta_u(camera->ProjWindow.viewportHorizontal /
+                      static_cast<double>(camera->ProjWindow.imageWidth)),
+        pixel_delta_v(camera->ProjWindow.viewportVertical /
+                      static_cast<double>(camera->ProjWindow.imageHeight)),
+        pixel00_loc(camera->ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v)),
+        scale(1.0 / static_cast<double>(context->config->samples_per_pixel)) { }
 
   void operator()(tbb::blocked_range2d<size_t> const & range) const {
     auto & ray_rng      = ctx->get_ray_rng();
@@ -59,15 +56,17 @@ struct RenderFunctor {
     for (size_t row = range.rows().begin(); row != range.rows().end(); ++row) {
       for (size_t col = range.cols().begin(); col != range.cols().end(); ++col) {
         Color accumulated_color(0.0, 0.0, 0.0);
-        Point3 const pixel_corner = pixel00_loc + (static_cast<double>(col) * pixel_delta_u) +
+        Point3 const pixel_corner = pixel00_loc +
+                                    (static_cast<double>(col) * pixel_delta_u) +
                                     (static_cast<double>(row) * pixel_delta_v);
 
         for (int s = 0; s < ctx->config->samples_per_pixel; ++s) {
-          double const px             = ray_rng.get_double() - 0.5;
-          double const py             = ray_rng.get_double() - 0.5;
-          Point3 const pixel_sample_point = pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
-          Ray const    ray(camera->cameraPos, pixel_sample_point - camera->cameraPos,
-                           ctx->config->max_depth);
+          double const px = ray_rng.get_double() - 0.5;
+          double const py = ray_rng.get_double() - 0.5;
+          Point3 const pixel_sample_point =
+              pixel_corner + (px * pixel_delta_u) + (py * pixel_delta_v);
+          Ray const ray(camera->cameraPos, pixel_sample_point - camera->cameraPos,
+                        ctx->config->max_depth);
 
           accumulated_color += Renderer::rayColor(ray, *ctx->scene, *ctx->config, material_rng);
         }
@@ -102,7 +101,8 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
     case PartitionerType::Static:
       tbb::parallel_for(range, renderer, tbb::static_partitioner());
       break;
-    case PartitionerType::Affinity: {
+    case PartitionerType::Affinity:
+    {
       static tbb::affinity_partitioner affinity_part;
       tbb::parallel_for(range, renderer, affinity_part);
       break;

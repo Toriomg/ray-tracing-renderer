@@ -51,13 +51,10 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
-void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
-                                ParallelSettings const * par_settings) {
+void ImagePar::fill_from_double(RGBInputData const & input, double gamma) {
   // Rama analysis/rendering: Post-procesado de imagen SECUENCIAL (control)
-  // Ignoramos par_settings para mantener compatibilidad de firma
-  (void) par_settings;
+  // Solo el rendering es paralelo en esta rama
 
-  // Calculamos el tamaño total de píxeles
   size_t const total_pixels = width_ * height_;
 
   // BUCLE SECUENCIAL: Procesamos cada píxel uno por uno
@@ -68,9 +65,7 @@ void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
   }
 }
 
-// Escritura a archivo PPM usando la clase PPMWriter
-bool ImagePar::write_to_ppm(std::string const & filename, ParallelSettings const * settings) const {
-  auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_, width_, height_);
-
-  return PPMWriter::write_ppm(filename, pixels, settings);
+// Escritura a archivo PPM usando la clase PPMWriter (SECUENCIAL en esta rama)
+bool ImagePar::write_to_ppm(std::string const & filename) const {
+  return PPMWriter::write_ppm(filename, r_channel_, g_channel_, b_channel_, width_, height_);
 }
