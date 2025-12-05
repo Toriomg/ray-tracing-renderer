@@ -1,6 +1,7 @@
 #ifndef PPM_WRITER_HPP
 #define PPM_WRITER_HPP
 
+#include "dataStructs/settings_structs.hpp"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -18,7 +19,7 @@ public:
   };
 
   static bool write_ppm(std::string const & filename, Pixels const & pixels, size_t width,
-                        size_t height);
+                        size_t height, ParallelSettings const * settings = nullptr);
 };
 
 #endif

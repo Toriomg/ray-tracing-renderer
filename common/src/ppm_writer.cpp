@@ -11,7 +11,7 @@
 // Escribe una imágen en formato PPM P3 recibiendo los 3 arrays de colores y las dimensiones de la
 // imagen
 bool PPMWriter::write_ppm(std::string const & filename, Pixels const & pixels, size_t width,
-                          size_t height) {
+                          size_t height, ParallelSettings const * settings) {
   // Checkeamos que el número de pixeles coincide con el tamaño de los arrays que se han definido
   size_t const total_pixels = width * height;
   if (pixels.r_channel.size() != total_pixels or
@@ -31,22 +31,50 @@ bool PPMWriter::write_ppm(std::string const & filename, Pixels const & pixels, s
   file << width << " " << height << "\n";
   file << "255\n";
 
-  tbb::static_partitioner sp;
+  // Use default settings if none provided
+  ParallelSettings const default_settings{};
+  ParallelSettings const & active_settings = settings != nullptr ? *settings : default_settings;
+
+  // Create blocked_range with custom grain size if specified
+  tbb::blocked_range<size_t> range =
+      (active_settings.grainSize > 0)
+          ? tbb::blocked_range<size_t>(0, total_pixels, active_settings.grainSize)
+          : tbb::blocked_range<size_t>(0, total_pixels);
+
   std::vector<std::string> output_lines(total_pixels);
-  tbb::parallel_for(
-      tbb::blocked_range<size_t>(0, total_pixels),
-      [&](tbb::blocked_range<size_t> const & range) {
-        for (size_t i = range.begin(); i != range.end(); ++i) {
-          output_lines[i] = std::to_string(static_cast<int>(pixels.r_channel[i])) +
-                            " " +
-                            std::to_string(static_cast<int>(pixels.g_channel[i])) +
-                            " " +
-                            std::to_string(static_cast<int>(pixels.b_channel[i])) +
-                            "\n";
-        }
-      },
-      sp);                                  // procesamos en paralelo
-  for (auto const & line : output_lines) {  // escribimos en secuencial
+
+  // Lambda for parallel conversion
+  auto convert_lambda = [&](tbb::blocked_range<size_t> const & r) {
+    for (size_t i = r.begin(); i != r.end(); ++i) {
+      output_lines[i] = std::to_string(static_cast<int>(pixels.r_channel[i])) +
+                        " " +
+                        std::to_string(static_cast<int>(pixels.g_channel[i])) +
+                        " " +
+                        std::to_string(static_cast<int>(pixels.b_channel[i])) +
+                        "\n";
+    }
+  };
+
+  // Select partitioner based on settings
+  switch (active_settings.type) {
+    case PartitionerType::Simple:
+      tbb::parallel_for(range, convert_lambda, tbb::simple_partitioner());
+      break;
+    case PartitionerType::Static:
+      tbb::parallel_for(range, convert_lambda, tbb::static_partitioner());
+      break;
+    case PartitionerType::Affinity:
+    {
+      static tbb::affinity_partitioner affinity_part;
+      tbb::parallel_for(range, convert_lambda, affinity_part);
+      break;
+    }
+    case PartitionerType::Auto:
+    default:                    tbb::parallel_for(range, convert_lambda, tbb::auto_partitioner()); break;
+  }
+
+  // Escribimos en secuencial
+  for (auto const & line : output_lines) {
     file << line;
   }
   file.close();
