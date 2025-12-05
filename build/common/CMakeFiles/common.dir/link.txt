@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcommon.a CMakeFiles/common.dir/src/dataStructs/bvh.cpp.o CMakeFiles/common.dir/src/utilities/random.cpp.o CMakeFiles/common.dir/src/camera.cpp.o CMakeFiles/common.dir/src/renderer.cpp.o CMakeFiles/common.dir/src/scene_parser.cpp.o CMakeFiles/common.dir/src/ppm_writer.cpp.o CMakeFiles/common.dir/src/config_parser.cpp.o
+/usr/bin/ranlib libcommon.a

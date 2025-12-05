@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpar.a CMakeFiles/par.dir/src/image_par.cpp.o
+/usr/bin/ranlib libpar.a

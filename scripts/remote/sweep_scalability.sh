@@ -28,10 +28,10 @@ for THREADS in 1 2 4 8 16 28 $(seq 56 4 112); do
     
     echo "Probando con $THREADS hilos..."
     
-    # IMPORTANTE: Pasamos --threads al programa
+    # Configuración de rendering paralelo con escalado de threads
     perf stat -e power/energy-pkg/ -o temp.log \
         $EXE $SCENE $CONFIG $OUTPUT_IMG \
-        --partitioner $BEST_PART --grain $BEST_GRAIN --threads $THREADS
+        --render-part $BEST_PART --render-grain $BEST_GRAIN --threads $THREADS
     
     TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
     ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
