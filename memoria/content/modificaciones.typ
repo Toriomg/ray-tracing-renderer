@@ -22,10 +22,13 @@ el renderizado y que resultará en una gran eficiencia de cálculo de iterseccio
 
 Por su parte, el renderizado ha sufrido modificaciones mucho más agresivas, requiriendo prácticamente una reescritura completa. Esto se debe a que el renderizador 
 ya no renderiza como tal si no que es el encargado de contar el número de intersecciones que se producen en cada rayo. 
+
 //TODO: Explicar un poco más los cambios del renderizador. 
 
 De este modo, y con todas las modificacione realizadas, se ha permitido una mejora sustancial en el rendimiento de la generación de imagenes, especialmente
 en aquellas escenas con un gran número de objetos y una complejidad mayor ( que se estudiará más adelante de manera mucho más profunda). 
+
+//TODO: Si queda hueco y como última cosa a hacer, incluir algún diagrama del funcionamiento de BVH como árbol, cajas o lo que sea.
 
 == Cambios en el randomizador. 
 En la primera práctica, dado que la ejecución era secuencial, el randomizador empleado no contaba con ningún tipo de seguridad para threads, 
@@ -38,6 +41,16 @@ como _enumerable_thread_specific_, de este modo, cada hilo cuenta con su propia 
 
 El código relativo a dicha implementación se encuentra en _common/include/utils/random_par.hpp_.
 
+//TODO: Añadir gráficas del funcionamiento del randomizador en diferentes hilos.
+
+== Scripts de automatización de pruebas.
+Pese a no formar parte explicita del código a desarrollar durante la práctica, nos parecía relevante hacer una breve mención a los scripts de automatización 
+de pruebas realizados a lo largo de la práctica, ya que estos han sido un factor determinante en la eficacia y rapidez del desarrollo de la práctica en su 
+totalidad, permitiendo lanzar pruebas en Avignon de manra rápida, automática y muy práctica. 
+
+//TODO: Explicar un poco más los scripts realizados y su funcionamiento de manera super breve, 1 o dos párrafos de 5 lineas, algo verdaderamente breve.
+
 == Diseño final del proyecto. 
 Tras las modificaciones especificadas, los esquemas y diagramas de clases del proyecto, han sido modificados y resultan tal y como se presenta a continuación. 
+
 //TODO: Incluir diagramas actualizados y las explicaciones pertinentes. 
