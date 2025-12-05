@@ -49,7 +49,7 @@ public:
 
   // Permite llenar todos los arrays a partir de datos en double con valores de 0 a 1 a valores
   // válidos del 0 al 255
-  void fill_from_double(RGBInputData const & input, double gamma = Constants::Gamma,
+  void fill_from_double(RGBInputData const & input, double gamma,
                         ParallelSettings const * par_settings = nullptr);
 
   // Métodos para recibir las dimensiones de la imagen
@@ -61,7 +61,7 @@ public:
 
   // Función para escribir la imagen en un archivo PPM
   [[nodiscard]] bool write_to_ppm(std::string const & filename,
-                                   ParallelSettings const * settings = nullptr) const;
+                                  ParallelSettings const * settings = nullptr) const;
 };
 
 #endif
