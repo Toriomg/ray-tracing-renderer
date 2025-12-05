@@ -196,16 +196,15 @@ namespace {
     return resources;
   }
 
-  void runRenderPipeline(AppResources & resources, ParallelSettings const & renderSettings,
-                         ParallelSettings const & imageSettings, std::string const & output_file) {
+  void runRenderPipeline(AppResources & resources, ParallelSettings const & imageSettings,
+                         std::string const & output_file) {
     // Create camera and determine image dimensions
     auto camera      = Camera(resources.config);
     auto imageWidth  = static_cast<size_t>(camera.ProjWindow.imageWidth);
     auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
 
-    // Create render context with render-specific settings
-    RenderContext ctx(&resources.scene, &resources.config, resources.rng_manager.get(),
-                      &renderSettings);
+    // Create render context (rendering is sequential in analysis/image branch)
+    RenderContext ctx(&resources.scene, &resources.config, resources.rng_manager.get());
 
     // Stage 1: Render to raw buffer (stores doubles, no gamma correction)
     std::cout << "Stage 1: Rendering to raw buffer (sequential)...\n";
@@ -257,8 +256,8 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-  // Run the render pipeline with separate settings
-  runRenderPipeline(*resources, render_settings, image_settings, args[3]);
+  // Run the render pipeline (rendering is sequential, only image processing is parallel)
+  runRenderPipeline(*resources, image_settings, args[3]);
 
   return 0;
 }
