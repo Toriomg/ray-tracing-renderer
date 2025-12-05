@@ -50,3 +50,4 @@ logs/**
 env.sh
 env.*
 .password
+build/
