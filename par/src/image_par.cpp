@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+// TBB headers removidos - Rama analysis/writer usa procesado secuencial
+
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
 ImagePar::ImagePar(size_t width, size_t height)
     : r_channel_(width * height, 0),  // Inicializamos todos con ceros
@@ -49,17 +51,20 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
-void ImagePar::fill_from_double(std::vector<double> const & r_data,
-                                std::vector<double> const & g_data,
-                                std::vector<double> const & b_data, double gamma) {
-  // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
-  size_t const expected_size = width_ * height_;
+void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
+                                ParallelSettings const * par_settings) {
+  // Rama analysis/writer: Post-procesado SECUENCIAL
+  // Ignoramos par_settings para mantener compatibilidad de firma
+  (void) par_settings;
 
-  // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t
-  for (size_t i = 0; i < expected_size; ++i) {
-    r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-    g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-    b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
+  // Calculamos el tamaño total de píxeles
+  size_t const total_pixels = width_ * height_;
+
+  // BUCLE SECUENCIAL: Procesamos cada píxel uno por uno
+  for (size_t i = 0; i < total_pixels; ++i) {
+    r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.r)[i], gamma));
+    g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.g)[i], gamma));
+    b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.b)[i], gamma));
   }
 }
 
