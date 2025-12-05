@@ -23,10 +23,14 @@ echo "Partitioner,GrainSize,Time(s),Energy(J)" > $RESULT_FILE
 
 echo ">>> INICIANDO BARRIDO DE OPTIMIZACIÓN <<<"
 
+# Número de hilos fijo para este barrido (profesor recomienda máximo)
+FIXED_THREADS=56
+
 # Estrategias a probar
 PARTITIONERS=("auto" "simple" "static" "affinity")
-# Tamaños de grano (0 = auto de TBB, luego potencias de 2)
-GRAINS=(0 1 32 64 128 256 512 1024)
+# Tamaños de grano para IMAGE: Granos más grandes porque la tarea es ligera (memory-bound)
+# Empezar con grain=threads, luego valores más grandes típicos de procesado de imagen
+GRAINS=(56 28 14 7 1 0 1024 2048 4096 8192)
 
 for PART in "${PARTITIONERS[@]}"; do
     for GRAIN in "${GRAINS[@]}"; do
@@ -36,8 +40,8 @@ for PART in "${PARTITIONERS[@]}"; do
 
         echo "Probando: $PART | Grain: $GRAIN"
         
-        # Ejecutamos 3 veces y nos quedamos con la última para evitar ruido (opcional, aquí 1 por rapidez)
-        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --partitioner $PART --grain $GRAIN
+        # Ejecutamos con configuración de IMAGE paralelo y threads fijos
+        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --image-part $PART --image-grain $GRAIN --threads $FIXED_THREADS
         
         # Extraer datos (Adaptado a tu salida exacta)
         # Asumiendo que tu programa imprime "X.XXXX seconds time elapsed"

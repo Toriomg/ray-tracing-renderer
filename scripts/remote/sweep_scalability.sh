@@ -22,16 +22,16 @@ echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
 
 echo ">>> INICIANDO TEST DE ESCALABILIDAD ($BEST_PART / $BEST_GRAIN) <<<"
 
-# Bucle solicitado: de 56 a 112 con salto de 4
-# Añadimos también 1, 2, 4, 8... 28 para tener la curva completa desde el principio
-for THREADS in 1 2 4 8 16 28 $(seq 56 4 112); do
+# Bucle con valores iniciales + barrido fino de 56 a 120 (de 4 en 4)
+# Valores clave: 28 (1 socket), 56 (2 sockets físicos), 112 (máx. físico), 120 (sobrecarga)
+for THREADS in 1 2 4 8 16 28 $(seq 56 4 120); do
     
     echo "Probando con $THREADS hilos..."
     
-    # IMPORTANTE: Pasamos --threads al programa
+    # IMPORTANTE: En analysis/image usamos --image-part y --image-grain
     perf stat -e power/energy-pkg/ -o temp.log \
         $EXE $SCENE $CONFIG $OUTPUT_IMG \
-        --partitioner $BEST_PART --grain $BEST_GRAIN --threads $THREADS
+        --image-part $BEST_PART --image-grain $BEST_GRAIN --threads $THREADS
     
     TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
     ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
