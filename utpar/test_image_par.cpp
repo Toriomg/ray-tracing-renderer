@@ -60,7 +60,7 @@ TEST(test_image_par, fill_from_double_default_gamma) {
   std::vector<double> const r = {0.5};
   std::vector<double> const g = {0.5};
   std::vector<double> const b = {0.5};
-  image.fill_from_double({&r, &g, &b});  // SIN especificar gamma (usa Constants::Gamma)
+  image.fill_from_double({&r, &g, &b});  // NOLINT - SIN especificar gamma (usa Constants::Gamma)
 
   // Gamma por defecto es Constants::Gamma (asumimos 2.2)
   double const default_gamma = 2.2;
@@ -110,7 +110,7 @@ TEST(test_image_par, fill_from_double_overwrites_previous_data) {
   std::vector<double> const g_data = {0.0, 0.0};
   std::vector<double> const b_data = {1.0, 1.0};  // Azul
 
-  image.fill_from_double({&r_data, &g_data, &b_data});
+  image.fill_from_double({&r_data, &g_data, &b_data});  // NOLINT
 
   // Verificar que los píxeles fueron sobrescritos
   EXPECT_EQ(image.get_red(0), 0) << "Píxel 0 R debe haber sido sobrescrito a 0";
