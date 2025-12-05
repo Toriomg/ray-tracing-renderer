@@ -40,10 +40,10 @@ TEST_F(PPMWriterTest, ValidImageWrite) {
   std::vector<uint8_t> const g_channel = {0, 128};
   std::vector<uint8_t> const b_channel = {0, 255};
 
-  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
+  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel, width, height);
 
   // Llamar a write_ppm
-  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
+  bool const result = PPMWriter::write_ppm(filename, pixels);
 
   // Verificar que la escritura fue exitosa
   ASSERT_TRUE(result) << "write_ppm debería retornar true para datos válidos";
@@ -101,10 +101,10 @@ TEST_F(PPMWriterTest, InvalidPixelDataSize) {
   std::vector<uint8_t> const g_channel = {1, 2, 3};
   std::vector<uint8_t> const b_channel = {1, 2, 3};
 
-  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
+  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel, width, height);
 
   // Llamar a write_ppm
-  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
+  bool const result = PPMWriter::write_ppm(filename, pixels);
 
   // Verificar que la función retorna false debido al chequeo de tamaño
   ASSERT_FALSE(result) << "write_ppm debería retornar false cuando el tamaño de los canales no "
@@ -127,10 +127,10 @@ TEST_F(PPMWriterTest, InvalidFilePath) {
   std::vector<uint8_t> const g_channel = {255};
   std::vector<uint8_t> const b_channel = {255};
 
-  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
+  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel, width, height);
 
   // Llamar a write_ppm
-  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
+  bool const result = PPMWriter::write_ppm(filename, pixels);
 
   // Verificar que la función retorna false debido a que no se pudo abrir el archivo
   ASSERT_FALSE(result) << "write_ppm debería retornar false cuando no se puede abrir el archivo";
