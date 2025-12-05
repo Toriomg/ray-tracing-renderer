@@ -11,20 +11,21 @@
 #include <string>
 #include <vector>
 
+#include <chrono> 
 /*
 std::string const FilepathScene  = "/workspace/res/scene_scripts/scene3example.txt";
 std::string const FilepathConfig = "/workspace/res/config_scripts/config3example.txt";
 std::string const FilepathOut    = "/workspace/outputImagePar.ppm";
 */
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {//NOLINT
   std::vector<std::string> const args(argv, argv + argc);
   if (args.size() != 4) {
     std::cerr << "Usage: " << args[0] << " <scene_file> <config_file> <output_file>\n";
     std::cerr << "Example: " << args[0] << " res/scene.txt res/config.txt output.ppm\n";
     return 1;
   }
-
+  auto start = std::chrono::high_resolution_clock::now();
   std::optional<ConfigSettings> config_opt = loadConfigFromFile(args[2]);
   if (!config_opt) {
     std::cerr << "Aborting due to configuration file error.\n";
@@ -38,6 +39,10 @@ int main(int argc, char * argv[]) {
     return 1;
   }
   SceneSettings & scene = *scene_opt;
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> duration = end - start;
+  std::cout << "Tiempo de parseo: " << duration.count() << " segundos.\n";
+
 
   // Creamos el generador random paralelizable
   ParallelRNGManager rng_manager(static_cast<unsigned int>(config.ray_rng_seed),
@@ -51,7 +56,11 @@ int main(int argc, char * argv[]) {
   {
     std::cout << "Rendering with ImagePar..." << '\n';
     ImagePar imageSoa(imageWidth, imageHeight);
+    auto start = std::chrono::high_resolution_clock::now();
     renderImage(imageSoa, camera, ctx);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Tiempo de renderizado: " << duration.count() << " segundos.\n";
     if (!imageSoa.write_to_ppm(args[3])) {
       std::cerr << "Error writing ImagePar to .ppm file\n";
     }
