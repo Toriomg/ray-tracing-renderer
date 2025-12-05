@@ -12,6 +12,8 @@ deploy:
 
 # 2. Compilar
 remote-build: deploy
+	@echo ">>> Asegurando permisos de ejecución en scripts/remote/..."
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && chmod +x scripts/remote/*.sh"
 	@echo ">>> Enviando compilación a la cola..."
 	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait scripts/remote/build.sh"
 

@@ -10,20 +10,32 @@ set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 # Definiciones
-EXE="./out/build/default/par/Release/render-par"
-SCENE="res/scene_scripts/scene5.txt"   # Cambia a scene2.txt si quieres ir rápido
+SCENE="res/scene_scripts/scene5.txt"   # Escena pesada para pruebas notables
 CONFIG="res/config_scripts/config5.txt"
 OUTPUT="out_custom.ppm"
 
 echo ">>> Iniciando Prueba Personalizada en $(hostname) <<<"
 
-# --- Edita esta línea para probar lo que quieras ---
-# Aquí ponemos la combinación que intentaste hacer a mano y falló
-ARGS="--render-part static --render-grain 32 --image-part auto --image-grain 0 --threads 4"
+# Búsqueda robusta del ejecutable
+EXE=$(find . -name render-par -type f | head -n 1)
 
-echo "Ejecutando con: $ARGS"
+if [[ -z "$EXE" ]]; then
+  echo "ERROR: No se encontró el ejecutable render-par"
+  echo "Por favor, compila el proyecto primero con: cmake --build out/build/default"
+  exit 1
+fi
 
-# Ejecutamos midiendo tiempo y energía
-perf stat -e power/energy-pkg/ $EXE $SCENE $CONFIG $OUTPUT $ARGS
+if [[ ! -x "$EXE" ]]; then
+  echo "ERROR: El archivo $EXE existe pero no es ejecutable"
+  exit 1
+fi
+
+echo "Ejecutable encontrado: $EXE"
+echo "Argumentos recibidos: $@"
+
+# Ejecutamos midiendo tiempo con time (sin perf)
+echo "Iniciando renderizado..."
+time "$EXE" "$SCENE" "$CONFIG" "$OUTPUT" "$@"
 
 echo ">>> Prueba Finalizada <<<"
+echo "Salida generada en: $OUTPUT"
