@@ -72,6 +72,9 @@ void ImagePar::fill_from_double(std::vector<double> const & r_data,
 // Escritura a archivo PPM usando la clase PPMWriter
 bool ImagePar::write_to_ppm(std::string const & filename) const {
   auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
-
+  auto start = std::chrono::high_resolution_clock::now();
   return PPMWriter::write_ppm(filename, pixels, width_, height_);
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> duration = end - start;
+  std::cout << "Tiempo de escritura de imagen: " << duration.count() << " segundos.\n";
 }
