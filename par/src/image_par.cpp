@@ -51,6 +51,7 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
+// NOLINTNEXTLINE
 void ImagePar::fill_from_double(RGBInputData const & input, double gamma) {
   // Rama analysis/rendering: Post-procesado de imagen SECUENCIAL (control)
   // Solo el rendering es paralelo en esta rama
