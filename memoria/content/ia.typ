@@ -15,7 +15,7 @@ las siguientes herramientas, que se mantien muy similares a las empleadas en la 
   start: 1,
   tight: false,
 )[
-  #underline[*Gemini 2.5 Pro: Asistente de Desarrollo Integral:*]
+  #underline[*Gemini 3 Pro: Asistente de Desarrollo Integral:*]
 
   Gemini 2.5 Pro fue la herramienta más utilizada a lo largo del proyecto, principalmente por su actualización al comienzo del mismo, 
   cosa que ha icrementado notablemente su utilidad. Podemos dividir su uso en las siguientes areas principales:
