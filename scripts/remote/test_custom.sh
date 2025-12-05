@@ -13,10 +13,17 @@ SCENE="res/scene_scripts/scene5.txt"
 CONFIG="res/config_scripts/config5.txt"
 OUTPUT="out_custom.ppm"
 
+# ============================================================
+# CONFIGURA AQUÍ TU TEST PERSONALIZADO
+# ============================================================
+PARTITIONER="static"      # Opciones: auto, simple, static, affinity
+GRAIN_SIZE="500"          # Valores típicos: 0, 100, 500, 1000, 5000
+THREADS="4"               # Valores típicos: 1, 2, 4, 8, 12, 16
+# ============================================================
+
 echo ">>> Iniciando Prueba Personalizada en $(hostname) <<<"
 
-# Solo un renderizado con particionador static
-ARGS="--image-part static --image-grain 500 --threads 4"
+ARGS="--image-part $PARTITIONER --image-grain $GRAIN_SIZE --threads $THREADS"
 echo "Ejecutando con: $ARGS"
 perf stat -e power/energy-pkg/ $EXE $SCENE $CONFIG $OUTPUT $ARGS
 
