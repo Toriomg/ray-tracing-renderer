@@ -69,9 +69,6 @@ auto-jd: remote-build run-jd-wait fetch-all
 	@echo "AUTO JD COMPLETADO"
 
 # Scripts sweep
-sweep-opt:
-	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_optimization.sh"
-
 sweep-scale:
 	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN)"
 
@@ -86,6 +83,44 @@ run-custom:
 
 tail-custom:
 	$(SSH_CMD) "tail -f \`ls -t $(REMOTE_DIR)/logs/custom_*.out | head -n1\`"
+
+# Validación de determinismo
+test-determinism:
+	@echo ">>> Ejecutando test de determinismo (3 runs con 1 thread)..."
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/test_determinism.sh"
+
+tail-determinism:
+	$(SSH_CMD) "tail -f \`ls -t $(REMOTE_DIR)/logs/determinism_*.out | head -n1\`"
+
+# Descargar imágenes de validación
+fetch-validation:
+	@echo ">>> Descargando imágenes de validación..."
+	@mkdir -p logs/img
+	$(SCP_PREFIX) $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/out_det*.ppm logs/img/ 2>/dev/null || true
+	$(SCP_PREFIX) $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/out_comp*.ppm logs/img/ 2>/dev/null || true
+	@echo ">>> Imágenes descargadas en logs/img/"
+
+# Test comprehensivo de PPM Writer (todas las combinaciones)
+test-comprehensive:
+	@echo ">>> Lanzando test comprehensivo (partitioners, grain sizes, threads)..."
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/test_comprehensive.sh"
+
+tail-comprehensive:
+	$(SSH_CMD) "tail -f \`ls -t $(REMOTE_DIR)/logs/comprehensive_*.out | head -n1\`"
+
+fetch-comprehensive:
+	@echo ">>> Descargando resultados comprehensivos..."
+	@mkdir -p logs
+	$(SCP_PREFIX) $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/comprehensive_results.csv logs/ 2>/dev/null || echo "⚠️  Archivo no encontrado"
+	@echo ">>> Resultados en logs/comprehensive_results.csv"
+
+# Verificación local de MD5
+verify-local:
+	@echo "=== Verificación de Determinismo ==="
+	@cd logs/img && md5sum out_det1.ppm out_det2.ppm out_det3.ppm 2>/dev/null || echo "⚠️  Archivos no encontrados. Ejecuta: make fetch-validation"
+	@echo ""
+	@echo "=== Verificación de Particionadores (del test comprehensive) ==="
+	@cd logs/img && md5sum out_comp_part_*.ppm 2>/dev/null | head -4 || echo "⚠️  Archivos no encontrados."
 
 
 # --- VALIDACIÓN Y COMPARACIÓN ---
