@@ -1,29 +1,22 @@
 #!/bin/bash
-#SBATCH --job-name=test-custom
-#SBATCH --output=logs/custom_%j.out
-#SBATCH --error=logs/custom_%j.err
-#SBATCH --partition=stan
-#SBATCH --exclusive
+# Script para pruebas manuales (Actualizado a Scene 5)
 
-# --- ESTO ES LO QUE HACE QUE FUNCIONE (Cargamos el entorno correcto del nodo Obrero) ---
-set -Eeuo pipefail
-export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-
-# Definiciones
-EXE="./out/build/default/par/Release/render-par"
-SCENE="res/scene_scripts/scene5.txt"   # Cambia a scene2.txt si quieres ir rápido
+# Busca el ejecutable automáticamente
+EXECUTABLE=$(find . -name render-par -type f | head -n 1)
+SCENE="res/scene_scripts/scene5.txt"
 CONFIG="res/config_scripts/config5.txt"
-OUTPUT="out_custom.ppm"
+OUTPUT="output_test.ppm"
 
-echo ">>> Iniciando Prueba Personalizada en $(hostname) <<<"
+if [ -z "$EXECUTABLE" ]; then
+    echo "Error: No se encuentra el ejecutable 'render-par'. Compila primero."
+    exit 1
+fi
 
-# --- Edita esta línea para probar lo que quieras ---
-# Aquí ponemos la combinación que intentaste hacer a mano y falló
-ARGS="--render-part static --render-grain 32 --image-part auto --image-grain 0 --threads 4"
+echo ">>> Iniciando Prueba Personalizada (Scene 5) <<<"
+echo "Binario: $EXECUTABLE"
+echo "Argumentos extra: ${@:1}"
 
-echo "Ejecutando con: $ARGS"
+# Ejecutar pasando todos los argumentos
+$EXECUTABLE "$SCENE" "$CONFIG" "$OUTPUT" "$@"
 
-# Ejecutamos midiendo tiempo y energía
-perf stat -e power/energy-pkg/ $EXE $SCENE $CONFIG $OUTPUT $ARGS
-
-echo ">>> Prueba Finalizada <<<"
+echo ">>> Fin de la prueba <<<"
