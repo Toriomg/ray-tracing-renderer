@@ -23,10 +23,14 @@ echo "Partitioner,GrainSize,Time(s),Energy(J)" > $RESULT_FILE
 
 echo ">>> INICIANDO BARRIDO DE OPTIMIZACIÓN <<<"
 
+# Número de hilos fijo para este barrido (profesor recomienda máximo)
+FIXED_THREADS=56
+
 # Estrategias a probar
 PARTITIONERS=("auto" "simple" "static" "affinity")
-# Tamaños de grano (0 = auto de TBB, luego potencias de 2)
-GRAINS=(0 1 32 64 128 256 512 1024)
+# Tamaños de grano: Empezar con grain=threads, luego reducir a la mitad
+# Incluimos 0 (auto), grains=hilos (56), y reducción progresiva
+GRAINS=(56 28 14 7 1 0 32 64 128 256 512 1024)
 
 for PART in "${PARTITIONERS[@]}"; do
     for GRAIN in "${GRAINS[@]}"; do
@@ -36,8 +40,8 @@ for PART in "${PARTITIONERS[@]}"; do
 
         echo "Probando: $PART | Grain: $GRAIN"
         
-        # Ejecutamos con configuración de rendering paralelo
-        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --render-part $PART --render-grain $GRAIN
+        # Ejecutamos con configuración de rendering paralelo y threads fijos
+        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --render-part $PART --render-grain $GRAIN --threads $FIXED_THREADS
         
         # Extraer datos (Adaptado a tu salida exacta)
         # Asumiendo que tu programa imprime "X.XXXX seconds time elapsed"
