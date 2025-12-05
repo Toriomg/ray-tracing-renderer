@@ -69,8 +69,8 @@ void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
 }
 
 // Escritura a archivo PPM usando la clase PPMWriter
-bool ImagePar::write_to_ppm(std::string const & filename) const {
+bool ImagePar::write_to_ppm(std::string const & filename, ParallelSettings const * settings) const {
   auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
 
-  return PPMWriter::write_ppm(filename, pixels, width_, height_);
+  return PPMWriter::write_ppm(filename, pixels, width_, height_, settings);
 }

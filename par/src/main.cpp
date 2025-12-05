@@ -190,9 +190,8 @@ namespace {
 
     // Note: imageSettings is available for future use with fill_from_double or other
     // image processing operations that may benefit from different parallel configuration
-    (void) imageSettings;  // Suppress unused parameter warning
 
-    if (!image.write_to_ppm(output_file)) {
+    if (!image.write_to_ppm(output_file, &imageSettings)) {
       std::cerr << "Error writing image to .ppm file\n";
       std::exit(1);
     }

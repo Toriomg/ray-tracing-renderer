@@ -60,7 +60,8 @@ public:
   [[nodiscard]] size_t total_pixels() const { return width_ * height_; }
 
   // Función para escribir la imagen en un archivo PPM
-  [[nodiscard]] bool write_to_ppm(std::string const & filename) const;
+  [[nodiscard]] bool write_to_ppm(std::string const & filename,
+                                   ParallelSettings const * settings = nullptr) const;
 };
 
 #endif
