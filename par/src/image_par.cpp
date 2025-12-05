@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+// TBB headers removidos - Rama analysis/writer usa procesado secuencial
+
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
 ImagePar::ImagePar(size_t width, size_t height)
     : r_channel_(width * height, 0),  // Inicializamos todos con ceros
@@ -51,14 +53,15 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
 
 void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
                                 ParallelSettings const * par_settings) {
-  // Ignoramos par_settings porque esta versión es puramente secuencial
+  // Rama analysis/rendering: Post-procesado de imagen SECUENCIAL (control)
+  // Ignoramos par_settings para mantener compatibilidad de firma
   (void) par_settings;
 
-  // Calculamos el tamaño total de pixels
-  size_t const size = width_ * height_;
+  // Calculamos el tamaño total de píxeles
+  size_t const total_pixels = width_ * height_;
 
-  // Procesamiento secuencial: aplicamos gamma y convertimos a uint8
-  for (size_t i = 0; i < size; ++i) {
+  // BUCLE SECUENCIAL: Procesamos cada píxel uno por uno
+  for (size_t i = 0; i < total_pixels; ++i) {
     r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.r)[i], gamma));
     g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.g)[i], gamma));
     b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.b)[i], gamma));
@@ -66,8 +69,8 @@ void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
 }
 
 // Escritura a archivo PPM usando la clase PPMWriter
-bool ImagePar::write_to_ppm(std::string const & filename) const {
-  auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
+bool ImagePar::write_to_ppm(std::string const & filename, ParallelSettings const * settings) const {
+  auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_, width_, height_);
 
-  return PPMWriter::write_ppm(filename, pixels, width_, height_);
+  return PPMWriter::write_ppm(filename, pixels, settings);
 }

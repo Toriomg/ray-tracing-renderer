@@ -22,10 +22,12 @@ Aunque el programa acepta todos los argumentos para mantener compatibilidad con 
 
 ```bash
 ./render-par scene.txt config.txt out.ppm \
-    --render-part <tipo> --render-grain <n> \  # <--- ESTO CAMBIA EL TIEMPO
-    --image-part <tipo> --image-grain <n> \    # <--- ESTO NO HACE NADA (Es secuencial)
-    --threads <n>                              # <--- ESTO CONTROLA EL ESCALADO
+    --render-part <tipo> --render-grain <n> \  # <--- ESTO CAMBIA EL TIEMPO (rendering paralelo)
+    --image-part <tipo> --image-grain <n> \    # <--- ESTO NO HACE NADA (imagen secuencial)
+    --threads <n>                              # <--- ESTO CONTROLA EL ESCALADO DE HILOS
 ```
+
+**En esta rama solo `--render-part`, `--render-grain` y `--threads` tienen efecto real.**
 
 ---
 
@@ -99,12 +101,14 @@ python3 scripts/analysis/plot_results.py
 
 ## 3. Scripts Disponibles y su Función en esta Rama
 
-| Script | Utilidad en esta Rama |
-|--------|----------------------|
-| `test_custom.sh` | **Alta.** Úsalo para verificar manualmente que `Limiting TBB...` funciona y que la imagen se genera bien antes de lanzar los masivos. |
-| `sweep_optimization.sh` | **Alta.** Sirve para tunear el motor (`rendering_engine`). |
-| `sweep_scalability.sh` | **Crítica.** Genera la curva principal del estudio. |
-| `sweep_matrix.sh` | **Baja.** Como la parte de imagen es secuencial, probar combinaciones cruzadas (Motor × Imagen) es redundante, ya que la "Imagen" siempre tarda lo mismo. Solo servirá para confirmar que el tiempo es constante respecto a los parámetros de imagen. |
+| Script | Utilidad en esta Rama | Argumentos que usa |
+|--------|----------------------|--------------------|
+| `test_custom.sh` | **Alta.** Prueba manual rápida con configuración editable. | `--render-part`, `--render-grain`, `--threads` |
+| `sweep_optimization.sh` | **Crítica.** Encuentra el mejor particionador y grain size para el motor de rendering. | `--render-part`, `--render-grain` |
+| `sweep_scalability.sh` | **Crítica.** Genera la curva de speedup variando hilos (1 a 112). | `--render-part`, `--render-grain`, `--threads` |
+| `sweep_matrix.sh` | **Baja.** Combinaciones exhaustivas, pero imagen siempre secuencial. | Varios (legacy) |
+
+**Nota:** Los scripts ahora usan correctamente `--render-part` y `--render-grain` en lugar del antiguo `--partitioner`/`--grain`.
 
 ---
 
@@ -112,15 +116,17 @@ python3 scripts/analysis/plot_results.py
 
 El flujo de trabajo establecido permite responder con datos a todas las preguntas de tu equipo.
 
-### 4.1. El Control de Variables (Lo que hemos conseguido)
+### 4.1. El Control de Variables
 
-Hemos implementado un sistema de **doble configuración** que permite la combinación manual y total de parámetros:
+Esta rama implementa **paralelización SOLO en el rendering** para aislar su impacto:
 
-| Parámetro | Propósito en esta Rama (`analysis/rendering`) | Script que lo Mide |
-|-----------|-----------------------------------------------|-------------------|
-| `--render-part` / `--render-grain` | **CRÍTICO**. Mide el rendimiento del **Motor Paralelo**. | `sweep_optimization.sh` |
-| `--image-part` / `--image-grain` | **CONTROL**. Prueba que no afecta el rendimiento (ya que es secuencial). | `sweep_matrix.sh` |
-| `--threads <n>` | **ESCALABILIDAD**. Mide la aceleración de 1 a 112 hilos. | `sweep_scalability.sh` |
+| Parámetro | Propósito en esta Rama (`analysis/rendering`) | Estado | Script que lo Mide |
+|-----------|-----------------------------------------------|--------|-------------------|
+| `--render-part` / `--render-grain` | **CRÍTICO**. Controla el particionador TBB del rendering. | ✅ PARALELO | `sweep_optimization.sh` |
+| `--image-part` / `--image-grain` | **IGNORADO**. El procesamiento de imagen es secuencial (control). | ❌ SECUENCIAL | N/A |
+| `--threads <n>` | **ESCALABILIDAD**. Controla cuántos hilos usa TBB (1 a 112). | ✅ ACTIVO | `sweep_scalability.sh` |
+
+**Objetivo científico:** Demostrar que el rendering (~99% del tiempo) es el componente crítico para la paralelización.
 
 ### 4.2. Cobertura de Requisitos
 
@@ -156,11 +162,15 @@ Para vuestra memoria, el orden de los tests es **vital**.
 
 Antes de dar los datos por buenos, verifica:
 
-- [ ] Que `make tail-custom` muestra `Limiting TBB to...`.
-- [ ] Que el tiempo con **1 hilo** en `results_scalability.csv` es alto (~38s) y con **56 hilos** es bajo (~2.5s).
-- [ ] Que la gráfica de Speedup muestra una curva ascendente clara.
-- [ ] Que `results_matrix.csv` (si ejecutaste Fase C) muestra tiempos constantes para variaciones de `--image-*` parámetros.
+- [ ] **Código:** `rendering_engine.hpp` usa `tbb::parallel_for` (no bucles `for` normales)
+- [ ] **Código:** `image_par.cpp` usa bucles `for` secuenciales (sin TBB)
+- [ ] **Tests:** `test_custom.sh` usa `--render-part` y `--render-grain` (no `--image-part`)
+- [ ] **Ejecución:** `make tail-custom` muestra `Limiting TBB to...` (confirma control de hilos)
+- [ ] **Speedup:** Con 1 hilo ~38s, con 56 hilos ~0.8s → Speedup ~47x ✅
+- [ ] **Curva:** `results_scalability.csv` muestra aceleración significativa (no como en `analysis/writer`)
+
+**Si el speedup es bajo (<5x), algo está mal - revisa que el rendering sea paralelo.**
 
 ---
 
-_Última actualización: 2025-12-04_
+_Última actualización: 2025-12-05 - Rama corregida: Rendering PARALELO, Imagen SECUENCIAL_

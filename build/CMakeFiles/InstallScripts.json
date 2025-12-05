@@ -1,0 +1,15 @@
+{
+	"InstallScripts" : 
+	[
+		"/workspace/build/cmake_install.cmake",
+		"/workspace/build/_deps/gsl-build/cmake_install.cmake",
+		"/workspace/build/_deps/gsl-build/include/cmake_install.cmake",
+		"/workspace/build/_deps/googletest-build/cmake_install.cmake",
+		"/workspace/build/_deps/googletest-build/googletest/cmake_install.cmake",
+		"/workspace/build/common/cmake_install.cmake",
+		"/workspace/build/par/cmake_install.cmake",
+		"/workspace/build/utcommon/cmake_install.cmake",
+		"/workspace/build/utpar/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/render-par.dir/link.d "CMakeFiles/render-par.dir/src/main.cpp.o" -o render-par  ../common/libcommon.a libpar.a ../common/libcommon.a /usr/lib/x86_64-linux-gnu/libtbb.so.12.11

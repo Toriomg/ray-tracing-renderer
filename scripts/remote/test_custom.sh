@@ -5,37 +5,37 @@
 #SBATCH --partition=stan
 #SBATCH --exclusive
 
-# --- ESTO ES LO QUE HACE QUE FUNCIONE (Cargamos el entorno correcto del nodo Obrero) ---
 set -Eeuo pipefail
 export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-# Definiciones
-SCENE="res/scene_scripts/scene5.txt"   # Escena pesada para pruebas notables
+EXE="./out/build/default/par/Release/render-par"
+SCENE="res/scene_scripts/scene5.txt"
 CONFIG="res/config_scripts/config5.txt"
 OUTPUT="out_custom.ppm"
 
+# ============================================================
+# CONFIGURA AQUÍ TU TEST PERSONALIZADO
+# ============================================================
+PARTITIONER="static"      # Opciones: auto, simple, static, affinity
+GRAIN_SIZE="64"           # Valores típicos: 0, 1, 32, 64, 128, 256, 512, 1024
+THREADS="56"              # Valores típicos: 1, 2, 4, 8, 16, 28, 56, 112
+# ============================================================
+
 echo ">>> Iniciando Prueba Personalizada en $(hostname) <<<"
 
-# Búsqueda robusta del ejecutable
-EXE=$(find . -name render-par -type f | head -n 1)
+ARGS="--render-part $PARTITIONER --render-grain $GRAIN_SIZE --threads $THREADS"
+echo "Ejecutando con: $ARGS"
+perf stat -e power/energy-pkg/ $EXE $SCENE $CONFIG $OUTPUT $ARGS
 
-if [[ -z "$EXE" ]]; then
-  echo "ERROR: No se encontró el ejecutable render-par"
-  echo "Por favor, compila el proyecto primero con: cmake --build out/build/default"
-  exit 1
-fi
+echo ""
+echo ">>> Verificando salida <<<
 
-if [[ ! -x "$EXE" ]]; then
-  echo "ERROR: El archivo $EXE existe pero no es ejecutable"
-  exit 1
-fi
+"
+ls -lh $OUTPUT
+md5sum $OUTPUT
 
-echo "Ejecutable encontrado: $EXE"
-echo "Argumentos recibidos: $@"
-
-# Ejecutamos midiendo tiempo con time (sin perf)
-echo "Iniciando renderizado..."
-time "$EXE" "$SCENE" "$CONFIG" "$OUTPUT" "$@"
+echo ""
+echo ">>> Comparando con referencia scene5 <<<"
+diff -q $OUTPUT res/references_par/s5-par.ppm && echo "✓ Imagen CORRECTA" || echo "✗ Imagen DIFERENTE (esperado: render secuencial vs paralelo)"
 
 echo ">>> Prueba Finalizada <<<"
-echo "Salida generada en: $OUTPUT"

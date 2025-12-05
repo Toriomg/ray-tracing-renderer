@@ -36,8 +36,8 @@ for PART in "${PARTITIONERS[@]}"; do
 
         echo "Probando: $PART | Grain: $GRAIN"
         
-        # Ejecutamos 3 veces y nos quedamos con la última para evitar ruido (opcional, aquí 1 por rapidez)
-        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --partitioner $PART --grain $GRAIN
+        # Ejecutamos con configuración de rendering paralelo
+        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --render-part $PART --render-grain $GRAIN
         
         # Extraer datos (Adaptado a tu salida exacta)
         # Asumiendo que tu programa imprime "X.XXXX seconds time elapsed"
