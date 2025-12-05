@@ -15,27 +15,27 @@ OUTPUT="out_custom.ppm"
 
 # ============================================================
 # CONFIGURA AQUÍ TU TEST PERSONALIZADO
+# Rama analysis/writer: Solo el PPM writer es paralelo
 # ============================================================
-PARTITIONER="static"      # Opciones: auto, simple, static, affinity
-GRAIN_SIZE="500"          # Valores típicos: 0, 100, 500, 1000, 5000
-THREADS="4"               # Valores típicos: 1, 2, 4, 8, 12, 16
+IMAGE_PARTITIONER="static"   # Opciones: auto, simple, static, affinity
+IMAGE_GRAIN="500"            # Valores típicos para writer: 100, 500, 1000, 5000
+THREADS="4"                  # Valores típicos: 1, 2, 4, 8, 16, 28, 56
 # ============================================================
 
 echo ">>> Iniciando Prueba Personalizada en $(hostname) <<<"
+echo ">>> Rama analysis/writer: Solo escritura PPM es paralela <<<"
 
-ARGS="--image-part $PARTITIONER --image-grain $GRAIN_SIZE --threads $THREADS"
+ARGS="--image-part $IMAGE_PARTITIONER --image-grain $IMAGE_GRAIN --threads $THREADS"
 echo "Ejecutando con: $ARGS"
 perf stat -e power/energy-pkg/ $EXE $SCENE $CONFIG $OUTPUT $ARGS
 
 echo ""
-echo ">>> Verificando salida <<<
-
-"
+echo ">>> Verificando salida <<<"
 ls -lh $OUTPUT
 md5sum $OUTPUT
 
 echo ""
 echo ">>> Comparando con referencia scene5 <<<"
-diff -q $OUTPUT res/references_par/s5-par.ppm && echo "✓ Imagen CORRECTA" || echo "✗ Imagen DIFERENTE (esperado: render secuencial vs paralelo)"
+diff -q $OUTPUT res/references_par/s5-par.ppm && echo "✓ Imagen CORRECTA" || echo "✗ Imagen DIFERENTE (puede ser normal por diferencias de redondeo)"
 
 echo ">>> Prueba Finalizada <<<"
