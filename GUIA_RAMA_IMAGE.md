@@ -90,6 +90,11 @@ Dado que hemos introducido una estructura intermedia, es vital asegurar que la i
 
 Descarga la imagen `out.ppm` resultante y verifica visualmente que se ve igual que la versión secuencial.
 
+### Nota sobre la Validación Visual
+Si la imagen resultante parece incorrecta o muy pequeña:
+1. **Tamaño del archivo:** Para la **Escena 5** (1800x1200), el archivo `.ppm` debe pesar entre **20MB y 30MB**. Si pesa ~4MB, estás renderizando la Escena 1 (incorrecto para el estudio final).
+2. **Imagen Negra:** Si la imagen tiene el tamaño correcto pero es negra, asegúrate de que el `RawBuffer` está pasando los datos y que `fill_from_double` aplica el Gamma correctamente.
+
 ---
 
 ## 4. Interpretación de Resultados para la Memoria
