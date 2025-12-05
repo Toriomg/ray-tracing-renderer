@@ -2,6 +2,7 @@
 #define SCENE_PARSER_HPP
 
 #include "dataStructs/settings_structs.hpp"
+#include <optional>
 #include <string>
 
 [[nodiscard]] std::optional<SceneSettings> loadSceneFromFile(std::string const & filename);
