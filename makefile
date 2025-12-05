@@ -68,9 +68,24 @@ run-jd-wait: deploy
 auto-jd: remote-build run-jd-wait fetch-all
 	@echo "AUTO JD COMPLETADO"
 
-# Scripts sweep
+# Scripts sweep (Flujo tradicional: config óptima → escalabilidad)
+sweep-opt:
+	@echo ">>> Barrido de optimización (partitioners + grain sizes con 56 hilos)..."
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_optimization.sh"
+
 sweep-scale:
 	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN)"
+
+# Nuevos scripts (Flujo metodológico: hilos primero → granularidad después)
+sweep-threads-first:
+	@echo ">>> PASO 1: Explorando número óptimo de hilos (28, 56, 112, 120)..."
+	@echo ">>> NOTA (analysis/writer): Mejoras MUY mínimas esperadas (writer <5% del tiempo)"
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_threads_first.sh"
+
+sweep-grain:
+	@echo ">>> PASO 2: Explorando granularidad óptima con $(THREADS) hilos fijos..."
+	@echo ">>> NOTA (analysis/writer): Se prueban granos típicos de I/O (100-5000)"
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_grain.sh $(THREADS)"
 
 fetch-results:
 	@echo ">>> Descargando resultados CSV..."
