@@ -1,22 +1,30 @@
 #!/bin/bash
-# Script para pruebas manuales (Actualizado a Scene 5)
+#SBATCH --job-name=test-custom
+#SBATCH --output=logs/custom_%j.out
+#SBATCH --error=logs/custom_%j.err
+#SBATCH --partition=stan
+#SBATCH --exclusive
 
-# Busca el ejecutable automáticamente
-EXECUTABLE=$(find . -name render-par -type f | head -n 1)
+# --- LA LÍNEA MÁGICA QUE FALTABA (Sin esto, falla) ---
+set -Eeuo pipefail
+export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# Definiciones
+EXE="./out/build/default/par/Release/render-par"
 SCENE="res/scene_scripts/scene5.txt"
 CONFIG="res/config_scripts/config5.txt"
-OUTPUT="output_test.ppm"
+OUTPUT="out_custom.ppm"
 
-if [ -z "$EXECUTABLE" ]; then
-    echo "Error: No se encuentra el ejecutable 'render-par'. Compila primero."
-    exit 1
-fi
+echo ">>> Iniciando Prueba Personalizada (Fix Libs) en $(hostname) <<<"
 
-echo ">>> Iniciando Prueba Personalizada (Scene 5) <<<"
-echo "Binario: $EXECUTABLE"
-echo "Argumentos extra: ${@:1}"
+# --- CONFIGURACIÓN MANUAL PARA RAMA IMAGEN ---
+# Motor Secuencial (ignore grain) + Imagen Paralela (auto) + 4 Hilos
+ARGS="--render-part auto --render-grain 0 --image-part static --image-grain 1024 --threads 4"
 
-# Ejecutar pasando todos los argumentos
-$EXECUTABLE "$SCENE" "$CONFIG" "$OUTPUT" "$@"
+echo "Ejecutando con: $ARGS"
 
-echo ">>> Fin de la prueba <<<"
+# Ejecutamos midiendo tiempo
+# Usamos 'time' de bash además de perf por si perf falla
+time $EXE $SCENE $CONFIG $OUTPUT $ARGS
+
+echo ">>> Prueba Finalizada <<<"
