@@ -73,7 +73,7 @@ sweep-opt:
 	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_optimization.sh"
 
 sweep-scale:
-	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN)"
+	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN) $(START) $(END) $(STEP)"
 
 # Nuevos scripts (Flujo metodológico: hilos primero → granularidad después)
 sweep-threads-first:

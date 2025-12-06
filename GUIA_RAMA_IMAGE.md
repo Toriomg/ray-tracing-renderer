@@ -172,12 +172,14 @@ sbatch scripts/remote/sweep_matrix.sh
 | `sweep_threads_first.sh` | **🆕 Crítica (Flujo A).** Explora 28, 56, 112, 120 hilos con auto_partitioner. | `--image-part auto`, `--image-grain 0`, `--threads` | `make sweep-threads-first` |
 | `sweep_grain.sh` | **🆕 Crítica (Flujo A).** Con hilos fijos, prueba grains (threads→threads/2→...→1→0) + grandes (1024-8192). | `--image-part`, `--image-grain`, `--threads <fijo>` | `make sweep-grain THREADS=56` |
 | `sweep_optimization.sh` | **Crítica (Flujo B).** Encuentra mejor partitioner+grain con 56 hilos fijos. | `--image-part`, `--image-grain`, `--threads 56` | `make sweep-opt` |
-| `sweep_scalability.sh` | **Crítica.** Genera curva de speedup (1→120 hilos, paso=4). **Mejora mínima esperada.** | `--image-part`, `--image-grain`, `--threads` | `make sweep-scale PART=X GRAIN=Y` |
+| `sweep_scalability.sh` | **Crítica.** Genera curva de speedup (1→120 hilos, paso=4). **Mejora mínima esperada.** Ahora acepta rango personalizado. | `--image-part`, `--image-grain`, `--threads` | `make sweep-scale PART=X GRAIN=Y [START=N END=M STEP=S]` |
 | `sweep_matrix.sh` | **Media.** Combinaciones exhaustivas (útil para verificación). | Varios | Manual con `sbatch` |
 
 **Notas importantes para analysis/image:**
 - ✅ `sweep_scalability.sh` ahora prueba hasta **120 hilos** (antes solo hasta 112)
 - ✅ `sweep_scalability.sh` hace barrido fino de 56→120 con paso=4 (56, 60, 64, 68, ..., 120)
+- ✅ **NUEVO:** `sweep_scalability.sh` acepta rangos personalizados: `START=56 END=112 STEP=2`
+- ✅ **MEJORAS DE ROBUSTEZ:** Todos los scripts usan `perf -r 5` (promedio de 5 ejecuciones), error handling y sync
 - ✅ `sweep_optimization.sh` ahora incluye **granos grandes** (1024, 2048, 4096, 8192) típicos de memory-bound
 - ✅ `sweep_grain.sh` implementa reducción por mitad PLUS granos grandes como pide el profesor
 - ⚠️ **DIFERENCIA CLAVE:** Esta rama usa `--image-part` y `--image-grain` (NO `--render-part`)
@@ -346,20 +348,39 @@ Si conseguís aislar solo el tiempo de Stage 2:
 
 ---
 
-## 10. Resumen de Cambios (2025-12-05)
+## 10. Resumen de Cambios
 
-### ✅ Correcciones Implementadas
+### ✅ Últimas Actualizaciones (2025-12-06)
+
+**Mejoras de Robustez en Mediciones:**
+- ✅ **perf stat -r 5:** Todos los scripts ejecutan 5 repeticiones y promedian (reduce ruido)
+- ✅ **Error handling:** Validación de salida de perf y datos extraídos
+- ✅ **sync después de cada escritura:** Previene pérdida de datos en crashes
+- ✅ **Logging mejorado:** Mensajes de error explícitos en stderr
+
+**Flexibilidad en Escalabilidad:**
+- ✅ **sweep_scalability.sh** ahora acepta rangos personalizados:
+  ```bash
+  make sweep-scale PART=static GRAIN=2048 START=56 END=112 STEP=2
+  # Ejecuta: 56, 58, 60, ..., 112
+  ```
+- ✅ Modo híbrido por defecto (sin START): 1, 2, 4, 8, 16, 28 + seq(56,STEP,END)
+- ✅ Modo personalizado (con START): seq(START,STEP,END)
+
+### ✅ Correcciones Previas (2025-12-05)
 
 1. **sweep_scalability.sh:**
    - ✅ Añadido 120 hilos al barrido
    - ✅ Barrido fino: `seq 56 4 120` (56, 60, 64, 68, ..., 120)
    - ✅ Cambiado a `--image-part` y `--image-grain`
+   - ✅ Ahora flexible con argumentos opcionales
 
 2. **sweep_optimization.sh:**
    - ✅ Añadidos granos grandes: 1024, 2048, 4096, 8192 (típicos de memory-bound)
    - ✅ Mantiene reducción por mitad desde threads: 56, 28, 14, 7, 1, 0
    - ✅ Fija 56 hilos con `--threads 56` explícitamente
    - ✅ Usa `--image-part` y `--image-grain`
+   - ✅ Mejoras de robustez aplicadas
 
 3. **sweep_threads_first.sh (NUEVO):**
    - ✅ Explora 28, 56, 112, 120 hilos con `auto_partitioner`
@@ -371,9 +392,11 @@ Si conseguís aislar solo el tiempo de Stage 2:
    - ✅ **PLUS:** Añade granos grandes (1024, 2048, 4096, 8192)
    - ✅ Implementa "Paso 2" de la metodología del profesor
    - ✅ Producto cartesiano: 4 partitioners × (reducción mitad + grandes)
+   - ✅ Mejoras de robustez aplicadas
 
 5. **Makefile:**
    - ✅ Añadidos comandos: `make sweep-threads-first`, `make sweep-grain THREADS=X`
+   - ✅ Actualizado `sweep-scale` para aceptar START, END, STEP
    - ✅ Mensajes informativos sobre naturaleza de analysis/image
 
 6. **Documentación:**
@@ -396,4 +419,4 @@ Si conseguís aislar solo el tiempo de Stage 2:
 
 ---
 
-_Última actualización: 2025-12-05 - Scripts corregidos según metodología del profesor para analysis/image_
+_Última actualización: 2025-12-06 - Mejoras de robustez y flexibilidad añadidas_
