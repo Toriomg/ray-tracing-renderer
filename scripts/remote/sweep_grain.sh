@@ -25,7 +25,6 @@ echo ">>> Rama analysis/image: Solo procesado de imagen es paralelo <<<"
 PARTITIONERS=("auto" "simple" "static" "affinity")
 
 # Grains para IMAGE: Empezar con grain=threads, luego reducir a la mitad
-# PERO también probar granos MÁS GRANDES (típico de tareas memory-bound ligeras)
 GRAINS=($OPTIMAL_THREADS)
 
 # Generar reducción a la mitad hasta llegar a 1
@@ -52,19 +51,30 @@ for PART in "${PARTITIONERS[@]}"; do
         echo "Probando: $PART | Grain: $GRAIN | Threads: $OPTIMAL_THREADS"
         
         # En esta rama: --image-part y --image-grain
-        perf stat -e power/energy-pkg/ -o temp.log \
+        perf stat -r 5 -e power/energy-pkg/ -o temp.log \
             $EXE $SCENE $CONFIG $OUTPUT_IMG \
-            --image-part $PART --image-grain $GRAIN --threads $OPTIMAL_THREADS
+            --image-part $PART --image-grain $GRAIN --threads $OPTIMAL_THREADS 2>&1
+        
+        # Verificar que perf se ejecutó correctamente
+        if [ $? -ne 0 ]; then
+            echo "ERROR: perf stat falló para $PART / grain=$GRAIN / threads=$OPTIMAL_THREADS" >&2
+            continue
+        fi
         
         TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
         ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
         
-        if [ ! -z "$TIME" ]; then
-            echo "$PART,$GRAIN,$TIME,$ENERGY" >> $RESULT_FILE
+        # Validar que se extrajeron ambos valores
+        if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+            echo "ERROR: No se pudo extraer TIME o ENERGY para $PART / grain=$GRAIN" >&2
+            continue
         fi
+        
+        # Escribir resultado y forzar sync a disco
+        echo "$PART,$GRAIN,$TIME,$ENERGY" >> $RESULT_FILE
+        sync
     done
 done
 
-rm temp.log
+rm -f temp.log
 echo ">>> FIN EXPLORACIÓN DE GRANULARIDAD <<<"
-echo ">>> NOTA: Mejoras mínimas esperadas (procesado de imagen es <1% del tiempo total) <<<"
