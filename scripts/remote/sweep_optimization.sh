@@ -41,22 +41,31 @@ for PART in "${PARTITIONERS[@]}"; do
 
         echo "Probando: $PART | Grain: $GRAIN"
         
-        # Ejecutamos con configuración de WRITER paralelo y threads fijos
-        # En esta rama, el writer paralelo usa --image-part y --image-grain
-        perf stat -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --image-part $PART --image-grain $GRAIN --threads $FIXED_THREADS
+        # Ejecutar con perf stat 5 veces para reducir ruido (-r 5 calcula media)
+        # En esta rama, el writer paralelo usa --writer-part y --writer-grain
+        perf stat -r 5 -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --writer-part $PART --writer-grain $GRAIN --threads $FIXED_THREADS 2>&1
         
-        # Extraer datos (Adaptado a tu salida exacta)
-        # Asumiendo que tu programa imprime "X.XXXX seconds time elapsed"
+        # Verificar que perf se ejecutó correctamente
+        if [ $? -ne 0 ]; then
+            echo "ERROR: perf stat falló para $PART / grain=$GRAIN" >&2
+            continue
+        fi
+        
+        # Extraer datos (con -r 5, el formato incluye la media en el primer campo)
         TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
         ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
         
-        # Guardar si obtuvimos datos válidos
-        if [ ! -z "$TIME" ]; then
-            echo "$PART,$GRAIN,$TIME,$ENERGY" >> $RESULT_FILE
+        # Validar que se extrajeron ambos valores
+        if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+            echo "ERROR: No se pudo extraer TIME o ENERGY para $PART / grain=$GRAIN" >&2
+            continue
         fi
+        
+        # Escribir resultado y forzar sync a disco
+        echo "$PART,$GRAIN,$TIME,$ENERGY" >> $RESULT_FILE
+        sync
     done
 done
 
-rm temp.log
+rm -f temp.log
 echo ">>> FIN OPTIMIZACIÓN <<<"
-echo ">>> NOTA: Mejoras mínimas esperadas (escritura PPM <5% del tiempo total) <<<"

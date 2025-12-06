@@ -28,18 +28,30 @@ for THREADS in 1 2 4 8 16 28 $(seq 56 4 120); do
     
     echo "Probando con $THREADS hilos..."
     
-    # IMPORTANTE: En analysis/writer el ppm_writer paralelo usa --image-part y --image-grain
-    perf stat -e power/energy-pkg/ -o temp.log \
+    # IMPORTANTE: En analysis/writer usamos --writer-part y --writer-grain
+    perf stat -r 5 -e power/energy-pkg/ -o temp.log \
         $EXE $SCENE $CONFIG $OUTPUT_IMG \
-        --image-part $BEST_PART --image-grain $BEST_GRAIN --threads $THREADS
+        --writer-part $BEST_PART --writer-grain $BEST_GRAIN --threads $THREADS 2>&1
+    
+    # Verificar que perf se ejecutó correctamente
+    if [ $? -ne 0 ]; then
+        echo "ERROR: perf stat falló para threads=$THREADS" >&2
+        continue
+    fi
     
     TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
     ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
     
-    if [ ! -z "$TIME" ]; then
-        echo "$THREADS,$TIME,$ENERGY" >> $RESULT_FILE
+    # Validar que se extrajeron ambos valores
+    if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+        echo "ERROR: No se pudo extraer TIME o ENERGY para threads=$THREADS" >&2
+        continue
     fi
+    
+    # Escribir resultado y forzar sync a disco
+    echo "$THREADS,$TIME,$ENERGY" >> $RESULT_FILE
+    sync
 done
 
-rm temp.log
+rm -f temp.log
 echo ">>> FIN ESCALABILIDAD <<<"
