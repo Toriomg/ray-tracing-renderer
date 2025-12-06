@@ -54,6 +54,11 @@ Estos scripts permiten compilar, ejecutar casos de evaluación y descargar los '
 La compilación se realiza gracias a un script de _Bash_ (_scripts/remote/build.sh_) que despliega el código en Avignon y lanza una _SLURM_ para la compilación en Avignon. La ejecución de casos (_scripts/remote/run-test-jd.sh_) se realiza lanzando un _sbatch_ en Avingon que ejecuta ese _script_ que se encarga de ejecutar con _perf_ cada uno de los casos y guarda la salida del programa. Otros _scripts_ permiten descargar los tiempos de ejecución y modificar los ficheros _.csv_ con los que creamos las tablas de tiempo de versiones de la memoria.
 
 == Diseño final del proyecto. 
-Tras las modificaciones especificadas, los esquemas y diagramas de clases del proyecto, han sido modificados y resultan tal y como se presenta a continuación. 
+Tras las modificaciones especificadas, tan solo se han producido cambios en las entidades y estructuras de datos del programa. La estructura y comportamiento de este sigue igual, más allá de los cambios de paralelización. 
 
-//TODO: Incluir diagramas actualizados y las explicaciones pertinentes. 
+#figure(
+  image("../img/esquemas/scena.drawio.png", width: 75%),
+  caption: [Esquema conceptual nuevo del proyecto]
+  )<Esquema>
+
+En la @Esquema se muestra el nuevo diseño del proyecto. Se ha incluido a _SceneSettings_ el atributo _bvh_, que es el BVH que tiene la estructura. Además se ha creado la clase _BVH_ y modificado _AABB_. El resto de estructuras que se muestran en el diagrama son envoltorios (_wrappers_) de datos para asegurar la baja aridad de las funciones, evitar la sobrecarga del código y asegurar mejor el principio DIY (_Don't Repeat Yourself_). 
