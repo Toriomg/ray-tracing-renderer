@@ -1,1 +1,3 @@
 = Evaluación rendimiento y energía <eval>
+n esta sección realizaremos un análisis del rendimiento y de la energía. Esta se analizará en base a diferentes factores, entre ellos: . De este modo, hemos realizado comprobaciones de los tiempos de ejecución y energía consumida para diferentes valores de las métricas mencionadas. Los datos resultantes, además de encontrarse en el repositorio dentro del directorio: _./memoria/graphs_ //TODO: poned la carpeta
+ //, podemos encontrarlos en la hoja de cálculo que podemos encontrar en el siguiente link:
