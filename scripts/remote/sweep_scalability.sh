@@ -14,17 +14,30 @@ OUTPUT_IMG="out_scale.ppm"
 RESULT_FILE="logs/results_scalability.csv"
 
 # --- CONFIGURACIÓN ÓPTIMA FIJA (Actualiza esto tras el primer test) ---
-BEST_PART=${1:-static}  # Usa el primer argumento, o 'static' por defecto
-BEST_GRAIN=${2:-64}     # Usa el segundo argumento, o '64' por defecto
+BEST_PART=${1:-static}   # Usa el primer argumento, o 'static' por defecto
+BEST_GRAIN=${2:-64}      # Usa el segundo argumento, o '64' por defecto
+# --- RANGO DE HILOS PERSONALIZABLE ---
+THREAD_START=${3:-}      # Inicio del rango (vacío = modo híbrido)
+THREAD_END=${4:-120}     # Fin del rango (por defecto 120)
+THREAD_STEP=${5:-4}      # Paso del rango (por defecto 4)
 # ----------------------------------------------------------------------
 
 echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
 
-echo ">>> INICIANDO TEST DE ESCALABILIDAD ($BEST_PART / $BEST_GRAIN) <<<"
+# Determinar qué secuencia de hilos usar
+if [ -z "$THREAD_START" ]; then
+    # Modo híbrido (por defecto): valores bajos + barrido fino
+    THREAD_SEQUENCE="1 2 4 8 16 28 $(seq 56 $THREAD_STEP $THREAD_END)"
+    echo ">>> INICIANDO TEST DE ESCALABILIDAD ($BEST_PART / $BEST_GRAIN) <<<"
+    echo ">>> Modo híbrido: 1,2,4,8,16,28 + seq(56,$THREAD_STEP,$THREAD_END) <<<"
+else
+    # Modo personalizado: rango especificado
+    THREAD_SEQUENCE=$(seq $THREAD_START $THREAD_STEP $THREAD_END)
+    echo ">>> INICIANDO TEST DE ESCALABILIDAD ($BEST_PART / $BEST_GRAIN) <<<"
+    echo ">>> Rango personalizado: $THREAD_START → $THREAD_END (paso $THREAD_STEP) <<<"
+fi
 
-# Bucle solicitado: de 56 a 112 con salto de 4
-# Añadimos también 1, 2, 4, 8... 28 para tener la curva completa desde el principio
-for THREADS in 1 2 4 8 16 28 $(seq 56 4 120); do
+for THREADS in $THREAD_SEQUENCE; do
     
     echo "Probando con $THREADS hilos..."
     
