@@ -59,6 +59,6 @@ Tras las modificaciones especificadas, tan solo se han producido cambios en las 
 #figure(
   image("../img/esquemas/scena.drawio.png", width: 75%),
   caption: [Esquema conceptual nuevo del proyecto]
-  )<Esquema>
+  )<Figura1>
 
-En la @Esquema se muestra el nuevo diseño del proyecto. Se ha incluido a _SceneSettings_ el atributo _bvh_, que es el BVH que tiene la estructura. Además se ha creado la clase _BVH_ y modificado _AABB_. El resto de estructuras que se muestran en el diagrama son envoltorios (_wrappers_) de datos para asegurar la baja aridad de las funciones, evitar la sobrecarga del código y asegurar mejor el principio DIY (_Don't Repeat Yourself_). 
+En la @Figura1 se muestra el nuevo diseño del proyecto. Se ha incluido a _SceneSettings_ el atributo _bvh_, que es el BVH que tiene la estructura. Además se ha creado la clase _BVH_ y modificado _AABB_. El resto de estructuras que se muestran en el diagrama son envoltorios (_wrappers_) de datos para asegurar la baja aridad de las funciones, evitar la sobrecarga del código y realizar el principio de programación DIY (_Don't Repeat Yourself_). 
