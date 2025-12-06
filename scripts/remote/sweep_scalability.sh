@@ -22,24 +22,36 @@ echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
 
 echo ">>> INICIANDO TEST DE ESCALABILIDAD ($BEST_PART / $BEST_GRAIN) <<<"
 
-# Bucle con valores iniciales + barrido fino de 56 a 120 (de 4 en 4)
-# Valores clave: 28 (1 socket), 56 (2 sockets físicos), 112 (máx. físico), 120 (sobrecarga)
+# Bucle solicitado: de 56 a 112 con salto de 4
+# Añadimos también 1, 2, 4, 8... 28 para tener la curva completa desde el principio
 for THREADS in 1 2 4 8 16 28 $(seq 56 4 120); do
     
     echo "Probando con $THREADS hilos..."
     
-    # IMPORTANTE: Pasamos --threads al programa
-    perf stat -e power/energy-pkg/ -o temp.log \
+    # En esta rama (rendering): --render-part y --render-grain
+    perf stat -r 5 -e power/energy-pkg/ -o temp.log \
         $EXE $SCENE $CONFIG $OUTPUT_IMG \
-        --partitioner $BEST_PART --grain $BEST_GRAIN --threads $THREADS
+        --render-part $BEST_PART --render-grain $BEST_GRAIN --threads $THREADS 2>&1
+    
+    # Verificar que perf se ejecutó correctamente
+    if [ $? -ne 0 ]; then
+        echo "ERROR: perf stat falló para threads=$THREADS" >&2
+        continue
+    fi
     
     TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
     ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
     
-    if [ ! -z "$TIME" ]; then
-        echo "$THREADS,$TIME,$ENERGY" >> $RESULT_FILE
+    # Validar que se extrajeron ambos valores
+    if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+        echo "ERROR: No se pudo extraer TIME o ENERGY para threads=$THREADS" >&2
+        continue
     fi
+    
+    # Escribir resultado y forzar sync a disco
+    echo "$THREADS,$TIME,$ENERGY" >> $RESULT_FILE
+    sync
 done
 
-rm temp.log
+rm -f temp.log
 echo ">>> FIN ESCALABILIDAD <<<"
