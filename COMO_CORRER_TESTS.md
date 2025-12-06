@@ -2,6 +2,31 @@
 
 Esta guía explica **paso a paso** cómo ejecutar tests de rendimiento en el cluster Avignon para medir el impacto de la paralelización en diferentes componentes del ray tracer.
 
+> **Última actualización:** 2025-12-06 - Añadidas mejoras de robustez y flexibilidad en escalabilidad
+
+---
+
+## 🆕 Mejoras Recientes (2025-12-06)
+
+### Robustez en Mediciones
+- ✅ **perf stat -r 5**: Todos los scripts ejecutan 5 repeticiones y promedian automáticamente
+- ✅ **Error handling**: Validación de datos y mensajes de error explícitos
+- ✅ **sync automático**: Previene pérdida de datos en crashes
+
+### Flexibilidad en Escalabilidad
+- ✅ **sweep-scale** ahora acepta rangos personalizados:
+  ```bash
+  make sweep-scale PART=static GRAIN=64 START=56 END=112 STEP=2
+  # Ejecuta: 56, 58, 60, ..., 112
+  ```
+- ✅ Sin START: modo híbrido (1,2,4,8,16,28 + seq(56,step,end))
+- ✅ Con START: modo personalizado (seq(start,step,end))
+
+**Casos de uso:**
+- `START=1 END=8 STEP=1` → Ideal para writer (satura temprano)
+- `START=56 END=120 STEP=4` → Barrido fino en zona alta
+- Sin START → Curva completa con puntos clave
+
 ---
 
 ## 📚 Tabla de Contenidos
@@ -288,14 +313,19 @@ make tail-custom
 |---------|----------|--------|-------------------|
 | `make sweep-threads-first` | Prueba 28, 56, 112, 120 hilos con auto | ~5-8 min | `results_threads_first.csv` |
 | `make sweep-grain THREADS=X` | Prueba grains con X hilos fijos | ~10-15 min | `results_grain_sweep.csv` |
-| `make sweep-scale PART=X GRAIN=Y` | Curva speedup con config óptima | ~15-20 min | `results_scalability.csv` |
+| `make sweep-scale PART=X GRAIN=Y [START=N END=M STEP=S]` | Curva speedup con config óptima (flexible) | ~15-20 min | `results_scalability.csv` |
+
+**Ejemplo con rango personalizado:**
+```bash
+make sweep-scale PART=static GRAIN=64 START=56 END=112 STEP=2
+```
 
 #### Flujo B (Tradicional)
 
 | Comando | Qué hace | Tiempo | Archivo resultado |
 |---------|----------|--------|-------------------|
 | `make sweep-opt` | Prueba todas las configs (part×grain) | ~10-15 min | `results_optimization.csv` |
-| `make sweep-scale PART=X GRAIN=Y` | Curva speedup con config óptima | ~15-20 min | `results_scalability.csv` |
+| `make sweep-scale PART=X GRAIN=Y [START=N END=M STEP=S]` | Curva speedup con config óptima (flexible) | ~15-20 min | `results_scalability.csv` |
 
 ---
 
