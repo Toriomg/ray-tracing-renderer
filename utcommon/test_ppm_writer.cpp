@@ -34,16 +34,14 @@ TEST_F(PPMWriterTest, ValidImageWrite) {
   size_t const width         = 2;
   size_t const height        = 1;
 
-  // Crear estructura Pixels usando PPMWriter::Pixels
-  // Los canales son std::vector<uint8_t>
+  // Crear canales RGB como std::vector<uint8_t>
   std::vector<uint8_t> const r_channel = {255, 0};
   std::vector<uint8_t> const g_channel = {0, 128};
   std::vector<uint8_t> const b_channel = {0, 255};
 
-  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
-
-  // Llamar a write_ppm
-  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
+  // Llamar a write_ppm con la nueva API (sin estructura Pixels)
+  bool const result =
+      PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
 
   // Verificar que la escritura fue exitosa
   ASSERT_TRUE(result) << "write_ppm debería retornar true para datos válidos";
@@ -95,16 +93,15 @@ TEST_F(PPMWriterTest, InvalidPixelDataSize) {
   size_t const width         = 5;
   size_t const height        = 5;  // total_pixels = 25
 
-  // Crear estructura Pixels con datos INCORRECTOS (solo 3 píxeles en lugar de 25)
+  // Crear canales con datos INCORRECTOS (solo 3 píxeles en lugar de 25)
   // Los canales son std::vector<uint8_t> de tamaño 3, no 25
   std::vector<uint8_t> const r_channel = {1, 2, 3};
   std::vector<uint8_t> const g_channel = {1, 2, 3};
   std::vector<uint8_t> const b_channel = {1, 2, 3};
 
-  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
-
-  // Llamar a write_ppm
-  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
+  // Llamar a write_ppm con la nueva API
+  bool const result =
+      PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
 
   // Verificar que la función retorna false debido al chequeo de tamaño
   ASSERT_FALSE(result) << "write_ppm debería retornar false cuando el tamaño de los canales no "
@@ -121,16 +118,14 @@ TEST_F(PPMWriterTest, InvalidFilePath) {
   size_t const width         = 1;
   size_t const height        = 1;
 
-  // Crear estructura Pixels con 1 píxel válido
-  // Los canales son std::vector<uint8_t>
+  // Crear canales con 1 píxel válido
   std::vector<uint8_t> const r_channel = {255};
   std::vector<uint8_t> const g_channel = {255};
   std::vector<uint8_t> const b_channel = {255};
 
-  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
-
-  // Llamar a write_ppm
-  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
+  // Llamar a write_ppm con la nueva API
+  bool const result =
+      PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
 
   // Verificar que la función retorna false debido a que no se pudo abrir el archivo
   ASSERT_FALSE(result) << "write_ppm debería retornar false cuando no se puede abrir el archivo";
