@@ -48,7 +48,9 @@ Pese a no formar parte explicita del código a desarrollar durante la práctica,
 de pruebas realizados a lo largo de la práctica, ya que estos han sido un factor determinante en la eficacia y rapidez del desarrollo de la práctica en su 
 totalidad, permitiendo lanzar pruebas en Avignon de manra rápida, automática y muy práctica. 
 
-//TODO: Explicar un poco más los scripts realizados y su funcionamiento de manera super breve, 1 o dos párrafos de 5 lineas, algo verdaderamente breve.
+Estos scripts permiten compilar, ejecutar casos de evaluación y descargar los 'logs' e imágenes resultantes. Esto se hace mediante _Makefile_ para la simplificación de comandos en la terminal local y _sshpass_ para automatizar la gestión del acceso a Avignon. 
+
+La compilación se realiza gracias a un script de _Bash_ (_scripts/remote/build.sh_) que despliega el código en Avignon y lanza una _SLURM_ para la compilación en Avignon. La ejecución de casos (_scripts/remote/run-test-jd.sh_) se realiza lanzando un _sbatch_ en Avingon que ejecuta ese _script_ que se encarga de ejecutar con _perf_ cada uno de los casos y guarda la salida del programa. Otros _scripts_ permiten descargar los tiempos de ejecución y modificar los ficheros _.csv_ con los que creamos las tablas de tiempo de versiones de la memoria.
 
 == Diseño final del proyecto. 
 Tras las modificaciones especificadas, los esquemas y diagramas de clases del proyecto, han sido modificados y resultan tal y como se presenta a continuación. 
