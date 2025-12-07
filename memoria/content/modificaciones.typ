@@ -41,7 +41,7 @@ La compilación se realiza gracias a un script de _Bash_ que despliega el códig
 Tras las modificaciones especificadas, tan solo se han producido cambios en las entidades y estructuras de datos del programa. La estructura y comportamiento de este sigue igual, más allá de los cambios de paralelización. 
 
 #figure(
-  image("../img/esquemas/scena.drawio.png", width: 70%),
+  image("../img/esquemas/scena.drawio.png", width: 90%),
   caption: [Esquema conceptual nuevo del proyecto]
   )<Figura1>
 
