@@ -41,27 +41,35 @@ for THREADS in $THREAD_SEQUENCE; do
     
     echo "Probando con $THREADS hilos..."
     
-    # IMPORTANTE: En analysis/image usamos --image-part y --image-grain
+    # Ejecutar perf y capturar el exit code sin abortar el script
+    set +e
     perf stat -r 5 -e power/energy-pkg/ -o temp.log \
         $EXE $SCENE $CONFIG $OUTPUT_IMG \
         --image-part $BEST_PART --image-grain $BEST_GRAIN --threads $THREADS 2>&1
+    PERF_EXIT=$?
+    set -e
     
-    # Verificar que perf se ejecutó correctamente
-    if [ $? -ne 0 ]; then
-        echo "ERROR: perf stat falló para threads=$THREADS" >&2
+    # Si perf falló, registrar error y continuar
+    if [ $PERF_EXIT -ne 0 ]; then
+        echo "ERROR: perf stat falló para threads=$THREADS (exit code: $PERF_EXIT)" >&2
+        echo "$THREADS,ERROR,ERROR" >> $RESULT_FILE
+        sync
         continue
     fi
     
-    TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
-    ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
+    # Parsear con protección (|| true evita que grep devuelva error fatal)
+    TIME=$(grep "seconds time elapsed" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
+    ENERGY=$(grep "Joules" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
     
     # Validar que se extrajeron ambos valores
-    if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+    if [ "$TIME" = "N/A" ] || [ "$ENERGY" = "N/A" ] || [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
         echo "ERROR: No se pudo extraer TIME o ENERGY para threads=$THREADS" >&2
+        echo "$THREADS,PARSE_ERROR,PARSE_ERROR" >> $RESULT_FILE
+        sync
         continue
     fi
     
-    # Escribir resultado y forzar sync a disco
+    # Escribir resultado válido y forzar sync a disco
     echo "$THREADS,$TIME,$ENERGY" >> $RESULT_FILE
     sync
 done
