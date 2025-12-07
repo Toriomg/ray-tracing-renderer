@@ -36,26 +36,33 @@ for PART in "${PARTITIONERS[@]}"; do
 
         echo "Probando: $PART | Grain: $GRAIN"
         
-        # Ejecutar con perf stat 5 veces para reducir ruido (-r 5 calcula media)
+        # Ejecutar perf y capturar exit code sin abortar
+        set +e
         perf stat -r 5 -e power/energy-pkg/ -o temp.log $EXE $SCENE $CONFIG $OUTPUT_IMG --image-part $PART --image-grain $GRAIN 2>&1
+        PERF_EXIT=$?
+        set -e
         
-        # Verificar que perf se ejecutó correctamente
-        if [ $? -ne 0 ]; then
-            echo "ERROR: perf stat falló para $PART / grain=$GRAIN" >&2
+        # Si perf falló, registrar error y continuar
+        if [ $PERF_EXIT -ne 0 ]; then
+            echo "ERROR: perf stat falló para $PART / grain=$GRAIN (exit: $PERF_EXIT)" >&2
+            echo "$PART,$GRAIN,ERROR,ERROR" >> $RESULT_FILE
+            sync
             continue
         fi
         
-        # Extraer datos (con -r 5, el formato incluye la media en el primer campo)
-        TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
-        ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
+        # Parsear con protección (|| echo "N/A" evita error fatal de grep)
+        TIME=$(grep "seconds time elapsed" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
+        ENERGY=$(grep "Joules" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
         
-        # Validar que se extrajeron ambos valores
-        if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+        # Validar extracción
+        if [ "$TIME" = "N/A" ] || [ "$ENERGY" = "N/A" ] || [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
             echo "ERROR: No se pudo extraer TIME o ENERGY para $PART / grain=$GRAIN" >&2
+            echo "$PART,$GRAIN,PARSE_ERROR,PARSE_ERROR" >> $RESULT_FILE
+            sync
             continue
         fi
         
-        # Escribir resultado y forzar sync a disco
+        # Escribir resultado válido y forzar sync a disco
         echo "$PART,$GRAIN,$TIME,$ENERGY" >> $RESULT_FILE
         sync
     done

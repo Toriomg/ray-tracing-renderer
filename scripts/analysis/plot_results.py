@@ -26,7 +26,14 @@ def main():
     df['Energy(J)'] = df['Energy(J)'].apply(clean_number)
 
     # 2. Calcular Speedup y Eficiencia
-    base_time = df[df['Threads'] == 1]['Time(s)'].values[0]
+    # Verificar si existe thread=1 para baseline
+    if 1 not in df['Threads'].values:
+        print("⚠️  ADVERTENCIA: No hay datos con Threads=1 (baseline secuencial)")
+        print("    Usando el tiempo MÁXIMO como referencia para speedup")
+        base_time = df['Time(s)'].max()
+    else:
+        base_time = df[df['Threads'] == 1]['Time(s)'].values[0]
+    
     df['Speedup'] = base_time / df['Time(s)']
     df['Efficiency'] = df['Speedup'] / df['Threads']
 
