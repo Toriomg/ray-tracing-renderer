@@ -1,5 +1,4 @@
 // MÁXIMO 5 PÁGINAS -> SI ES NECESARIO EMPLEAR ANEXSOS PARA OTRAS GRÁFICAS Y CUESTIONES IMPORTANTES
-
 = Evaluación rendimiento y energía <eval>
 En esta sección realizaremos un análisis del rendimiento y de la energía en base a diferentes factores, entre ellos: el número de hilos, granularidad y tipo de _partitioners_, permitiendo la comprensión de las decisiones de paralelización tomadas.
 //Los datos resultantes, además de encontrarse en el repositorio dentro del directorio: _./memoria/graphs_  !!! HAY QUE VER REALMENTE DONDE SE METEN Y COMO PORQUE LO CSV DAN PROBLEMAS LOL
@@ -51,7 +50,7 @@ Por tanto, en las siguientes gráfica presentamos los resultados de rendimiento 
 
 Esto tiene total sentido, ya que son valores que se encuentran próximos al límite de paralelización físico que presneta la arquitectura de nuestra máquina. 
 
-Por ello, realizaremos nuestro estudio de particionadores y grano en base a la ejecución con 108, 110 y 112 hilos. En este caso, y dado que el comportamiento es muy similar tanto en tiempo de ejcución como en energía consumida, presentaremos solo las gráficas de rendimiento. No obstante, las de energía se pueden encontrar en el Anexo 1: Otras gráficas y datos de rendimiento.
+Por ello, realizaremos nuestro estudio de particionadores y grano en base a la ejecución con 108, 110 y 112 hilos. En este caso, y dado que el comportamiento es muy similar tanto en tiempo de ejcución como en energía consumida, presentaremos solo las gráficas de rendimiento. No obstante, las de energía se pueden encontrar en @Anexo-1
 #figure(
   grid(
     columns: 3,
@@ -72,4 +71,4 @@ Esto se puede atribuir a que el static_partitioner hace un reparto del tarbajo d
 
 En cuanto a la granularidad, también presentan uniformidad, pues todos presentan valores óptimos con tamaño de grano 3. Esto es especialmente importante, y más tratandose de un bloque en 2 dimensiones. Con un grano 3 se permite el tratado de unos 9 píxeles por bloque, siendo estos lo suficientemente pequeños como para que el hilo esté balanceado de manera adecuada pero lo suficientemente grande como para amortizar el _overhead_.Además permite una buena localidad espacial. 
 
-Mirando a las gráficas, aunque se observa un comportamiento similar y unos valores cercanos, podemos observar que el valor óptimo se presenta con 112 hilos, tamaño de grano 3 y un particionador simple, con un tiempo de ejecución de 1,79998 segundos y un consumo energético de 469,5 J, lo que se traduce en un speedup de 22,16 respecto a la versión secuencial solo con la paralelización de este fragmento.
+Mirando a las gráficas, aunque se observa un comportamiento similar y unos valores cercanos, podemos observar que el valor óptimo se presenta con 112 hilos, tamaño de grano 3 y un particionador simple, con un tiempo de ejecución de 1,79998 segundos y un consumo energético de 469,5 J, lo que se traduce en un speedup de mayor a 22 respecto a la versión secuencial solo con la paralelización de este fragmento.
