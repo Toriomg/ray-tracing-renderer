@@ -8,3 +8,5 @@
 + Wikipedia, _Bounding volume hierarchy_, 28 Octubre 2025 [Online] URL: https://en.wikipedia.org/wiki/Bounding_volume_hierarchy
 
 + Jbikker, _How to build a BVH – Part 1: Basics_, Ompf2 13 Abril 2022, [Online] URL: https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
+
++ Intel, _Threading Building Bocks Deveoper Guide and API Reference_, [Online] URL: https://www.intel.com/content/www/us/en/docs/onetbb/developer-guide-api-reference/2021-9/partitioner-summary.html 
