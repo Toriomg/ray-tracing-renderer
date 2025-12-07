@@ -171,12 +171,14 @@ python3 scripts/analysis/plot_results.py
 | `sweep_threads_first.sh` | **🆕 Crítica (Flujo A).** Explora 28, 56, 112, 120 hilos con auto_partitioner. | `--render-part auto`, `--render-grain 0`, `--threads` | `make sweep-threads-first` |
 | `sweep_grain.sh` | **🆕 Crítica (Flujo A).** Con hilos fijos, prueba grains (threads→threads/2→...→1→0). | `--render-part`, `--render-grain`, `--threads <fijo>` | `make sweep-grain THREADS=56` |
 | `sweep_optimization.sh` | **Crítica (Flujo B).** Encuentra mejor partitioner+grain con 56 hilos fijos. | `--render-part`, `--render-grain`, `--threads 56` | `make sweep-opt` |
-| `sweep_scalability.sh` | **Crítica.** Genera curva de speedup con config óptima (1→120 hilos, paso=4). | `--render-part`, `--render-grain`, `--threads` | `make sweep-scale PART=X GRAIN=Y` |
+| `sweep_scalability.sh` | **Crítica.** Genera curva de speedup con config óptima (1→120 hilos, paso=4). Ahora acepta rango personalizado. | `--render-part`, `--render-grain`, `--threads` | `make sweep-scale PART=X GRAIN=Y [START=N END=M STEP=S]` |
 | `sweep_matrix.sh` | **Baja.** Combinaciones exhaustivas (legacy, muy pesado). | Varios | Manual con `sbatch` |
 
 **Notas importantes:**
 - ✅ `sweep_scalability.sh` ahora prueba hasta **120 hilos** (antes solo hasta 112)
 - ✅ `sweep_scalability.sh` hace barrido fino de 56→120 con paso=4 (56, 60, 64, 68, ..., 120)
+- ✅ **NUEVO:** `sweep_scalability.sh` acepta rangos personalizados: `START=56 END=112 STEP=2`
+- ✅ **MEJORAS DE ROBUSTEZ:** Todos los scripts usan `perf -r 5` (promedio de 5 ejecuciones), error handling y sync
 - ✅ `sweep_optimization.sh` ahora incluye grains=56 y grains=112 (igual a número de hilos)
 - ✅ `sweep_grain.sh` implementa reducción por mitad desde grain=threads como pide el profesor
 
@@ -293,17 +295,36 @@ Antes de dar los datos por buenos, verifica:
 
 ---
 
-## 6. Resumen de Cambios (2025-12-05)
+## 6. Resumen de Cambios
 
-### ✅ Correcciones Implementadas
+### ✅ Últimas Actualizaciones (2025-12-06)
+
+**Mejoras de Robustez en Mediciones:**
+- ✅ **perf stat -r 5:** Todos los scripts ejecutan 5 repeticiones y promedian (reduce ruido)
+- ✅ **Error handling:** Validación de salida de perf y datos extraídos
+- ✅ **sync después de cada escritura:** Previene pérdida de datos en crashes
+- ✅ **Logging mejorado:** Mensajes de error explícitos en stderr
+
+**Flexibilidad en Escalabilidad:**
+- ✅ **sweep_scalability.sh** ahora acepta rangos personalizados:
+  ```bash
+  make sweep-scale PART=static GRAIN=64 START=56 END=112 STEP=2
+  # Ejecuta: 56, 58, 60, ..., 112
+  ```
+- ✅ Modo híbrido por defecto (sin START): 1, 2, 4, 8, 16, 28 + seq(56,STEP,END)
+- ✅ Modo personalizado (con START): seq(START,STEP,END)
+
+### ✅ Correcciones Previas (2025-12-05)
 
 1. **sweep_scalability.sh:**
    - ✅ Añadido 120 hilos al barrido
    - ✅ Barrido fino: `seq 56 4 120` (56, 60, 64, 68, ..., 120)
+   - ✅ Ahora flexible con argumentos opcionales
 
 2. **sweep_optimization.sh:**
    - ✅ Añadidos grains=56 y grains=112 (igual a número de hilos)
    - ✅ Fija 56 hilos con `--threads 56` explícitamente
+   - ✅ Mejoras de robustez aplicadas
 
 3. **sweep_threads_first.sh (NUEVO):**
    - ✅ Explora 28, 56, 112, 120 hilos con `auto_partitioner`
@@ -313,9 +334,11 @@ Antes de dar los datos por buenos, verifica:
    - ✅ Con hilos fijos, prueba grains: threads→threads/2→...→1→0
    - ✅ Implementa "Paso 2" de la metodología del profesor
    - ✅ Producto cartesiano: 4 partitioners × N grains
+   - ✅ Mejoras de robustez aplicadas
 
 5. **Makefile:**
    - ✅ Añadidos comandos: `make sweep-threads-first`, `make sweep-grain THREADS=X`
+   - ✅ Actualizado `sweep-scale` para aceptar START, END, STEP
 
 6. **Documentación:**
    - ✅ Explicados ambos flujos (A: hilos primero, B: tradicional)
