@@ -2,15 +2,22 @@
 #define PARALLEL_RNG_HPP
 
 #include "utilities/random.hpp"
+#include <algorithm>
 #include <atomic>
+#include <random>
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/task_arena.h>
+#include <thread>
+#include <vector>
 
 class ParallelRNGManager {
 public:
   ParallelRNGManager(unsigned int base_seed_ray, unsigned int base_seed_material)
-      : m_base_seed_ray(base_seed_ray), m_base_seed_material(base_seed_material) { }
+      : m_base_seed_ray(base_seed_ray), m_base_seed_material(base_seed_material) {
+    determine_max_threads();
+    generate_seed_vectors();
+  }
 
-  // Acceso a los RNG locales del hilo
   RandomGenerator & get_ray_rng() { return m_ray_rngs.local(); }
 
   RandomGenerator & get_material_rng() { return m_material_rngs.local(); }
@@ -19,19 +26,43 @@ private:
   unsigned int m_base_seed_ray;
   unsigned int m_base_seed_material;
 
-  // Aseguramos semillas únicas en cada hilo
-  static inline std::atomic<unsigned int> s_ray_counter{0};
-  static inline std::atomic<unsigned int> s_material_counter{0};
+  std::vector<std::uint64_t> m_ray_seeds;
+  std::vector<std::uint64_t> m_material_seeds;
 
-  // Solo se crean generadoes de numeros aleatorios para los hilos que existen
+  static inline std::atomic<std::size_t> s_thread_counter{0};
+
+  std::size_t m_max_threads{0};  // Inicialización por defecto aquí
+
+  void determine_max_threads() {
+    // static_cast para evitar warning de conversión de signo
+    m_max_threads = static_cast<std::size_t>(tbb::this_task_arena::max_concurrency());
+
+    if (m_max_threads == 0) {
+      m_max_threads = static_cast<std::size_t>(std::thread::hardware_concurrency());
+    }
+  }
+
+  void generate_seed_vectors() {
+    m_ray_seeds.resize(m_max_threads);
+    m_material_seeds.resize(m_max_threads);
+
+    // std::mt19937_64 (enunciado dice mt19934_64 por error tipográfico)
+    std::mt19937_64 ray_seed_gen(static_cast<std::uint64_t>(m_base_seed_ray));
+    std::mt19937_64 material_seed_gen(static_cast<std::uint64_t>(m_base_seed_material));
+
+    // Usar std::ranges::generate EXACTAMENTE como en Listado 6 del enunciado
+    std::ranges::generate(m_ray_seeds, ray_seed_gen);
+    std::ranges::generate(m_material_seeds, material_seed_gen);
+  }
+
   tbb::enumerable_thread_specific<RandomGenerator> m_ray_rngs{[this]() {
-    unsigned int thread_seed = m_base_seed_ray + s_ray_counter.fetch_add(1);
-    return RandomGenerator(thread_seed);
+    std::size_t thread_id = s_thread_counter.fetch_add(1);
+    return RandomGenerator(m_ray_seeds[thread_id % m_ray_seeds.size()]);
   }};
 
   tbb::enumerable_thread_specific<RandomGenerator> m_material_rngs{[this]() {
-    unsigned int thread_seed = m_base_seed_material + s_material_counter.fetch_add(1);
-    return RandomGenerator(thread_seed);
+    std::size_t thread_id = s_thread_counter.fetch_add(1);
+    return RandomGenerator(m_material_seeds[thread_id % m_material_seeds.size()]);
   }};
 };
 
