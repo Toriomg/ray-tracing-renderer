@@ -13,8 +13,11 @@ CONFIG="res/config_scripts/config5.txt"
 OUTPUT_IMG="out_grain.ppm"
 RESULT_FILE="logs/results_grain_sweep.csv"
 
-# Número de hilos óptimo encontrado en el paso anterior (pásalo como argumento)
-OPTIMAL_THREADS=${1:-56}
+# --- ARGUMENTOS PERSONALIZABLES (para ejecución por lotes) ---
+OPTIMAL_THREADS=${1:-56}  # Número de hilos (por defecto 56)
+CUSTOM_PARTS="$2"         # Lista de partitioners (ej: "static affinity")
+CUSTOM_GRAINS="$3"        # Lista de grains (ej: "32 64 128")
+# ---------------------------------------------------------------
 
 # Crear cabecera solo si el archivo no existe (para permitir ejecuciones incrementales)
 if [ ! -f "$RESULT_FILE" ]; then
@@ -25,26 +28,38 @@ fi
 echo ">>> PASO 2: EXPLORACIÓN DE GRANULARIDAD (con $OPTIMAL_THREADS hilos fijos) <<<"
 echo ">>> Rama analysis/image: Solo procesado de imagen es paralelo <<<"
 
-# Partitioners a probar
-PARTITIONERS=("auto" "simple" "static" "affinity")
+# Partitioners a probar (usar custom si se proporciona, sino usar defaults)
+if [ -n "$CUSTOM_PARTS" ]; then
+    PARTITIONERS=($CUSTOM_PARTS)
+    echo ">>> Partitioners personalizados: ${PARTITIONERS[@]} <<<"
+else
+    PARTITIONERS=("auto" "simple" "static" "affinity")
+    echo ">>> Partitioners por defecto: ${PARTITIONERS[@]} <<<"
+fi
 
-# Grains para IMAGE: Empezar con grain=threads, luego reducir a la mitad
-GRAINS=($OPTIMAL_THREADS)
-
-# Generar reducción a la mitad hasta llegar a 1
-CURRENT=$OPTIMAL_THREADS
-while [ $CURRENT -gt 1 ]; do
-    CURRENT=$((CURRENT / 2))
-    GRAINS+=($CURRENT)
-done
-
-# Añadir 0 al final (auto de TBB)
-GRAINS+=(0)
-
-# Añadir granos grandes típicos de procesado de imagen (1024, 2048, 4096, 8192)
-GRAINS+=(1024 2048 4096 8192)
-
-echo "Grains a probar: ${GRAINS[@]}"
+# Grains a probar (usar custom si se proporciona, sino generar automáticamente)
+if [ -n "$CUSTOM_GRAINS" ]; then
+    GRAINS=($CUSTOM_GRAINS)
+    echo ">>> Grains personalizados: ${GRAINS[@]} <<<"
+else
+    # Lógica automática: Empezar con grain=threads, luego reducir a la mitad
+    GRAINS=($OPTIMAL_THREADS)
+    
+    # Generar reducción a la mitad hasta llegar a 1
+    CURRENT=$OPTIMAL_THREADS
+    while [ $CURRENT -gt 1 ]; do
+        CURRENT=$((CURRENT / 2))
+        GRAINS+=($CURRENT)
+    done
+    
+    # Añadir 0 al final (auto de TBB)
+    GRAINS+=(0)
+    
+    # Añadir granos grandes típicos de procesado de imagen (1024, 2048, 4096, 8192)
+    GRAINS+=(1024 2048 4096 8192)
+    
+    echo ">>> Grains generados automáticamente: ${GRAINS[@]} <<<"
+fi
 
 for PART in "${PARTITIONERS[@]}"; do
     for GRAIN in "${GRAINS[@]}"; do
