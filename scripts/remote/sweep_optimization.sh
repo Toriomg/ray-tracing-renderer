@@ -24,12 +24,31 @@ if [ ! -f "$RESULT_FILE" ]; then
     sync
 fi
 
+# --- ARGUMENTOS PERSONALIZABLES (para ejecución por lotes) ---
+CUSTOM_PARTS="$1"       # Lista de partitioners (ej: "static affinity")
+CUSTOM_GRAINS="$2"      # Lista de grains (ej: "32 64 128")
+# ---------------------------------------------------------------
+
 echo ">>> INICIANDO BARRIDO DE OPTIMIZACIÓN <<<"
 
-# Estrategias a probar
-PARTITIONERS=("auto" "simple" "static" "affinity")
-# Tamaños de grano (0 = auto de TBB, luego potencias de 2)
-GRAINS=(0 1 32 64 128 256 512 1024)
+# Estrategias a probar (usar custom si se proporciona, sino usar defaults)
+if [ -n "$CUSTOM_PARTS" ]; then
+    PARTITIONERS=($CUSTOM_PARTS)
+    echo ">>> Partitioners personalizados: ${PARTITIONERS[@]} <<<"
+else
+    PARTITIONERS=("auto" "simple" "static" "affinity")
+    echo ">>> Partitioners por defecto: ${PARTITIONERS[@]} <<<"
+fi
+
+# Tamaños de grano (usar custom si se proporciona, sino usar defaults)
+if [ -n "$CUSTOM_GRAINS" ]; then
+    GRAINS=($CUSTOM_GRAINS)
+    echo ">>> Grains personalizados: ${GRAINS[@]} <<<"
+else
+    # 0 = auto de TBB, luego potencias de 2
+    GRAINS=(0 1 32 64 128 256 512 1024)
+    echo ">>> Grains por defecto: ${GRAINS[@]} <<<"
+fi
 
 for PART in "${PARTITIONERS[@]}"; do
     for GRAIN in "${GRAINS[@]}"; do
