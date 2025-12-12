@@ -18,8 +18,11 @@ CONFIG="res/config_scripts/config5.txt"
 OUTPUT_IMG="out_opt.ppm"
 RESULT_FILE="logs/results_optimization.csv"
 
-# Crear cabecera CSV
-echo "Partitioner,GrainSize,Time(s),Energy(J)" > $RESULT_FILE
+# Crear cabecera solo si el archivo no existe (para permitir ejecuciones incrementales)
+if [ ! -f "$RESULT_FILE" ]; then
+    echo "Partitioner,GrainSize,Time(s),Energy(J)" > $RESULT_FILE
+    sync
+fi
 
 echo ">>> INICIANDO BARRIDO DE OPTIMIZACIÓN <<<"
 

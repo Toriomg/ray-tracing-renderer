@@ -16,7 +16,11 @@ RESULT_FILE="logs/results_grain_sweep.csv"
 # Número de hilos óptimo encontrado en el paso anterior (pásalo como argumento)
 OPTIMAL_THREADS=${1:-56}
 
-echo "Partitioner,GrainSize,Time(s),Energy(J)" > $RESULT_FILE
+# Crear cabecera solo si el archivo no existe (para permitir ejecuciones incrementales)
+if [ ! -f "$RESULT_FILE" ]; then
+    echo "Partitioner,GrainSize,Time(s),Energy(J)" > $RESULT_FILE
+    sync
+fi
 
 echo ">>> PASO 2: EXPLORACIÓN DE GRANULARIDAD (con $OPTIMAL_THREADS hilos fijos) <<<"
 echo ">>> Rama analysis/image: Solo procesado de imagen es paralelo <<<"

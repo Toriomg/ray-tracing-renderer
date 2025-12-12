@@ -22,7 +22,11 @@ THREAD_END=${4:-120}     # Fin del rango (por defecto 120)
 THREAD_STEP=${5:-4}      # Paso del rango (por defecto 4)
 # ----------------------------------------------------------------------
 
-echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
+# Crear cabecera solo si el archivo no existe (para permitir ejecuciones incrementales)
+if [ ! -f "$RESULT_FILE" ]; then
+    echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
+    sync
+fi
 
 # Determinar qué secuencia de hilos usar
 if [ -z "$THREAD_START" ]; then
