@@ -72,3 +72,79 @@ Esto se puede atribuir a que el static_partitioner hace un reparto del tarbajo d
 En cuanto a la granularidad, también presentan uniformidad, pues todos presentan valores óptimos con tamaño de grano 3. Esto es especialmente importante, y más tratandose de un bloque en 2 dimensiones. Con un grano 3 se permite el tratado de unos 9 píxeles por bloque, siendo estos lo suficientemente pequeños como para que el hilo esté balanceado de manera adecuada pero lo suficientemente grande como para amortizar el _overhead_.Además permite una buena localidad espacial. 
 
 Mirando a las gráficas, aunque se observa un comportamiento similar y unos valores cercanos, podemos observar que el valor óptimo se presenta con 112 hilos, tamaño de grano 3 y un particionador simple, con un tiempo de ejecución de 1,79998 segundos y un consumo energético de 469,5 J, lo que se traduce en un speedup de mayor a 22 respecto a la versión secuencial solo con la paralelización de este fragmento.
+
+
+== Procesado de Imagen (image_par.cpp)
+
+Esta sección analiza el impacto de la paralelización en la etapa final de generación de imagen (conversión de espectro a RGB y corrección gamma), implementada en la clase `ImagePar`.
+
+=== Resultados Experimentales
+
+#figure(
+  grid(
+    columns: 2,
+    gutter: 1em,
+    row-gutter: 0.8em,
+    
+    // Fila 1
+    figure(
+      image("../img/graficas/Gráfica1-Escalabilidad_Validación_Amdahl.png", width: 100%),
+      caption: [Tiempo de ejecución vs hilos],
+    ) <fig:image-scalability>,
+    
+    figure(
+      image("../img/graficas/Gráfica2-La_Curva_de_Speedup.png", width: 100%),
+      caption: [Curva de Speedup],
+    ) <fig:image-speedup>,
+    
+    // Fila 2
+    figure(
+      image("../img/graficas/Gráfica3-Consumo_Energético.png", width: 100%),
+      caption: [Consumo energético total],
+    ) <fig:image-energy>,
+    
+    figure(
+      image("../img/graficas/Gráfica4-Barrido_de_Optimización.png", width: 100%),
+      caption: [Comparativa de partitioners],
+    ) <fig:image-optimization>,
+    
+    // Fila 3 (centrada)
+    grid.cell(
+      colspan: 2,
+      align: center,
+      figure(
+        image("../img/graficas/Gráfica5-Detalle_de_Granularidad_Fina.png", width: 50%),
+        caption: [Detalle de granularidad para `simple_partitioner`],
+      ) <fig:image-grain-simple>
+    ),
+  ),
+  caption: [Análisis completo del procesado de imagen: escalabilidad, speedup, energía, partitioners y granularidad],
+)
+
+=== Estrategia de Paralelización
+
+A diferencia del motor de renderizado, el procesado de imagen es una tarea de baja intensidad computacional pero con un alto volumen de accesos a memoria (_Memory Bound_). Para aislar y medir correctamente su rendimiento, se modificó la arquitectura del `pipeline` introduciendo un buffer intermedio (`RawImage`). Esto permite desacoplar el trazado de rayos (secuencial y costoso) del post-procesado (paralelo y ligero), evitando que el primero enmascare al segundo durante las pruebas unitarias.
+
+=== Análisis de Rendimiento y Ley de Amdahl
+
+Se realizó un estudio intensivo de escalabilidad ejecutando la aplicación completa con un rango de 1 a 120 hilos. Los resultados se analizan desde la perspectiva del tiempo total y la aceleración relativa.
+
+==== Tiempo de Ejecución y Speedup
+
+La @fig:image-scalability muestra la evolución del tiempo total de ejecución. Se observa un comportamiento asintótico inmediato: el tiempo desciende ligeramente de #strong[38.36 s (1 hilo)] a #strong[37.73 s (120 hilos)], estabilizándose rápidamente. Para cuantificar esta mejora, la @fig:image-speedup ilustra el factor de aceleración (_speedup_), cuyo valor máximo se satura en #strong[1.016x].
+
+Estos dos gráficos validan la #strong[Ley de Amdahl]. El perfilado determinó que el motor de renderizado (secuencial) consume el ~99.5% del tiempo total ($P_("seq") approx 0.995$). El speedup teórico máximo está acotado matemáticamente por $S_("max") = 1 / P_("seq") approx 1.005x$. Los datos experimentales coinciden con esta predicción, confirmando que optimizar la fase de imagen tiene un impacto marginal en el _Wall-Clock Time_ global.
+
+==== Eficiencia Energética
+
+El uso de recursos adicionales conlleva un coste eléctrico. La @fig:image-energy analiza el consumo energético total en función de los hilos utilizados. Al ser la reducción de tiempo casi nula, el aumento del número de hilos activos incrementa la potencia media sin reducir la duración de la tarea, lo que resulta en una penalización energética neta en configuraciones de alto paralelismo.
+
+==== Optimización de Configuración
+
+Se estudió el impacto de las estrategias de planificación (_partitioners_) y la granularidad para encontrar la configuración óptima que minimice el _overhead_ de gestión de hilos. La @fig:image-optimization compara las cuatro estrategias disponibles en TBB (_auto, simple, static, affinity_). La homogeneidad de las curvas demuestra la robustez del sistema. Las diferencias entre estrategias son inferiores a 0.2 segundos (ruido estadístico). No obstante, el análisis numérico identificó al #strong[`simple_partitioner`] como la estrategia marginalmente superior.
+
+La @fig:image-grain-simple detalla el comportamiento de esta estrategia ganadora bajo diferentes tamaños de grano. El mejor tiempo absoluto se obtuvo con #strong[`simple_partitioner` y grano 64 (37.67 s)]. Aunque la mejora respecto a otras configuraciones (ej. `static` 256) es de apenas 7 milisegundos, esta combinación minimiza el compromiso entre balanceo de carga y _overhead_ de creación de tareas.
+
+=== Conclusión de la Sección
+
+La paralelización es funcional y correcta. Sin embargo, su impacto global es nulo debido al dominio de la parte secuencial. Basándonos en los datos empíricos, se selecciona la configuración #strong[`simple` / `64`] para la versión final, aunque se destaca que el sistema es insensible a variaciones en los parámetros de paralelización.
