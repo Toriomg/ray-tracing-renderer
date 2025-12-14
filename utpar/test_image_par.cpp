@@ -29,11 +29,11 @@ TEST(test_image_par, calculo_indice) {
 TEST(test_image_par, fill_from_double_valid_data) {
   ImagePar image(1, 2);  // 2 píxeles
   double const gamma               = 2.0;
-  std::vector<double> const r_data = {0.25, 0.5};
-  std::vector<double> const g_data = {0.5, 0.75};
-  std::vector<double> const b_data = {1.0, 0.0};
+  std::vector<double> const r_data = {0.0, 1.0};
+  std::vector<double> const g_data = {1.0, 0.0};
+  std::vector<double> const b_data = {0.0, 1.0};
 
-  image.fill_from_double(r_data, g_data, b_data, gamma);
+  image.fill_from_double({&r_data, &g_data, &b_data}, gamma);
 
   // Verifica Píxel 0
   auto expected_r0 = static_cast<uint8_t>(255.999 * std::pow(0.25, 1.0 / gamma));
@@ -60,7 +60,7 @@ TEST(test_image_par, fill_from_double_default_gamma) {
   std::vector<double> const r = {0.5};
   std::vector<double> const g = {0.5};
   std::vector<double> const b = {0.5};
-  image.fill_from_double(r, g, b);  // SIN especificar gamma (usa Constants::Gamma)
+  image.fill_from_double({&r, &g, &b});  // NOLINT - SIN especificar gamma (usa Constants::Gamma)
 
   // Gamma por defecto es Constants::Gamma (asumimos 2.2)
   double const default_gamma = 2.2;
@@ -79,7 +79,7 @@ TEST(test_image_par, fill_from_double_extreme_values) {
   std::vector<double> const g_data = {1.0, 0.0, 0.5};
   std::vector<double> const b_data = {0.5, 0.5, 1.0};
 
-  image.fill_from_double(r_data, g_data, b_data, gamma);
+  image.fill_from_double({&r_data, &g_data, &b_data}, gamma);
 
   // Píxel 0: r=0.0 (negro), g=1.0 (blanco), b=0.5
   EXPECT_EQ(image.get_red(0), 0) << "Valor 0.0 debe resultar en 0";
@@ -110,7 +110,7 @@ TEST(test_image_par, fill_from_double_overwrites_previous_data) {
   std::vector<double> const g_data = {0.0, 0.0};
   std::vector<double> const b_data = {1.0, 1.0};  // Azul
 
-  image.fill_from_double(r_data, g_data, b_data);
+  image.fill_from_double({&r_data, &g_data, &b_data});  // NOLINT
 
   // Verificar que los píxeles fueron sobrescritos
   EXPECT_EQ(image.get_red(0), 0) << "Píxel 0 R debe haber sido sobrescrito a 0";
@@ -132,7 +132,7 @@ TEST(test_image_par, fill_from_double_large_image) {
   std::vector<double> const b_data(size, 0.5);
 
   double const gamma = 2.0;
-  image.fill_from_double(r_data, g_data, b_data, gamma);
+  image.fill_from_double({&r_data, &g_data, &b_data}, gamma);
 
   auto expected = static_cast<uint8_t>(255.999 * std::pow(0.5, 1.0 / gamma));
 

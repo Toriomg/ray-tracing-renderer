@@ -7,18 +7,12 @@
 
 class PPMWriter {
 public:
-  struct Pixels {
-    std::vector<uint8_t> r_channel;
-    std::vector<uint8_t> g_channel;
-    std::vector<uint8_t> b_channel;
-
-    Pixels(std::vector<uint8_t> const & r, std::vector<uint8_t> const & g,
-           std::vector<uint8_t> const & b)
-        : r_channel(r), g_channel(g), b_channel(b) { }
-  };
-
-  static bool write_ppm(std::string const & filename, Pixels const & pixels, size_t width,
-                        size_t height);
+  // Versión simple para rama analysis/rendering (sin paralelización del writer)
+  static bool write_ppm(std::string const & filename,
+                        std::vector<uint8_t> const & r_channel,
+                        std::vector<uint8_t> const & g_channel,
+                        std::vector<uint8_t> const & b_channel,
+                        size_t width, size_t height);
 };
 
 #endif

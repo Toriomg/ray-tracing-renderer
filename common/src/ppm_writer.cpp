@@ -2,53 +2,44 @@
 #include <cstddef>
 #include <fstream>
 #include <iostream>
-#include <oneapi/tbb/partitioner.h>
 #include <string>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
 #include <vector>
 
-// Escribe una imágen en formato PPM P3 recibiendo los 3 arrays de colores y las dimensiones de la
-// imagen
-bool PPMWriter::write_ppm(std::string const & filename, Pixels const & pixels, size_t width,
-                          size_t height) {
-  // Checkeamos que el número de pixeles coincide con el tamaño de los arrays que se han definido
+// Versión SIMPLE para rama analysis/rendering
+// En esta rama SOLO el rendering es paralelo, el writer es secuencial
+
+// NOLINTNEXTLINE(readability-function-size)
+bool PPMWriter::write_ppm(std::string const & filename, std::vector<uint8_t> const & r_channel,
+                          std::vector<uint8_t> const & g_channel,
+                          std::vector<uint8_t> const & b_channel, size_t width, size_t height) {
   size_t const total_pixels = width * height;
-  if (pixels.r_channel.size() != total_pixels or
-      pixels.g_channel.size() != total_pixels or
-      pixels.b_channel.size() != total_pixels)
-  {  // evitamos lanzar excepciones, solo imprimimos el error
+
+  // Validar dimensiones
+  if (r_channel.size() != total_pixels or  // NOLINT(readability-operators-representation)
+      g_channel.size() != total_pixels or  // NOLINT(readability-operators-representation)
+      b_channel.size() != total_pixels)
+  {
     std::cerr << "Error: El tamaño de los canales no coincide con las dimensiones de la imagen.\n";
     return false;
   }
+
+  // Abrir archivo
   std::ofstream file(filename);
-  if (!file.is_open()) {  // abrimos archivo a escribir
+  if (!file.is_open()) {
     std::cerr << "Error: No se pudo abrir el archivo para escritura: " << filename << "\n";
     return false;
   }
 
-  file << "P3\n";  // Cabecera para PPM P6 (binario)
+  // Escribir cabecera PPM P3
+  file << "P3\n";
   file << width << " " << height << "\n";
   file << "255\n";
 
-  tbb::static_partitioner sp;
-  std::vector<std::string> output_lines(total_pixels);
-  tbb::parallel_for(
-      tbb::blocked_range<size_t>(0, total_pixels),
-      [&](tbb::blocked_range<size_t> const & range) {
-        for (size_t i = range.begin(); i != range.end(); ++i) {
-          output_lines[i] = std::to_string(static_cast<int>(pixels.r_channel[i])) +
-                            " " +
-                            std::to_string(static_cast<int>(pixels.g_channel[i])) +
-                            " " +
-                            std::to_string(static_cast<int>(pixels.b_channel[i])) +
-                            "\n";
-        }
-      },
-      sp);                                  // procesamos en paralelo
-  for (auto const & line : output_lines) {  // escribimos en secuencial
-    file << line;
+  // Escribir píxeles SECUENCIALMENTE (no paralelizado en esta rama)
+  for (size_t i = 0; i < total_pixels; ++i) {
+    file << static_cast<int>(r_channel[i]) << " " << static_cast<int>(g_channel[i]) << " "
+         << static_cast<int>(b_channel[i]) << "\n";
   }
-  file.close();
-  return true;
+
+  return file.good();
 }
