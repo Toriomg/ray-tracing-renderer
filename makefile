@@ -6,12 +6,18 @@ PASSFILE=.password
 SSH_CMD=sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST)
 SCP_PREFIX=sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no
 
+# Para los scripts sweep
+SSH_CMD=sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST)
+SCP_PREFIX=sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no
+
 # 1. Subir código
 deploy:
 	@bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
 
 # 2. Compilar
 remote-build: deploy
+	@echo ">>> Asegurando permisos de ejecución en scripts/remote/..."
+	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && chmod +x scripts/remote/*.sh"
 	@echo ">>> Enviando compilación a la cola..."
 	@sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && sbatch --wait scripts/remote/build.sh"
 
@@ -32,6 +38,9 @@ all-jd: run-jd tail-jd
 # --- DESCARGA DE RESULTADOS ---
 
 fetch-ppm:
+	@echo ">>> Creando carpeta logs y descargando imágenes..."
+	@mkdir -p logs/img
+	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img/
 	@echo ">>> Creando carpeta logs y descargando imágenes..."
 	@mkdir -p logs/img
 	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img/

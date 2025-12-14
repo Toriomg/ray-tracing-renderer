@@ -5,13 +5,13 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <oneapi/tbb/partitioner.h>
 #include <string>
-#include <vector>
-
-// Rama analysis/image: fill_from_double usa TBB PARALLEL
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
-#include <tbb/partitioner.h>
+#include <vector>
+
+// TBB headers removidos - Rama analysis/writer usa procesado secuencial
 
 // Constructor
 ImagePar::ImagePar(size_t width, size_t height)
@@ -50,63 +50,31 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
-// Rama analysis/image: fill_from_double es PARALELO (TBB)
-// Configuración óptima: simple_partitioner con grain=64
-// Seleccionada tras análisis de rendimiento exhaustivo que mostró que minimiza
-// el overhead de gestión de hilos. Aunque las diferencias con otras configuraciones
-// fueron < 7ms (ruido estadístico), esta combinación ofrece el mejor balance.
-void ImagePar::fill_from_double(RGBInputData const & input, double gamma,
-                                ParallelSettings const * par_settings) {
-  size_t const total_pixels = width_ * height_;
+// NOLINTNEXTLINE
+void ImagePar::fill_from_double(RGBInputData const & input, double gamma) {
+  // Rama analysis/rendering: Post-procesado de imagen SECUENCIAL (control)
+  // Solo el rendering es paralelo en esta rama
 
-  // Configuración fija óptima (puede ser sobreescrita por par_settings para benchmarks)
-  constexpr size_t OPTIMAL_GRAIN = 64;
-  size_t grain_size              = OPTIMAL_GRAIN;
+  size_t const total_pixels          = width_ * height_;
+  std::vector<double> const & r_data = *(input.r);
+  std::vector<double> const & g_data = *(input.g);
+  std::vector<double> const & b_data = *(input.b);
 
-  // Si se proveen settings, usarlos (para pruebas/benchmarks)
-  if (par_settings != nullptr && par_settings->grainSize > 0) {
-    grain_size = par_settings->grainSize;
-  }
-
-  // Functor para procesamiento paralelo
-  auto process_pixels = [&](tbb::blocked_range<size_t> const & range) {
-    for (size_t i = range.begin(); i != range.end(); ++i) {
-      r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.r)[i], gamma));
-      g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.g)[i], gamma));
-      b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.b)[i], gamma));
-    }
-  };
-
-  // Configurar rango con grain size óptimo
-  tbb::blocked_range<size_t> range(0, total_pixels, grain_size);
-
-  // Usar simple_partitioner (óptimo determinado empíricamente)
-  // Si se proveen settings, permitir override para benchmarks
-  if (par_settings != nullptr) {
-    switch (par_settings->type) {
-      case PartitionerType::Simple:
-        tbb::parallel_for(range, process_pixels, tbb::simple_partitioner());
-        break;
-      case PartitionerType::Static:
-        tbb::parallel_for(range, process_pixels, tbb::static_partitioner());
-        break;
-      case PartitionerType::Affinity:
-      {
-        static tbb::affinity_partitioner affinity_part;
-        tbb::parallel_for(range, process_pixels, affinity_part);
-        break;
-      }
-      default:  // Auto
-        tbb::parallel_for(range, process_pixels, tbb::auto_partitioner());
-        break;
-    }
-  } else {
-    // Configuración óptima por defecto: simple_partitioner
-    tbb::parallel_for(range, process_pixels, tbb::simple_partitioner());
-  }
+  // BUCLE SECUENCIAL: Procesamos cada píxel uno por uno
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, total_pixels, 64),  // Grano de 64
+      [&](tbb::blocked_range<size_t> const & range) {
+        for (size_t i = range.begin(); i != range.end(); ++i) {
+          r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
+          g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
+          b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
+        }
+      },
+      tbb::simple_partitioner()  // Usa simple_partitioner
+  );
 }
 
-// Escritura a archivo PPM (SECUENCIAL en esta rama)
+// Escritura a archivo PPM usando la clase PPMWriter (SECUENCIAL en esta rama)
 bool ImagePar::write_to_ppm(std::string const & filename) const {
   return PPMWriter::write_ppm(filename, r_channel_, g_channel_, b_channel_, width_, height_);
 }

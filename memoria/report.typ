@@ -36,7 +36,7 @@
   language: "es"
 )
 
-
+#include "content/graphs.typ"
 #include "content/modificaciones.typ"
 #include "content/paralelizacion.typ"
 #include "content/eval.typ"
@@ -44,3 +44,4 @@
 #include "content/concl.typ"
 #include "content/ia.typ"
 #include "content/bibliografia.typ"
+#include "content/anexos.typ"

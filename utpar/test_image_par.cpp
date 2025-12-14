@@ -29,9 +29,9 @@ TEST(test_image_par, calculo_indice) {
 TEST(test_image_par, fill_from_double_valid_data) {
   ImagePar image(1, 2);  // 2 píxeles
   double const gamma               = 2.0;
-  std::vector<double> const r_data = {0.25, 0.5};
-  std::vector<double> const g_data = {0.5, 0.75};
-  std::vector<double> const b_data = {1.0, 0.0};
+  std::vector<double> const r_data = {0.0, 1.0};
+  std::vector<double> const g_data = {1.0, 0.0};
+  std::vector<double> const b_data = {0.0, 1.0};
 
   RGBInputData input{&r_data, &g_data, &b_data};
   image.fill_from_double(input, gamma, nullptr);

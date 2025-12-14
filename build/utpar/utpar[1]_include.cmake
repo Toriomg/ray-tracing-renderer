@@ -1,0 +1,5 @@
+if(EXISTS "/workspace/build/utpar/utpar[1]_tests.cmake")
+  include("/workspace/build/utpar/utpar[1]_tests.cmake")
+else()
+  add_test(utpar_NOT_BUILT utpar_NOT_BUILT)
+endif()
