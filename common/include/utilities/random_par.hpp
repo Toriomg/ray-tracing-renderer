@@ -54,7 +54,6 @@ private:
     std::mt19937_64 ray_seed_gen(static_cast<std::uint64_t>(m_base_seed_ray));
     std::mt19937_64 material_seed_gen(static_cast<std::uint64_t>(m_base_seed_material));
 
-    // Usar std::ranges::generate EXACTAMENTE como en Listado 6 del enunciado
     // Si tienes C++20, usa esto:
     std::ranges::generate(m_ray_seeds, ray_seed_gen);
     std::ranges::generate(m_material_seeds, material_seed_gen);
