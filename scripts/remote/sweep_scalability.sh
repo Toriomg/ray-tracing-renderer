@@ -14,15 +14,21 @@ OUTPUT_IMG="out_scale.ppm"
 RESULT_FILE="logs/results_scalability.csv"
 
 # --- CONFIGURACIÓN ÓPTIMA FIJA (Actualiza esto tras el primer test) ---
-BEST_PART=${1:-static}   # Usa el primer argumento, o 'static' por defecto
-BEST_GRAIN=${2:-64}      # Usa el segundo argumento, o '64' por defecto
+# NOTA: En rama analysis/rendering, partitioner y grain están hardcodeados en rendering_engine.hpp
+# Este script solo varía el número de hilos
+BEST_PART=${1:-simple}   # Argumento ignorado en esta rama (hardcoded en código)
+BEST_GRAIN=${2:-3}       # Argumento ignorado en esta rama (hardcoded en código)
 # --- RANGO DE HILOS PERSONALIZABLE ---
 THREAD_START=${3:-}      # Inicio del rango (vacío = modo híbrido)
 THREAD_END=${4:-120}     # Fin del rango (por defecto 120)
 THREAD_STEP=${5:-4}      # Paso del rango (por defecto 4)
 # ----------------------------------------------------------------------
 
-echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
+# Crear cabecera solo si el archivo no existe (para permitir ejecuciones incrementales)
+if [ ! -f "$RESULT_FILE" ]; then
+    echo "Threads,Time(s),Energy(J)" > $RESULT_FILE
+    sync
+fi
 
 # Determinar qué secuencia de hilos usar
 if [ -z "$THREAD_START" ]; then
@@ -41,27 +47,36 @@ for THREADS in $THREAD_SEQUENCE; do
     
     echo "Probando con $THREADS hilos..."
     
-    # En esta rama (rendering): --render-part y --render-grain
-    perf stat -r 5 -e power/energy-pkg/ -o temp.log \
-        $EXE $SCENE $CONFIG $OUTPUT_IMG \
-        --render-part $BEST_PART --render-grain $BEST_GRAIN --threads $THREADS 2>&1
+    # Ejecutar perf y capturar exit code sin abortar el script
+    set +e
+    # En rama analysis/rendering: el binario NO acepta flags, solo 3 argumentos posicionales
+    # Los hilos se controlan mediante variable de entorno TBB_NUM_THREADS
+    TBB_NUM_THREADS=$THREADS perf stat -r 5 -e power/energy-pkg/ -o temp.log \
+        $EXE $SCENE $CONFIG $OUTPUT_IMG 2>&1
+    PERF_EXIT=$?
+    set -e
     
-    # Verificar que perf se ejecutó correctamente
-    if [ $? -ne 0 ]; then
-        echo "ERROR: perf stat falló para threads=$THREADS" >&2
+    # Si perf falló, registrar error y continuar
+    if [ $PERF_EXIT -ne 0 ]; then
+        echo "ERROR: perf stat falló para threads=$THREADS (exit code: $PERF_EXIT)" >&2
+        echo "$THREADS,ERROR,ERROR" >> $RESULT_FILE
+        sync
         continue
     fi
     
-    TIME=$(grep "seconds time elapsed" temp.log | awk '{print $1}' | tr ',' '.')
-    ENERGY=$(grep "Joules" temp.log | awk '{print $1}' | tr ',' '.')
+    # Parsear con protección (|| echo "N/A" evita error fatal de grep)
+    TIME=$(grep "seconds time elapsed" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
+    ENERGY=$(grep "Joules" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
     
     # Validar que se extrajeron ambos valores
-    if [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
+    if [ "$TIME" = "N/A" ] || [ "$ENERGY" = "N/A" ] || [ -z "$TIME" ] || [ -z "$ENERGY" ]; then
         echo "ERROR: No se pudo extraer TIME o ENERGY para threads=$THREADS" >&2
+        echo "$THREADS,PARSE_ERROR,PARSE_ERROR" >> $RESULT_FILE
+        sync
         continue
     fi
     
-    # Escribir resultado y forzar sync a disco
+    # Escribir resultado válido y forzar sync a disco
     echo "$THREADS,$TIME,$ENERGY" >> $RESULT_FILE
     sync
 done

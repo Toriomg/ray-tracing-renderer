@@ -6,6 +6,7 @@
 #include "../../common/include/renderer.hpp"
 #include "../../common/include/utilities/random.hpp"
 #include "../../common/include/utilities/random_par.hpp"
+#include <cstdlib>  // Para std::getenv y std::atoi
 #include <tbb/blocked_range2d.h>
 #include <tbb/global_control.h>
 #include <tbb/parallel_for.h>
@@ -39,7 +40,18 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {  // 
 
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
-  tbb::global_control global_limit(tbb::global_control::max_allowed_parallelism, 112);
+  // Leer número de hilos desde variable de entorno o usar 112 por defecto
+  int num_threads          = 112;
+  char const * threads_env = std::getenv("TBB_NUM_THREADS");
+  if (threads_env != nullptr) {
+    int parsed = std::atoi(threads_env);
+    if (parsed > 0) {
+      num_threads = parsed;
+    }
+  }
+
+  tbb::global_control global_limit(tbb::global_control::max_allowed_parallelism,
+                                   static_cast<size_t>(num_threads));
 
   tbb::parallel_for(
       tbb::blocked_range2d<size_t>(0, imageHeight, 3, 0, imageWidth, 3),
