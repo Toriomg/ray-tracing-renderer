@@ -14,10 +14,8 @@ OUTPUT_IMG="out_scale.ppm"
 RESULT_FILE="logs/results_scalability.csv"
 
 # --- CONFIGURACIÓN ÓPTIMA FIJA (Actualiza esto tras el primer test) ---
-# NOTA: En rama analysis/rendering, partitioner y grain están hardcodeados en rendering_engine.hpp
-# Este script solo varía el número de hilos
-BEST_PART=${1:-simple}   # Argumento ignorado en esta rama (hardcoded en código)
-BEST_GRAIN=${2:-3}       # Argumento ignorado en esta rama (hardcoded en código)
+BEST_PART=${1:-static}   # Usa el primer argumento, o 'static' por defecto
+BEST_GRAIN=${2:-64}      # Usa el segundo argumento, o '64' por defecto
 # --- RANGO DE HILOS PERSONALIZABLE ---
 THREAD_START=${3:-}      # Inicio del rango (vacío = modo híbrido)
 THREAD_END=${4:-120}     # Fin del rango (por defecto 120)
@@ -47,12 +45,11 @@ for THREADS in $THREAD_SEQUENCE; do
     
     echo "Probando con $THREADS hilos..."
     
-    # Ejecutar perf y capturar exit code sin abortar el script
+    # Ejecutar perf y capturar el exit code sin abortar el script
     set +e
-    # En rama analysis/rendering: el binario NO acepta flags, solo 3 argumentos posicionales
-    # Los hilos se controlan mediante variable de entorno TBB_NUM_THREADS
-    TBB_NUM_THREADS=$THREADS perf stat -r 5 -e power/energy-pkg/ -o temp.log \
-        $EXE $SCENE $CONFIG $OUTPUT_IMG 2>&1
+    perf stat -r 5 -e power/energy-pkg/ -o temp.log \
+        $EXE $SCENE $CONFIG $OUTPUT_IMG \
+        --image-part $BEST_PART --image-grain $BEST_GRAIN --threads $THREADS 2>&1
     PERF_EXIT=$?
     set -e
     
@@ -64,7 +61,7 @@ for THREADS in $THREAD_SEQUENCE; do
         continue
     fi
     
-    # Parsear con protección (|| echo "N/A" evita error fatal de grep)
+    # Parsear con protección (|| true evita que grep devuelva error fatal)
     TIME=$(grep "seconds time elapsed" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
     ENERGY=$(grep "Joules" temp.log 2>/dev/null | awk '{print $1}' | tr ',' '.' || echo "N/A")
     

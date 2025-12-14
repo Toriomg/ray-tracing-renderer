@@ -15,27 +15,27 @@ OUTPUT="out_custom.ppm"
 
 # ============================================================
 # CONFIGURA AQUÍ TU TEST PERSONALIZADO
+# Rama analysis/image: Solo los parámetros de IMAGE importan
 # ============================================================
-PARTITIONER="static"      # Opciones: auto, simple, static, affinity
-GRAIN_SIZE="64"           # Valores típicos: 0, 1, 32, 64, 128, 256, 512, 1024
-THREADS="56"              # Valores típicos: 1, 2, 4, 8, 16, 28, 56, 112
+IMAGE_PARTITIONER="static"   # Opciones: auto, simple, static, affinity
+IMAGE_GRAIN="1024"           # Valores típicos para image: 0, 1024, 4096, 8192
+THREADS="56"                 # Valores típicos: 1, 2, 4, 8, 16, 28, 56, 112
 # ============================================================
 
 echo ">>> Iniciando Prueba Personalizada en $(hostname) <<<"
+echo ">>> Rama analysis/image: Solo procesado de imagen es paralelo <<<"
 
-ARGS="--render-part $PARTITIONER --render-grain $GRAIN_SIZE --threads $THREADS"
+ARGS="--image-part $IMAGE_PARTITIONER --image-grain $IMAGE_GRAIN --threads $THREADS"
 echo "Ejecutando con: $ARGS"
 perf stat -e power/energy-pkg/ $EXE $SCENE $CONFIG $OUTPUT $ARGS
 
 echo ""
-echo ">>> Verificando salida <<<
-
-"
+echo ">>> Verificando salida <<<"
 ls -lh $OUTPUT
 md5sum $OUTPUT
 
 echo ""
 echo ">>> Comparando con referencia scene5 <<<"
-diff -q $OUTPUT res/references_par/s5-par.ppm && echo "✓ Imagen CORRECTA" || echo "✗ Imagen DIFERENTE (esperado: render secuencial vs paralelo)"
+diff -q $OUTPUT res/references_par/s5-par.ppm && echo "✓ Imagen CORRECTA" || echo "✗ Imagen DIFERENTE (puede ser normal por diferencias de redondeo)"
 
 echo ">>> Prueba Finalizada <<<"

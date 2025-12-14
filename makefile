@@ -6,6 +6,10 @@ PASSFILE=.password
 SSH_CMD=sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST)
 SCP_PREFIX=sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no
 
+# Para los scripts sweep
+SSH_CMD=sshpass -f $(PASSFILE) ssh -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST)
+SCP_PREFIX=sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no
+
 # 1. Subir código
 deploy:
 	@bash scripts/deploy/sync.sh $(REMOTE_USER) $(REMOTE_HOST) $(REMOTE_DIR)
@@ -34,6 +38,9 @@ all-jd: run-jd tail-jd
 # --- DESCARGA DE RESULTADOS ---
 
 fetch-ppm:
+	@echo ">>> Creando carpeta logs y descargando imágenes..."
+	@mkdir -p logs/img
+	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img/
 	@echo ">>> Creando carpeta logs y descargando imágenes..."
 	@mkdir -p logs/img
 	-sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/*.ppm ./logs/img/
@@ -80,10 +87,12 @@ sweep-scale:
 # Nuevos scripts (Flujo metodológico: hilos primero → granularidad después)
 sweep-threads-first:
 	@echo ">>> PASO 1: Explorando número óptimo de hilos (28, 56, 112, 120)..."
+	@echo ">>> NOTA (analysis/image): Mejoras mínimas esperadas (imagen <1% del tiempo)"
 	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_threads_first.sh"
 
 sweep-grain:
 	@echo ">>> PASO 2: Explorando granularidad óptima con $(THREADS) hilos fijos..."
+	@echo ">>> NOTA (analysis/image): Se prueban granos grandes (1024-8192) típicos de memory-bound"
 	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_grain.sh $(THREADS)"
 
 fetch-results:

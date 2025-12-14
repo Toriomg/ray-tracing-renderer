@@ -1,0 +1,14 @@
+[ 5 ] Iniciando ejecución CRÍTICA Escenario 5 en stan
+>>> Ejecutando Escenario 5 (Objetivo < 175s)...
+Building BVH: 196 objects.
+BVH built: 127 nodes.
+Rendering with ImagePar...
+
+ Performance counter stats for 'system wide':
+
+            895,20 Joules power/energy-pkg/                                                  
+
+       2,792016470 seconds time elapsed
+
+--------------------------------------------------
+--- Prueba S5 Finalizada ---

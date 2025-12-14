@@ -1,4 +1,4 @@
-#include "ppm_writer.hpp"
+#include "../include/ppm_writer.hpp"
 #include <cstddef>
 #include <fstream>
 #include <iostream>
@@ -15,8 +15,8 @@ bool PPMWriter::write_ppm(std::string const & filename, std::vector<uint8_t> con
   size_t const total_pixels = width * height;
 
   // Validar dimensiones
-  if (r_channel.size() != total_pixels or  // NOLINT(readability-operators-representation)
-      g_channel.size() != total_pixels or  // NOLINT(readability-operators-representation)
+  if (r_channel.size() != total_pixels or
+      g_channel.size() != total_pixels or
       b_channel.size() != total_pixels)
   {
     std::cerr << "Error: El tamaño de los canales no coincide con las dimensiones de la imagen.\n";
@@ -35,7 +35,7 @@ bool PPMWriter::write_ppm(std::string const & filename, std::vector<uint8_t> con
   file << width << " " << height << "\n";
   file << "255\n";
 
-  // Escribir píxeles SECUENCIALMENTE (no paralelizado en esta rama)
+  // Escribir píxeles seuencialmente
   for (size_t i = 0; i < total_pixels; ++i) {
     file << static_cast<int>(r_channel[i]) << " " << static_cast<int>(g_channel[i]) << " "
          << static_cast<int>(b_channel[i]) << "\n";

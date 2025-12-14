@@ -1,5 +1,5 @@
 out/**
-logs/**
+#logs/**
 # PPM files
 *.ppm
 # Prerequisites
@@ -50,3 +50,4 @@ logs/**
 env.sh
 env.*
 .password
+build/
