@@ -43,7 +43,9 @@ public:
   void fill_from_double(RGBInputData const & input, double gamma = Constants::Gamma);
 
   [[nodiscard]] size_t width() const { return width_; }
+
   [[nodiscard]] size_t height() const { return height_; }
+
   [[nodiscard]] size_t total_pixels() const { return width_ * height_; }
 
   // Rama analysis/rendering: write_to_ppm es SECUENCIAL (sin ParallelSettings)

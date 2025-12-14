@@ -34,12 +34,12 @@ TEST_F(PPMWriterTest, ValidImageWrite) {
   size_t const width         = 2;
   size_t const height        = 1;
 
-  // Crear canales RGB
+  // Crear canales RGB como std::vector<uint8_t>
   std::vector<uint8_t> const r_channel = {255, 0};
   std::vector<uint8_t> const g_channel = {0, 128};
   std::vector<uint8_t> const b_channel = {0, 255};
 
-  // Llamar a write_ppm con firma simple (rama analysis/rendering)
+  // Llamar a write_ppm con la nueva API (sin estructura Pixels)
   bool const result =
       PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
 
@@ -94,11 +94,12 @@ TEST_F(PPMWriterTest, InvalidPixelDataSize) {
   size_t const height        = 5;  // total_pixels = 25
 
   // Crear canales con datos INCORRECTOS (solo 3 píxeles en lugar de 25)
+  // Los canales son std::vector<uint8_t> de tamaño 3, no 25
   std::vector<uint8_t> const r_channel = {1, 2, 3};
   std::vector<uint8_t> const g_channel = {1, 2, 3};
   std::vector<uint8_t> const b_channel = {1, 2, 3};
 
-  // Llamar a write_ppm
+  // Llamar a write_ppm con la nueva API
   bool const result =
       PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
 
@@ -118,11 +119,12 @@ TEST_F(PPMWriterTest, InvalidFilePath) {
   size_t const height        = 1;
 
   // Crear canales con 1 píxel válido
+  // Crear canales con 1 píxel válido
   std::vector<uint8_t> const r_channel = {255};
   std::vector<uint8_t> const g_channel = {255};
   std::vector<uint8_t> const b_channel = {255};
 
-  // Llamar a write_ppm
+  // Llamar a write_ppm con la nueva API
   bool const result =
       PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
 
