@@ -1,16 +1,16 @@
 = Organización de trabajo
 Dado que en la entrega previa del proyecto la organización del trabajo fue verdaderamente eficaz y nos permitió entregar el trabajo a tiempo y con unos 
-buenos resultados, hemos decididio utilizar de nuevo el método de organización por sprints para la realización de esta segunda parte, empleando 
-herramientes de desarroyo Agile como Jira, que nos permiten saber en todo momento las tareas pendientes, pudiendo asi, tener una visión completa 
+buenos resultados, hemos decidido utilizar de nuevo el método de organización por sprints para la realización de esta segunda parte, empleando 
+herramientas de desarrollo Agile como Jira, que nos permiten saber en todo momento las tareas pendientes, pudiendo asi, tener una visión completa 
 del estado y evolución del trabajo. 
 
 
-En este caso, dado que tanto la cantidad de código a producir como el tiempo de trabajo ha sido significativamenete menor, los sprints son de 
+En este caso, dado que tanto la cantidad de código a producir como el tiempo de trabajo ha sido significativamente menor, los sprints son de 
 menor duración y cantidad de tareas, no obstante, se han mantenido cuatro fases de trabajo como en la entrega previa y se han incluido a la 
-planificación las tareas esenciales a realiar en cada sprint desde el primer momento. 
+planificación las tareas esenciales a realizar en cada sprint desde el primer momento. 
 
 En la siguiente imagen, podemos comprobar cual ha sido la planificación inicial de sprints en un calendario, representando cada color una etapa diferente
-de trabajo en el calendaro desde la publicación del proyecto hasta la entrega del mismo. 
+de trabajo en el calendario desde la publicación del proyecto hasta la entrega del mismo. 
 #figure(
   image("../img/sprints/calendario-sprints.png", width: 100%),
   caption: [Calendario de sprints para la entrega]
@@ -23,7 +23,7 @@ La subdivisión en secciones de trabajo y sus correspondientes sprints se incluy
   tight: false,
 )[
   *Organización y diseño:* 
-  En esta etapa, se han ralizado la creación y modificación del repositiorio de modo que se pueda paralelizar adecuadamente. 
+  En esta etapa, se han realizado la creación y modificación del repositorio de modo que se pueda paralelizar adecuadamente. 
   Esto incluye la modificación del randomizador y modificaciones como la inclusión del modelo BVH. 
   
   Esta etapa es realmente importante dado que nos permite establecer una base sólida para el proyecto. 
@@ -43,7 +43,7 @@ La subdivisión en secciones de trabajo y sus correspondientes sprints se incluy
   más teórica posibilidades de paralelización e incluso comprobando algunas de ellas. 
   
   Esto nos permite establecer los cuellos de botella 
-  de nuestro código y así poder enforcar nuestras energias en fragmentos concretos del código que nos van a ofrecer una mayor mejora en el código. 
+  de nuestro código y así poder enforcar nuestras energías en fragmentos concretos del código que nos van a ofrecer una mayor mejora en el código. 
   #figure(
   image("../img/sprints/sprint2.png", width: 100%),
   caption: [Sprint 2 de tareas: Estudio de paralelización]
@@ -65,7 +65,7 @@ La subdivisión en secciones de trabajo y sus correspondientes sprints se incluy
   tight: false,
 )[
   *Memoría y últimos detalles:* 
-  Para finalizar, una vez tenemos las mejores combinaciones de paralelización de cada fragmento paralelizado, juntamos dichas combinaciones establecemos unos tiempos de ejecución finales y pasamos toda la documentación correspondiente a la memoria para su enntrega.
+  Para finalizar, una vez tenemos las mejores combinaciones de paralelización de cada fragmento paralelizado, juntamos dichas combinaciones establecemos unos tiempos de ejecución finales y pasamos toda la documentación correspondiente a la memoria para su entrega.
   #figure(
   image("../img/sprints/sprint4.png", width: 100%),
   caption: [Sprint 4 de tareas: Memoria y últimos detalles.]
