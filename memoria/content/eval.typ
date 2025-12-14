@@ -1,9 +1,7 @@
 // MÁXIMO 5 PÁGINAS -> SI ES NECESARIO EMPLEAR ANEXSOS PARA OTRAS GRÁFICAS Y CUESTIONES IMPORTANTES
 = Evaluación rendimiento y energía <eval>
-En esta sección realizaremos un análisis del rendimiento y de la energía en base a diferentes factores, entre ellos: el número de hilos, granularidad y tipo de _partitioners_, permitiendo la comprensión de las decisiones de paralelización tomadas.
-//Los datos resultantes, además de encontrarse en el repositorio dentro del directorio: _./memoria/graphs_  !!! HAY QUE VER REALMENTE DONDE SE METEN Y COMO PORQUE LO CSV DAN PROBLEMAS LOL
-//TODO: poned la carpeta
-//, podemos encontrarlos en la hoja de cálculo que podemos encontrar en el siguiente link:
+En esta sección realizaremos un análisis del rendimiento y de la energía en base a diferentes factores, entre ellos: el número de hilos, granularidad y tipo de _partitioners_, permitiendo la comprensión de las decisiones de paralelización tomadas. 
+
 == Proceso de paralelización 
 Para evaluar nuestro código y conseguir el mayor rendimiento y eficiencia energética, hemos realizado una evaluación exhaustiva de las mejores combinaciones de las metricas indicadas en la introducción de la sección para cada fragmento paralelizado (que se ha detallado en la sección anterior).
 
@@ -76,25 +74,27 @@ Mirando a las gráficas, aunque se observa un comportamiento similar y unos valo
 
 == Procesado de Imagen (image_par.cpp)
 
-Esta sección analiza el impacto de la paralelización en la etapa final de generación de imagen (conversión de espectro a RGB y corrección gamma), implementada en la clase `ImagePar`.
+Esta sección analiza el impacto de la paralelización en la etapa final de generación de imagen. 
 
-=== Estrategia de Paralelización
+Para la evaluación de los efectos de la paralelización de la generación de la imagen, hemos seguido los mismos pasos seguidos en el caso anterior y comentados al comienzo de la sección. 
 
-A diferencia del motor de renderizado, el procesado de imagen es una tarea _Memory Bound_ con baja intensidad computacional pero alto volumen de accesos a memoria. Se modificó la arquitectura del `pipeline` introduciendo un buffer intermedio (`RawImage`) para desacoplar el trazado de rayos (secuencial y costoso) del post-procesado (paralelo y ligero), evitando que el primero enmascare al segundo en las mediciones.
+No osbtantem, cabe destacar que, a diferencia del motor de renderizado, el procesado de imagen es una tarea con baja intensidad computacional pero alto volumen de accesos a memoria. 
 
-=== Análisis de Rendimiento y Ley de Amdahl
+Tal y como se mencionó en la metodología a seguir, Se ejecutó un barrido de 1 a 120 hilos. El tiempo desciende de 38.36 s (1 hilo) a 37.73 s (120 hilos). El speedup se satura en 1.016x, validando la _Ley de Amdahl_ que establece que dado $P_("seq") approx 0.995$ (el renderizado secuencial consume ~99.5%), el speedup teórico máximo es de $S_("max") = 1 / P_("seq") approx 1.005x$. 
+
+De este modo, concluimos que el mayor speedup se presenta cuando se utilizan 100 hilos para la paralelización, de este modo
+
+En las gráficas que se muestran a contonuación se pueden observar los datos indicados:
 
 #figure(
   grid(
-    columns: (1fr, 1fr),
+    columns: 2,
     gutter: 1em,
     image("../img/graficas/Gráfica1-Escalabilidad_Validación_Amdahl.png", width: 100%),
     image("../img/graficas/Gráfica2-La_Curva_de_Speedup.png", width: 100%),
   ),
   caption: [Izquierda: Tiempo de ejecución total vs hilos. Derecha: Curva de Speedup],
 ) <fig:image-scalability>
-
-Se ejecutó un barrido de 1 a 120 hilos. El tiempo desciende de #strong[38.36 s (1 hilo)] a #strong[37.73 s (120 hilos)]. El speedup se satura en #strong[1.016x], validando la #strong[Ley de Amdahl]: con $P_("seq") approx 0.995$ (renderizado secuencial consume ~99.5%), el speedup teórico máximo es $S_("max") = 1 / P_("seq") approx 1.005x$. Los datos experimentales coinciden con esta predicción.
 
 === Eficiencia Energética y Optimización
 
