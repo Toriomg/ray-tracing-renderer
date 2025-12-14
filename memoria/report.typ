@@ -44,3 +44,4 @@
 #include "content/concl.typ"
 #include "content/ia.typ"
 #include "content/bibliografia.typ"
+#include "content/anexos.typ"
