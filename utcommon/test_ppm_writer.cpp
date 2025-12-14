@@ -119,6 +119,7 @@ TEST_F(PPMWriterTest, InvalidFilePath) {
   size_t const height        = 1;
 
   // Crear canales con 1 píxel válido
+  // Crear canales con 1 píxel válido
   std::vector<uint8_t> const r_channel = {255};
   std::vector<uint8_t> const g_channel = {255};
   std::vector<uint8_t> const b_channel = {255};

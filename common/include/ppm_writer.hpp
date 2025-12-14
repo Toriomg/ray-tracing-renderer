@@ -7,12 +7,10 @@
 
 class PPMWriter {
 public:
-  // Versión simple para rama analysis/image (sin paralelización del writer)
-  static bool write_ppm(std::string const & filename,
-                        std::vector<uint8_t> const & r_channel,
+  // Versión simple para rama analysis/rendering (sin paralelización del writer)
+  static bool write_ppm(std::string const & filename, std::vector<uint8_t> const & r_channel,
                         std::vector<uint8_t> const & g_channel,
-                        std::vector<uint8_t> const & b_channel,
-                        size_t width, size_t height);
+                        std::vector<uint8_t> const & b_channel, size_t width, size_t height);
 };
 
 #endif

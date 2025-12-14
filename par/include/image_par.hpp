@@ -39,15 +39,16 @@ public:
 
   void set_pixel(size_t index, Color const & color, double gamma = Constants::Gamma);
 
-  // Rama analysis/image: fill_from_double es PARALELO (usa TBB con ParallelSettings)
-  void fill_from_double(RGBInputData const & input, double gamma, 
-                        ParallelSettings const * par_settings = nullptr);
+  // Rama analysis/rendering: fill_from_double es SECUENCIAL (sin ParallelSettings)
+  void fill_from_double(RGBInputData const & input, double gamma = Constants::Gamma);
 
   [[nodiscard]] size_t width() const { return width_; }
+
   [[nodiscard]] size_t height() const { return height_; }
+
   [[nodiscard]] size_t total_pixels() const { return width_ * height_; }
 
-  // Rama analysis/image: write_to_ppm es SECUENCIAL (sin ParallelSettings)
+  // Rama analysis/rendering: write_to_ppm es SECUENCIAL (sin ParallelSettings)
   [[nodiscard]] bool write_to_ppm(std::string const & filename) const;
 };
 
