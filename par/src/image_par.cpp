@@ -7,11 +7,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <oneapi/tbb/partitioner.h>
 #include <string>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
 #include <vector>
+
+// TBB headers removidos - Rama analysis/writer usa procesado secuencial
 
 // Constructor para generar los arrays de colores del tamaño correcto proporcionado por el usuario
 ImagePar::ImagePar(size_t width, size_t height)
@@ -52,26 +51,22 @@ void ImagePar::set_pixel(size_t index, Color const & color, double gamma) {
   set_blue(index, color.z, gamma);
 }
 
-void ImagePar::fill_from_double(std::vector<double> const & r_data,
-                                std::vector<double> const & g_data,
-                                std::vector<double> const & b_data, double gamma) {
-  // Calculamos el tamaño esperado de los arrays a partir de las dimensiones de la imagen
-  size_t const expected_size = width_ * height_;
+// NOLINTNEXTLINE
+void ImagePar::fill_from_double(RGBInputData const & input, double gamma) {
+  // Rama analysis/rendering: Post-procesado de imagen SECUENCIAL (control)
+  // Solo el rendering es paralelo en esta rama
 
-  // Aplicamos la corrección gamma a todos los valores y convertimos a uint8_t en paralelo
-  tbb::parallel_for(
-      tbb::blocked_range<size_t>(0, expected_size), [&](tbb::blocked_range<size_t> const & range) {
-        for (size_t i = range.begin(); i != range.end(); ++i) {
-          r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(r_data[i], gamma));
-          g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(g_data[i], gamma));
-          b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma(b_data[i], gamma));
-        }
-      });
+  size_t const total_pixels = width_ * height_;
+
+  // BUCLE SECUENCIAL: Procesamos cada píxel uno por uno
+  for (size_t i = 0; i < total_pixels; ++i) {
+    r_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.r)[i], gamma));
+    g_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.g)[i], gamma));
+    b_channel_[i] = color_utils::double_to_uint8(color_utils::apply_gamma((*input.b)[i], gamma));
+  }
 }
 
-// Escritura a archivo PPM usando la clase PPMWriter
+// Escritura a archivo PPM usando la clase PPMWriter (SECUENCIAL en esta rama)
 bool ImagePar::write_to_ppm(std::string const & filename) const {
-  auto pixels = PPMWriter::Pixels(r_channel_, g_channel_, b_channel_);
-
-  return PPMWriter::write_ppm(filename, pixels, width_, height_);
+  return PPMWriter::write_ppm(filename, r_channel_, g_channel_, b_channel_, width_, height_);
 }

@@ -7,6 +7,7 @@
 #include "../../common/include/utilities/random.hpp"
 #include "../../common/include/utilities/random_par.hpp"
 #include <tbb/blocked_range2d.h>
+#include <tbb/global_control.h>
 #include <tbb/parallel_for.h>
 
 // RenderContext struct
@@ -29,7 +30,7 @@ struct RenderContext {
 // EN rendering_engine.hpp
 
 template <typename ImageType>
-void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
+void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {  // NOLINT
   auto imageWidth    = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight   = static_cast<size_t>(camera.ProjWindow.imageHeight);
   auto pixel_delta_u = camera.ProjWindow.viewportHorizontal / static_cast<double>(imageWidth);
@@ -38,8 +39,10 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
 
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
+  tbb::global_control global_limit(tbb::global_control::max_allowed_parallelism, 112);
+
   tbb::parallel_for(
-      tbb::blocked_range2d<size_t>(0, imageHeight, 0, imageWidth),
+      tbb::blocked_range2d<size_t>(0, imageHeight, 3, 0, imageWidth, 3),
       [&](tbb::blocked_range2d<size_t> const & r) {
         // Cada hilo obtiene sus propios generadores locales
         auto & ray_rng      = ctx.get_ray_rng();
@@ -67,7 +70,8 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
             image.set_pixel(index, final_pixel_color, ctx.config->gamma);
           }
         }
-      });
+      },
+      tbb::simple_partitioner());
 }
 
 #endif
