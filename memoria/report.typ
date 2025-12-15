@@ -37,8 +37,8 @@
 )
 
 #include "content/modificaciones.typ"
-#include "content/paralelizacion.typ"
 #include "content/eval.typ"
+#include "content/paralelizacion.typ"
 #include "content/org.typ"
 #include "content/concl.typ"
 #include "content/ia.typ"
