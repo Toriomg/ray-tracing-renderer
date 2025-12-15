@@ -86,7 +86,7 @@ A continuación, se presentan las gráficas, que como se puede observar, present
 En cuanto a la granularidad, también presentan uniformidad, pues todos presentan valores óptimos con tamaño de grano 3. Esto es especialmente importante, y más tratándose de un bloque en 2 dimensiones. Con un grano 3 se permite el tratado de unos 9 píxeles por bloque, siendo estos lo suficientemente pequeños como para que el hilo esté balanceado de manera adecuada pero lo suficientemente grande como para amortizar el _overhead_.Además permite una buena localidad espacial. 
 
 Mirando a las gráficas, aunque se observa un comportamiento similar y unos valores cercanos, podemos observar que el valor óptimo se presenta con 112 hilos, tamaño de grano 3 y un particionador simple, con un tiempo de ejecución de 1,79998 segundos y un consumo energético de 469,5 J, lo que se traduce en un speedup de mayor a 22 respecto a la versión secuencial solo con la paralelización de este fragmento.
-
+ #pagebreak()
 
 == Procesado de Imagen (image_par.cpp)
 
@@ -104,27 +104,25 @@ Por otro lado, el consumo energético muestra tendencia ascendente: al no reduci
   grid(
     columns: 2,
     gutter: 1em,
-    figure(image("../img/graficas/consumo-energetico.png", width: 80%), 
+    figure(image("../img/graficas/consumo-energetico.png", width: 70%), 
     caption:[Consumo energético total vs hilos]),
-    figure(image("../img/graficas/speedup.png", width: 80%), 
+    figure(image("../img/graficas/speedup.png", width: 70%), 
     caption:[Curva de Speedup])),
   )<fig:image-scalability>
 
 Una vez establecido el número de hilos, determinamos la mejor combinación de _partitioners_ y grano. Para ello, se ha llevado a cabo un barrido como el anterior comprobando las posibles combinaciones de estos para el número de hilos determinado. 
 
-Dados los resultados que se pueden observar en la gráfica de la derecha, el particionador que presenta mejores resultados es el _simple_partitioner_. Por ello, además se ha analizado su comportamiento en mayor profundidad. 
+Dados los resultados que se pueden observar en la gráfica de la derecha, el particionador que presenta mejores resultados es el _simple_partitioner_. 
 
-El comportamiento bajo diferentes granos muestra óptimo en: `simple_partitioner` con grano 64 (37.67s), esta combinación minimiza el compromiso entre balanceo de carga y _overhead_ de gestión. 
-
-No obstante, la mejora presentada con respecto a otras configuraciones es mínima, siendo de ~7ms. 
+El comportamiento de este bajo diferentes granos muestra óptimo en: `simple_partitioner` con grano 64 (37.67s), esta combinación minimiza el compromiso entre balanceo de carga y _overhead_ de gestión. No obstante, la mejora presentada con respecto a otras configuraciones es mínima, siendo de ~7ms. 
 
 
 #figure(
   grid(
     columns: (1fr, 1fr),
     gutter: 1em,
-    figure(image("../img/graficas/barrido.png", width: 80%), caption: [Comparativa de partitioners]),
-    figure(image("../img/graficas/granularidad-fina.png", width: 80%), caption: [Detalle de granularidad para simple_partitioner]),
+    figure(image("../img/graficas/barrido.png", width: 70%), caption: [Comparativa de partitioners]),
+    figure(image("../img/graficas/granularidad-fina.png", width: 70%), caption: [Detalle de granularidad para simple_partitioner]),
   )
 ) <fig:image-energy>
 
@@ -146,3 +144,16 @@ Dada esta configuración, observamos los siguientes datos para speedup y consumo
 )
 
 Estos, presentan unos resultado satisfactorios, que reducen significativamente el tiempo de ejecución con respecto al punto de partida inicial desde el que comenzó la paralelización. Por ello, podemos concluir que nuestra evaluación ha sido debidamente completada. 
+
+Además, pese a que no se presenta en esta práctica en concreto, planteamos la diferencia de duración para todas las imágenes del código de la primera práctica y el de esta ultima versión del código. Así como una variación del speedup para todas las imagenes, lo que nos permite evaluar debidamente los resultados obtenidos. 
+
+#figure(
+  grid(
+    columns: (1fr, 1fr),
+    gutter: 1em,
+    figure(image("../img/graficas/comparativa.png", width: 100%), caption: [Comparativa de rendimeinto en escenas con respecto a la primera entrega]),
+    figure(image("../img/graficas/comp-speedup.png", width: 100%), caption: [Incremento del speedup con respecto a las escenas estudiadas]),
+  )
+) <fig:image-energy>
+
+Estas gráficas nos permiten establecer que los resultados han resultado en mejoras significativas en todas las imágenes, en especial en aquellas que tienen un mayor volumen de figuras, como es el caso de la quinta escena presentada para esta entrega, pues en ellas, los efectos de paralelización y de las estructuras BVH presentan un imacto mucho más notable.
