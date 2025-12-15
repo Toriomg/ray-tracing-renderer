@@ -50,11 +50,10 @@ private:
     m_ray_seeds.resize(m_max_threads);
     m_material_seeds.resize(m_max_threads);
 
-    // std::mt19937_64 (enunciado dice mt19934_64 por error tipográfico)
+    // std::mt19937_64
     std::mt19937_64 ray_seed_gen(static_cast<std::uint64_t>(m_base_seed_ray));
     std::mt19937_64 material_seed_gen(static_cast<std::uint64_t>(m_base_seed_material));
 
-    // Si tienes C++20, usa esto:
     std::ranges::generate(m_ray_seeds, ray_seed_gen);
     std::ranges::generate(m_material_seeds, material_seed_gen);
   }

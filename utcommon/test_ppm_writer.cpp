@@ -39,9 +39,11 @@ TEST_F(PPMWriterTest, ValidImageWrite) {
   std::vector<uint8_t> const g_channel = {0, 128};
   std::vector<uint8_t> const b_channel = {0, 255};
 
-  // Llamar a write_ppm con la nueva API (sin estructura Pixels)
-  bool const result =
-      PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
+  // CORREGIDO: Crear objeto Pixels antes de llamar a write_ppm
+  PPMWriter::Pixels pixels(r_channel, g_channel, b_channel);
+
+  // Llamar a write_ppm con la API correcta
+  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
 
   // Verificar que la escritura fue exitosa
   ASSERT_TRUE(result) << "write_ppm debería retornar true para datos válidos";
@@ -99,9 +101,11 @@ TEST_F(PPMWriterTest, InvalidPixelDataSize) {
   std::vector<uint8_t> const g_channel = {1, 2, 3};
   std::vector<uint8_t> const b_channel = {1, 2, 3};
 
-  // Llamar a write_ppm con la nueva API
-  bool const result =
-      PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
+  // CORREGIDO: Crear objeto Pixels
+  PPMWriter::Pixels pixels(r_channel, g_channel, b_channel);
+
+  // Llamar a write_ppm con la API correcta
+  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
 
   // Verificar que la función retorna false debido al chequeo de tamaño
   ASSERT_FALSE(result) << "write_ppm debería retornar false cuando el tamaño de los canales no "
@@ -119,14 +123,15 @@ TEST_F(PPMWriterTest, InvalidFilePath) {
   size_t const height        = 1;
 
   // Crear canales con 1 píxel válido
-  // Crear canales con 1 píxel válido
   std::vector<uint8_t> const r_channel = {255};
   std::vector<uint8_t> const g_channel = {255};
   std::vector<uint8_t> const b_channel = {255};
 
-  // Llamar a write_ppm con la nueva API
-  bool const result =
-      PPMWriter::write_ppm(filename, r_channel, g_channel, b_channel, width, height);
+  // CORREGIDO: Crear objeto Pixels
+  PPMWriter::Pixels pixels(r_channel, g_channel, b_channel);
+
+  // Llamar a write_ppm con la API correcta
+  bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
 
   // Verificar que la función retorna false debido a que no se pudo abrir el archivo
   ASSERT_FALSE(result) << "write_ppm debería retornar false cuando no se puede abrir el archivo";
