@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <limits>
 #include <optional>
 
@@ -27,7 +28,7 @@ Color Renderer::rayColor(Ray const & ray, SceneSettings const & scene,
   TraversalData trav_data{
     std::ref(ray),                           // Envolvemos const Ray&
     std::ref(scene),                         // Envolvemos const SceneSettings&
-    std::ref(rec),                           // Envolvemos HitRecord& (mutable)
+    std::ref(rec),                           // Envolvemos HitRecord& (mutable) ""
     0.001,                                   // t_min (evitar acne propio)
     std::numeric_limits<double>::infinity()  // closest_t inicial
   };
