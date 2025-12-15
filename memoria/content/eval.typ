@@ -151,9 +151,9 @@ Además, pese a que no se presenta en esta práctica en concreto, planteamos la 
   grid(
     columns: (1fr, 1fr),
     gutter: 1em,
-    figure(image("../img/graficas/comparativa.png", width: 100%), caption: [Comparativa de rendimeinto en escenas con respecto a la primera entrega]),
-    figure(image("../img/graficas/comp-speedup.png", width: 100%), caption: [Incremento del speedup con respecto a las escenas estudiadas]),
+    figure(image("../img/graficas/comparativa.png", width: 80%), caption: [Comparativa de rendimeinto en escenas con respecto a la primera entrega]),
+    figure(image("../img/graficas/comp-speedup.png", width: 80%), caption: [Incremento del speedup con respecto a las escenas estudiadas]),
   )
 ) <fig:image-energy>
 
-Estas gráficas nos permiten establecer que los resultados han resultado en mejoras significativas en todas las imágenes, en especial en aquellas que tienen un mayor volumen de figuras, como es el caso de la quinta escena presentada para esta entrega, pues en ellas, los efectos de paralelización y de las estructuras BVH presentan un imacto mucho más notable.
+Estas gráficas nos permiten establecer que los resultados han resultado en mejoras significativas en todas las imágenes, en especial en aquellas que tienen un mayor volumen de figuras, como es el caso de la quinta escena presentada para esta entrega, pues en ellas, los efectos de paralelización y de las estructuras BVH presentan un imacto mucho más notable. Además se presenta que en la versión paralelizada, el incremento en tiempo de ejecución y rendimiento según incrementa la complejidad de la imagen crece de maneera múcho más lenta y controlada, lo que nos viene a demostrar la escalabilidad de nuestro programa y solución al problema de renderizado presentado en la práctica.
