@@ -5,7 +5,9 @@ En esta sección realizaremos un análisis del rendimiento y de la energía en b
 == Proceso de paralelización 
 Para evaluar nuestro código y conseguir el mayor rendimiento y eficiencia energética, hemos realizado una evaluación exhaustiva de las mejores combinaciones de las métricas indicadas en la introducción de la sección para cada fragmento paralelizado (que se ha detallado en la sección anterior).
 
-Para ello, se ha definido un proceso de evaluación fijo para todos los casos que se define a continuación:. 
+En primer lugar, hemos realizado un análisis del código inicial que nos ha permitido determinar que secciones merece la pena paralelizar. Hemos determinado que el fragmento del código que ocupa una mayor cantidad de tiempo con respecto a la ejecución completa del código es el modo de renderizado (rendering_engine.hpp), algo que dado que se trata de un proyecto de renderizado de imágenes tiene bastante sentido. Por otro lado, los dos siguientes fragmentos paralelizables que ocupan un mayor tiempo de ejecución (aunque significativamente menor) son _image_par.cppp_ y _ppm_rwiter.cpp_. 
+
+Para evaluar estos fragmentos de manera independiente, se ha definido un proceso de evaluación fijo para todos los casos que se define a continuación:. 
   #set enum(numbering: "1", start: 1)
   + En primer lugar establecemos el número de hilos del que empleará el fragmento. Para ello, antes de probar valores a fuerza bruta, comprobamos valores críticos en base a la arquitectura del nodo _stan_, como son: 1, 28, 56, 112 y 120 hilos. Esto, nos permitirá observar la tendencia de mejora en el rendimiento del código y poder elegir un rango sobre el que trabajar para nuestras pruebas. 
   + Con el rango determinado y sin particionador, comprobamos todos los valores de hilos del rango más prometedor con un step 2. De este modo, podemos comprobar que valores presentan un mejor rendimiento y reducir aún más las pruebas que nos permitirán establecer el partitioner y el tamaño de grano. 
@@ -39,10 +41,10 @@ Por tanto, en las siguientes gráfica presentamos los resultados de rendimiento 
     columns: 2,
     gutter: 0cm,
     
-    figure(image("../img/graficas/tiempo_renderizado.png", width: 50%),
-    caption: [Evaluación rendimiento en base valores clave]),
-    figure(image("../img/graficas/energia_renderizado.png", width: 50%),
-    caption: [Evaluación consumo energético en base valores clave]),
+    figure(image("../img/graficas/barrido-render.png", width: 94%),
+    caption: [Evaluación rendimiento entre 108 y 114 hilos]),
+    figure(image("../img/graficas/barrido-energia.png", width: 90%),
+    caption: [Evaluación consumo energético entre 108 y 114 hilos]),
   ),
 )
 
@@ -96,21 +98,17 @@ No osbtante, cabe destacar que, a diferencia del motor de renderizado, el proces
 
 Tal y como se mencionó en la metodología a seguir, Se ejecutó un barrido de 1 a 120 hilos. El tiempo desciende de 38.36 s (1 hilo) a 37.73 s (120 hilos). El speedup se satura en 1.016x, validando la _Ley de Amdahl_ que establece que dado $P_("seq") approx 0.995$ (el renderizado secuencial consume ~99.5%), el speedup teórico máximo es de $S_("max") = 1 / P_("seq") approx 1.005x$. 
 
-Por otro lado, el consumo energético muestra tendencia ascendente: al no reducirse el tiempo, más hilos incrementan la potencia media resultando en penalización energética. 
-
-En definitiva, tomando como objetivo principal el speedup, se establece que el número óptimo de hilos para la implementación es de 36 hilos. 
-
-En las gráficas que se muestran a continuación se pueden observar los datos indicados:
+Por otro lado, el consumo energético muestra tendencia ascendente: al no reducirse el tiempo, más hilos incrementan la potencia media resultando en penalización energética.
 
 #figure(
   grid(
     columns: 2,
     gutter: 1em,
-    image("../img/graficas/Gráfica3-Consumo_Energético.png", width: 100%),
-    image("../img/graficas/Gráfica2-La_Curva_de_Speedup.png", width: 100%),
-  ),
-  caption: [Izquierda: Consumo energético total vs hilos. Derecha: Curva de Speedup],
-) <fig:image-scalability>
+    figure(image("../img/graficas/consumo-energetico.png", width: 80%), 
+    caption:[Consumo energético total vs hilos]),
+    figure(image("../img/graficas/speedup.png", width: 80%), 
+    caption:[Curva de Speedup])),
+  )<fig:image-scalability>
 
 Una vez establecido el número de hilos, determinamos la mejor combinación de _partitioners_ y grano. Para ello, se ha llevado a cabo un barrido como el anterior comprobando las posibles combinaciones de estos para el número de hilos determinado. 
 
@@ -125,19 +123,21 @@ No obstante, la mejora presentada con respecto a otras configuraciones es mínim
   grid(
     columns: (1fr, 1fr),
     gutter: 1em,
-    image("../img/graficas/Gráfica4-Barrido_de_Optimización.png", width: 100%),
-    image("../img/graficas/Gráfica5-Detalle_de_Granularidad_Fina.png", width: 100%),
-  ),
-  caption: [Izquierda: Comparativa de partitioners vs Derecha: Detalle de granularidad para `simple_partitioner`],
+    figure(image("../img/graficas/barrido.png", width: 80%), caption: [Comparativa de partitioners]),
+    figure(image("../img/graficas/granularidad-fina.png", width: 80%), caption: [Detalle de granularidad para simple_partitioner]),
+  )
 ) <fig:image-energy>
 
 
-Una vez hemos realizado todos los pasos establecidos en nuestro estudio, podemos concluir que la paralelización es funcional y correcta.. Basándonos en los datos empíricos, se selecciona la configuración simple/64 para la versión final, aunque se destaca que el sistema es insensible a variaciones en los parámetros de paralelización.
+Una vez hemos realizado todos los pasos establecidos en nuestro estudio, podemos concluir que la paralelización es funcional y correcta. Basándonos en los datos empíricos, se selecciona la configuración simple/64 para la versión final, aunque se destaca que el sistema es insensible a variaciones en los parámetros de paralelización.
 
-No obstante, como se puede ver, el speedup presentado en este caso es mínimo, muy a diferencia del caso que se ha presentado con anterioridad en el motor de renderizado. 
+No obstante, como se puede ver, el speedup presentado en este caso es mínimo, muy a diferencia del caso que se ha presentado con anterioridad en el motor de renderizado. Por ello, no se aplicará la paralelización para este fragmento, y teniendo en cuenta que, como se ha mencionado al comienzo del documento, se trata del segundo fragmento del código que más tiempo ocupaba y que tenía posibilidad de paralelización, se ha decidido finalizar el estudio de paralelización y proceder con un modelo de paralelización en el que el único fragmento paralelizado es el motor de renderizador o _rendering_engine_.
 
 == Solucion final. 
-Juntando estas dos paralelizaciones, y entendiendo que los resultados finales vienen dados en su mayoría por la paralelización de el motor de renderizado (_rendering_engine_) obtenemos los resultados mostrados en la siguiente tabla:
+De este modo, la solución final planteada para el sistema pasa por la paralelización del bloque _rendering_engine_ con los principios que se han establecido con anterioridad. 
+
+Dada esta configuración, observamos los siguientes datos para speedup y consumo energético final.
+
 #table(
   columns: (auto, auto, auto),
   align: center,
@@ -145,6 +145,4 @@ Juntando estas dos paralelizaciones, y entendiendo que los resultados finales vi
   [1.89], [650.667], [20.105],
 )
 
-Estos, presentan unos resultado satisfactorios, que reducen significativamente el tiempo de ejecución con respecto al punto de partida inicial (ya teniendo en cuenta la implementación de BVH). Por ello, podemos concluir que nuestra evaluación ha sido debidamente completada. 
-
-Como se puede observar, el valor obtenido es muy similar al que se obtiene en la evaluación del renderizador. Esto se debe, a que como bien hemos explicado con anterioridad, es este proceso el que domina la paralelización, y realmente el programa en su conjunto. 
+Estos, presentan unos resultado satisfactorios, que reducen significativamente el tiempo de ejecución con respecto al punto de partida inicial desde el que comenzó la paralelización. Por ello, podemos concluir que nuestra evaluación ha sido debidamente completada. 
