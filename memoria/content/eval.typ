@@ -94,7 +94,7 @@ Esta sección analiza el impacto de la paralelización en la etapa final de gene
 
 Para la evaluación de los efectos de la paralelización de la generación de la imagen, hemos seguido los mismos pasos seguidos en el caso anterior y comentados al comienzo de la sección. 
 
-No osbtante, cabe destacar que, a diferencia del motor de renderizado, el procesado de imagen es una tarea con baja intensidad computacional pero alto volumen de accesos a memoria. 
+No obstante, cabe destacar que, a diferencia del motor de renderizado, el procesado de imagen es una tarea con baja intensidad computacional pero alto volumen de accesos a memoria. 
 
 Tal y como se mencionó en la metodología a seguir, Se ejecutó un barrido de 1 a 120 hilos. El tiempo desciende de 38.36 s (1 hilo) a 37.73 s (120 hilos). El speedup se satura en 1.016x, validando la _Ley de Amdahl_ que establece que dado $P_("seq") approx 0.995$ (el renderizado secuencial consume ~99.5%), el speedup teórico máximo es de $S_("max") = 1 / P_("seq") approx 1.005x$. 
 

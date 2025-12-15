@@ -27,16 +27,13 @@ struct RenderContext {
   }
 };
 
-// EN rendering_engine.hpp
-
 template <typename ImageType>
-void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {  // NOLINT
+void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
   auto imageWidth    = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight   = static_cast<size_t>(camera.ProjWindow.imageHeight);
   auto pixel_delta_u = camera.ProjWindow.viewportHorizontal / static_cast<double>(imageWidth);
   auto pixel_delta_v = camera.ProjWindow.viewportVertical / static_cast<double>(imageHeight);
   auto pixel00_loc   = camera.ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v);
-
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
   tbb::global_control global_limit(tbb::global_control::max_allowed_parallelism, 112);
@@ -65,8 +62,7 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {  // 
               accumulated_color += Renderer::rayColor(ray, *ctx.scene, *ctx.config, material_rng);
             }
             Color const final_pixel_color = accumulated_color * static_cast<double>(scale);
-
-            size_t const index = image.indice(row, col);
+            size_t const index            = image.indice(row, col);
             image.set_pixel(index, final_pixel_color, ctx.config->gamma);
           }
         }
