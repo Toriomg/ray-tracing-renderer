@@ -40,7 +40,7 @@ TEST_F(PPMWriterTest, ValidImageWrite) {
   std::vector<uint8_t> const b_channel = {0, 255};
 
   // CORREGIDO: Crear objeto Pixels antes de llamar a write_ppm
-  PPMWriter::Pixels pixels(r_channel, g_channel, b_channel);
+  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
 
   // Llamar a write_ppm con la API correcta
   bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
@@ -102,7 +102,7 @@ TEST_F(PPMWriterTest, InvalidPixelDataSize) {
   std::vector<uint8_t> const b_channel = {1, 2, 3};
 
   // CORREGIDO: Crear objeto Pixels
-  PPMWriter::Pixels pixels(r_channel, g_channel, b_channel);
+  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
 
   // Llamar a write_ppm con la API correcta
   bool const result = PPMWriter::write_ppm(filename, pixels, width, height);
@@ -128,7 +128,7 @@ TEST_F(PPMWriterTest, InvalidFilePath) {
   std::vector<uint8_t> const b_channel = {255};
 
   // CORREGIDO: Crear objeto Pixels
-  PPMWriter::Pixels pixels(r_channel, g_channel, b_channel);
+  PPMWriter::Pixels const pixels(r_channel, g_channel, b_channel);
 
   // Llamar a write_ppm con la API correcta
   bool const result = PPMWriter::write_ppm(filename, pixels, width, height);

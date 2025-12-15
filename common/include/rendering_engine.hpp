@@ -6,6 +6,7 @@
 #include "../../common/include/renderer.hpp"
 #include "../../common/include/utilities/random.hpp"
 #include "../../common/include/utilities/random_par.hpp"
+#include "image_par.hpp"
 #include <tbb/blocked_range2d.h>
 #include <tbb/global_control.h>
 #include <tbb/parallel_for.h>
@@ -27,8 +28,7 @@ struct RenderContext {
   }
 };
 
-template <typename ImageType>
-void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
+inline void renderImage(ImagePar & image, Camera & camera, RenderContext & ctx) {
   auto imageWidth    = static_cast<size_t>(camera.ProjWindow.imageWidth);
   auto imageHeight   = static_cast<size_t>(camera.ProjWindow.imageHeight);
   auto pixel_delta_u = camera.ProjWindow.viewportHorizontal / static_cast<double>(imageWidth);
@@ -36,7 +36,7 @@ void renderImage(ImageType & image, Camera & camera, RenderContext & ctx) {
   auto pixel00_loc   = camera.ProjWindow.viewportOrigin + 0.5 * (pixel_delta_u + pixel_delta_v);
   double const scale = 1.0 / static_cast<double>(ctx.config->samples_per_pixel);
 
-  tbb::global_control global_limit(tbb::global_control::max_allowed_parallelism, 112);
+  tbb::global_control const global_limit(tbb::global_control::max_allowed_parallelism, 112);
 
   tbb::parallel_for(
       tbb::blocked_range2d<size_t>(0, imageHeight, 3, 0, imageWidth, 3),

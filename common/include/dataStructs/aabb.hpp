@@ -21,18 +21,18 @@ public:
   Point3 max_point;
 
   AABB() {
-    double min_n = std::numeric_limits<double>::lowest();
-    double max_n = std::numeric_limits<double>::max();
-    min_point    = {max_n, max_n, max_n};
-    max_point    = {min_n, min_n, min_n};
+    double const min_n = std::numeric_limits<double>::lowest();
+    double const max_n = std::numeric_limits<double>::max();
+    min_point          = {max_n, max_n, max_n};
+    max_point          = {min_n, min_n, min_n};
   }
 
   AABB(Point3 const & a, Point3 const & b) : min_point(a), max_point(b) { }
 
-  [[nodiscard]] bool intersect_fast(Point3 const & origin, Vec3 const & inv_dir,
-                                    double t_min, double t_max_limit) const {
-    double tx1 = (min_point.x - origin.x) * inv_dir.x;
-    double tx2 = (max_point.x - origin.x) * inv_dir.x;
+  [[nodiscard]] bool intersect_fast(Point3 const & origin, Vec3 const & inv_dir, double t_min,
+                                    double t_max_limit) const {
+    double const tx1 = (min_point.x - origin.x) * inv_dir.x;
+    double const tx2 = (max_point.x - origin.x) * inv_dir.x;
 
     // tmin empieza siendo el t_min que pasamos por parámetro (arregla el warning)
     double tmin = std::max(t_min, std::min(tx1, tx2));
@@ -59,10 +59,10 @@ public:
     double t_max = t.max;
 
     auto check = [&](double o, double inv, double b_min, double b_max) {
-      double t1 = (b_min - o) * inv;
-      double t2 = (b_max - o) * inv;
-      t_min     = std::max(t_min, std::min(t1, t2));
-      t_max     = std::min(t_max, std::max(t1, t2));
+      double const t1 = (b_min - o) * inv;
+      double const t2 = (b_max - o) * inv;
+      t_min           = std::max(t_min, std::min(t1, t2));
+      t_max           = std::min(t_max, std::max(t1, t2));
     };
 
     check(origin.x, inv_d.x, box.min_point.x, box.max_point.x);
@@ -80,24 +80,24 @@ public:
   }
 
   static AABB from_sphere(Point3 const & center, double radius) {
-    Vec3 r_vec(radius, radius, radius);
+    Vec3 const r_vec(radius, radius, radius);
     return {center - r_vec, center + r_vec};
   }
 
   static AABB from_cylinder(Point3 const & center, Vec3 const & axis, double radius, double h) {
-    Vec3 half = axis.normalize() * (h * 0.5);
-    Point3 p1 = center - half;
-    Point3 p2 = center + half;
-    Point3 min_p(std::min(p1.x, p2.x), std::min(p1.y, p2.y), std::min(p1.z, p2.z));
-    Point3 max_p(std::max(p1.x, p2.x), std::max(p1.y, p2.y), std::max(p1.z, p2.z));
-    Vec3 r_vec(radius, radius, radius);
+    Vec3 const half = axis.normalize() * (h * 0.5);
+    Point3 const p1 = center - half;
+    Point3 const p2 = center + half;
+    Point3 const min_p(std::min(p1.x, p2.x), std::min(p1.y, p2.y), std::min(p1.z, p2.z));
+    Point3 const max_p(std::max(p1.x, p2.x), std::max(p1.y, p2.y), std::max(p1.z, p2.z));
+    Vec3 const r_vec(radius, radius, radius);
     return {min_p - r_vec, max_p + r_vec};
   }
 
   [[nodiscard]] Point3 centroid() const { return (min_point + max_point) * 0.5; }
 
   [[nodiscard]] int longest_axis() const {
-    Vec3 e = max_point - min_point;
+    Vec3 const e = max_point - min_point;
     if (e.x > e.y and e.x > e.z) {
       return 0;
     }

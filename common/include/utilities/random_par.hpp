@@ -51,20 +51,20 @@ private:
     m_material_seeds.resize(m_max_threads);
 
     // std::mt19937_64
-    std::mt19937_64 ray_seed_gen(static_cast<std::uint64_t>(m_base_seed_ray));
-    std::mt19937_64 material_seed_gen(static_cast<std::uint64_t>(m_base_seed_material));
+    std::mt19937_64 const ray_seed_gen(static_cast<std::uint64_t>(m_base_seed_ray));
+    std::mt19937_64 const material_seed_gen(static_cast<std::uint64_t>(m_base_seed_material));
 
     std::ranges::generate(m_ray_seeds, ray_seed_gen);
     std::ranges::generate(m_material_seeds, material_seed_gen);
   }
 
   tbb::enumerable_thread_specific<RandomGenerator> m_ray_rngs{[this]() {
-    std::size_t thread_id = s_thread_counter.fetch_add(1);
+    std::size_t const thread_id = s_thread_counter.fetch_add(1);
     return RandomGenerator(m_ray_seeds[thread_id % m_ray_seeds.size()]);
   }};
 
   tbb::enumerable_thread_specific<RandomGenerator> m_material_rngs{[this]() {
-    std::size_t thread_id = s_thread_counter.fetch_add(1);
+    std::size_t const thread_id = s_thread_counter.fetch_add(1);
     return RandomGenerator(m_material_seeds[thread_id % m_material_seeds.size()]);
   }};
 };

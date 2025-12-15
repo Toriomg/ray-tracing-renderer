@@ -1,8 +1,11 @@
 #include "../include/dataStructs/bvh.hpp"
 #include "../include/renderer.hpp"
+#include "dataStructs/object.hpp"
+#include "utilities/vec3.hpp"
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <vector>
 
@@ -21,7 +24,7 @@ void BVH::init_build_data(SphereData const & s, CylinderData const & c) {
 
 // Splits a node's objects into two halves based on the centroid median.
 void BVH::partition_node(BuildTask const & task, int axis, std::vector<BuildTask> & stack) {
-  size_t mid = task.start + (task.end - task.start) / 2;
+  size_t const mid = task.start + (task.end - task.start) / 2;
 
   // Comparator for sorting objects along the longest axis
   auto cmp = [axis](BVHObject const & a, BVHObject const & b) {
@@ -36,7 +39,7 @@ void BVH::partition_node(BuildTask const & task, int axis, std::vector<BuildTask
   // Partially sort so elements < mid are on the left (Linear time split)
   std::nth_element(start_itr, mid_itr, end_itr, cmp);
 
-  size_t left_idx = nodes.size();
+  size_t const left_idx = nodes.size();
   nodes.emplace_back();  // Create Left Child
   nodes.emplace_back();  // Create Right Child
 
@@ -55,7 +58,7 @@ void BVH::process_node(BuildTask const & task, std::vector<BuildTask> & stack) {
   }
   nodes.at(task.node_idx).bounding_box = node_bounds;
 
-  size_t count = task.end - task.start;
+  size_t const count = task.end - task.start;
   // Leaf condition: 4 or fewer primitives
   if (count <= 4) {
     nodes.at(task.node_idx).left_first = static_cast<uint32_t>(task.start);
@@ -65,7 +68,7 @@ void BVH::process_node(BuildTask const & task, std::vector<BuildTask> & stack) {
 
   // Internal node setup
   nodes.at(task.node_idx).prim_count = 0;
-  int axis                           = node_bounds.longest_axis();
+  int const axis                     = node_bounds.longest_axis();
   nodes.at(task.node_idx).axis       = static_cast<uint8_t>(axis);
   partition_node(task, axis, stack);
 }
@@ -73,7 +76,7 @@ void BVH::process_node(BuildTask const & task, std::vector<BuildTask> & stack) {
 // Iteratively processes the build stack until all nodes are created.
 void BVH::process_build_queue(std::vector<BuildTask> & stack) {
   while (!stack.empty()) {
-    BuildTask task = stack.back();
+    BuildTask const task = stack.back();
     stack.pop_back();
     process_node(task, stack);
   }

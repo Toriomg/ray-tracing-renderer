@@ -1,4 +1,5 @@
 #include "../par/include/image_par.hpp"
+#include "constants.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
