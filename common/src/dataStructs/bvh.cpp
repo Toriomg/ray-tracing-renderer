@@ -89,7 +89,6 @@ void BVH::build(SphereData const & spheres, CylinderData const & cylinders) {
     return;
   }
 
-  std::cout << "Building BVH: " << bvh_objects.size() << " objects.\n";
   nodes.reserve(bvh_objects.size() * 2);
   nodes.emplace_back();  // Create Root
 
@@ -97,8 +96,6 @@ void BVH::build(SphereData const & spheres, CylinderData const & cylinders) {
   stack.reserve(64);
   stack.push_back({0, 0, bvh_objects.size()});
   process_build_queue(stack);
-
-  std::cout << "BVH built: " << nodes.size() << " nodes.\n";
 }
 
 // Función auxiliar estática para procesar los objetos dentro de un nodo hoja.
