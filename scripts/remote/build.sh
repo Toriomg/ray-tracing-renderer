@@ -5,4 +5,4 @@ export LD_LIBRARY_PATH="/opt/gcc-14/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 # cmake --build --preset gcc-release --config Release --target all --parallel
 # Descomentar para la entrega
 cmake --preset clang-tidy
-cmake --build --preset clang-tidy-debug --config Debug --target all --parallel
+cmake --build --preset clang-tidy-debug --config Release --target all --parallel

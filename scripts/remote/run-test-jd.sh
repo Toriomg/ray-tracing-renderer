@@ -31,7 +31,7 @@ do
     echo "========================================="
     
     # Ejecutar medición
-    perf stat -r 1 ${RENDER_EXE} ${SCENE_FILE} ${CONFIG_FILE} ${OUTPUT_FILE}
+    perf stat -r 1 ${RENDER_EXE} ${CONFIG_FILE} ${SCENE_FILE} ${OUTPUT_FILE}
 
     echo "[ $i ] Mediciones finalizadas."
 done
