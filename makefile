@@ -77,24 +77,6 @@ run-jd-wait: deploy
 auto-jd: remote-build run-jd-wait fetch-all
 	@echo "AUTO JD COMPLETADO"
 
-# Scripts sweep (Flujo tradicional: config óptima → escalabilidad)
-sweep-opt:
-	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_optimization.sh"
-
-sweep-scale:
-	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_scalability.sh $(PART) $(GRAIN) $(START) $(END) $(STEP)"
-
-# Nuevos scripts (Flujo metodológico: hilos primero → granularidad después)
-sweep-threads-first:
-	@echo ">>> PASO 1: Explorando número óptimo de hilos (28, 56, 112, 120)..."
-	@echo ">>> NOTA (analysis/image): Mejoras mínimas esperadas (imagen <1% del tiempo)"
-	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_threads_first.sh"
-
-sweep-grain:
-	@echo ">>> PASO 2: Explorando granularidad óptima con $(THREADS) hilos fijos..."
-	@echo ">>> NOTA (analysis/image): Se prueban granos grandes (1024-8192) típicos de memory-bound"
-	$(SSH_CMD) "cd $(REMOTE_DIR) && sbatch scripts/remote/sweep_grain.sh $(THREADS)"
-
 fetch-results:
 	@echo ">>> Descargando resultados CSV..."
 	sshpass -f $(PASSFILE) scp -o StrictHostKeyChecking=no $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/logs/*.csv ./logs/
