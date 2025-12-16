@@ -1,1 +1,0 @@
-# Archivo de configuracion vacio para usar valores por defecto
