@@ -25,14 +25,14 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-  std::optional<ConfigSettings> config_opt = loadConfigFromFile(args[2]);
+  std::optional<ConfigSettings> config_opt = loadConfigFromFile(args[1]);
   if (!config_opt) {
     std::cerr << "Aborting due to configuration file error.\n";
     return 1;
   }
   ConfigSettings const & config = *config_opt;
 
-  std::optional<SceneSettings> scene_opt = loadSceneFromFile(args[1]);
+  std::optional<SceneSettings> scene_opt = loadSceneFromFile(args[2]);
   if (!scene_opt) {
     std::cerr << "Aborting due to scene file error.\n";
     return 1;
