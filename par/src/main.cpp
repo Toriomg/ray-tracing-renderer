@@ -49,7 +49,6 @@ int main(int argc, char * argv[]) {
   auto imageHeight = static_cast<size_t>(camera.ProjWindow.imageHeight);
   RenderContext ctx(&scene, &config, &rng_manager);
   {
-    std::cout << "Rendering with ImagePar..." << '\n';
     ImagePar imageSoa(imageWidth, imageHeight);
     renderImage(imageSoa, camera, ctx);
     if (!imageSoa.write_to_ppm(args[3])) {
