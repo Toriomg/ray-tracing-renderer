@@ -6,7 +6,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <vector>
 
 // Initializes the flat object list from separate Sphere and Cylinder arrays.
