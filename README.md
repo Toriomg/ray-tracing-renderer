@@ -3,6 +3,23 @@
 This repository contains a template for the project assignment in the Computer
 Architecture course at Universidad Carlos III de Madrid.
 
+## Resultados
+
+Imágenes generadas por el renderer a partir de las escenas de `res/scene_scripts`
+y las configuraciones de `res/config_scripts`.
+
+| Escena 2 | Escena 3 |
+| :---: | :---: |
+| ![Escena 2](docs/img/scene2.png) | ![Escena 3](docs/img/scene3.png) |
+| **Escena 4** | **Escena 5** |
+| ![Escena 4](docs/img/scene4.png) | ![Escena 5](docs/img/scene5.png) |
+
+<details>
+<summary>Escena 1 (sin objetos, solo el fondo)</summary>
+
+![Escena 1](docs/img/scene1.png)
+</details>
+
 
 # How to use the scripts
 
